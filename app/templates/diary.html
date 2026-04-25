@@ -1,0 +1,1722 @@
+{% extends "base.html" %}
+{% block title %}Diary | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .card {
+    background: var(--surface) !important;
+    border-color: rgba(45,31,26,0.1) !important;
+    box-shadow: 0 2px 12px rgba(45,31,26,0.06);
+  }
+  h1,h2,h3,h4 { color: var(--dark); font-family: 'DM Sans', sans-serif; }
+  .muted { color: var(--muted) !important; }
+  a:not([class]) { color: var(--brown); }
+  a:not([class]):hover { color: var(--dark); }
+  th { color: var(--muted) !important; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+  td { border-color: rgba(45,31,26,0.06) !important; }
+  tr:hover td { background: var(--warm) !important; }
+  .positive, .chg-pos { color: #4a9470 !important; }
+  .negative, .chg-neg { color: #b85050 !important; }
+</style>
+<style>
+  .diary-wrap {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .diary-wrap { grid-template-columns: 1fr; } }
+
+  .diary-tabs {
+    display: flex; gap: 4px;
+    background: #f0f0ee; border-radius: 12px;
+    padding: 4px; margin-bottom: 20px;
+    width: fit-content;
+  }
+  .dtab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    padding: 7px 16px; border-radius: 9px;
+    border: none; background: none; cursor: pointer; color: #777;
+    transition: all 0.15s;
+  }
+  .dtab.active { background: var(--surface); color: #2d1f1a; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  .diary-panel { display: none; }
+  .diary-panel.active { display: block; }
+
+  .dc {
+    background: var(--surface); border: 1.5px solid #e5e5e5;
+    border-radius: 16px; padding: 20px 22px; margin-bottom: 16px;
+  }
+  .dc-title {
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+
+  /* calendar header shows the month name and prev/next arrows */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .cal-month {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; font-weight: 400; letter-spacing: -0.3px;
+  }
+  .cal-nav { display: flex; gap: 6px; }
+  .cal-nav button {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1.5px solid #e5e5e5; background: var(--surface);
+    cursor: pointer; font-size: 14px; color: #555;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; padding: 0;
+  }
+  .cal-nav button:hover { background: #f5f5f5; border-color: #ccc; }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-dow {
+    text-align: center; font-size: 11px; font-weight: 600;
+    color: #bbb; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .cal-day {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 10px; cursor: pointer; position: relative;
+    transition: all 0.12s; font-size: 13px; font-weight: 500; color: #4a3028;
+    gap: 2px;
+  }
+  .cal-day:hover { background: #f5f5f5; }
+  .cal-day.today { background: #2d1f1a; color: #fff; }
+  .cal-day.today:hover { background: #222; }
+  .cal-day.other-month { color: #ccc; }
+  .cal-day.has-entry { font-weight: 700; }
+  .cal-day .dot-row { display: flex; gap: 2px; }
+  .cal-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+  .dot-trade  { background: var(--rose); }
+  .dot-note   { background: #f59e0b; }
+  .dot-event  { background: #10b981; }
+  .dot-mood   { background: #ec4899; }
+  .dot-goal   { background: #7bafc4; }
+  .cal-day.selected { background: var(--blush); color: var(--rose); border: 1.5px solid var(--rose); }
+  .cal-day.today.selected { background: var(--rose); color: #fff; }
+
+  .entry-item {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid #f5f5f5; align-items: flex-start;
+    cursor: pointer; transition: background 0.1s;
+  }
+  .entry-item:last-child { border-bottom: none; }
+  .entry-item:hover { background: #fafafa; margin: 0 -4px; padding-left: 4px; padding-right: 4px; border-radius: 8px; }
+  .entry-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .ei-trade  { background: #ede9fe; }
+  .ei-note   { background: #fef3c7; }
+  .ei-event  { background: #d1fae5; }
+  .ei-mood   { background: #fce7f3; }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-title { font-size: 14px; font-weight: 600; color: #2d1f1a; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-meta  { font-size: 12px; color: #aaa; }
+  .entry-tag {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: var(--blush); color: var(--rose); white-space: nowrap;
+  }
+
+  .mood-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .mood-opt {
+    font-size: 22px; width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: 2px solid transparent;
+    background: #f5f5f5; transition: all 0.15s;
+  }
+  .mood-opt:hover { transform: scale(1.1); border-color: #ddd; }
+  .mood-opt.selected { border-color: var(--rose); background: var(--blush); }
+
+  .confidence-row { display: flex; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .conf-label { font-size: 12px; color: #aaa; min-width: 20px; text-align: center; }
+  .conf-bar {
+    flex: 1; height: 6px; background: #f0f0f0; border-radius: 3px;
+    position: relative; cursor: pointer;
+  }
+  .conf-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--rose), #10b981); transition: width 0.2s; }
+  input[type=range].conf-slider {
+    width: 100%; margin: 0; accent-color: var(--rose);
+    padding: 0; border: none; background: none; height: 6px;
+  }
+
+  .dfield { margin-bottom: 12px; }
+  .dfield label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+  }
+  .dfield input, .dfield select, .dfield textarea {
+    width: 100%; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 9px 12px;
+    border: 1.5px solid #e5e5e5; border-radius: 10px;
+    background: var(--surface); color: #2d1f1a;
+    box-sizing: border-box; outline: none; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .dfield input:focus, .dfield select:focus, .dfield textarea:focus { border-color: var(--rose); }
+
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 9px 20px; background: #2d1f1a; color: #fff;
+    border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 9px 16px; background: var(--surface); color: #555;
+    border: 1.5px solid #e5e5e5; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: #aaa; color: #2d1f1a; }
+  .btn-danger {
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 6px 14px; background: var(--surface); color: #dc2626;
+    border: 1.5px solid #fecaca; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: #fef2f2; }
+
+  .sidebar-card { background: var(--surface); border: 1.5px solid #e5e5e5; border-radius: 16px; padding: 18px 20px; margin-bottom: 16px; }
+  .sc-title { font-size: 11px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+
+  .event-item {
+    display: flex; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5; align-items: flex-start;
+  }
+  .event-item:last-child { border-bottom: none; }
+  .event-date-badge {
+    width: 36px; text-align: center; flex-shrink: 0;
+  }
+  .event-day { font-size: 18px; font-weight: 700; line-height: 1; color: #2d1f1a; }
+  .event-mon { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+  .event-name { font-size: 13px; font-weight: 600; color: #2d1f1a; margin-bottom: 2px; }
+  .event-sub  { font-size: 11px; color: #aaa; }
+
+  .stat-row { display: flex; gap: 0; }
+  .statBox { flex: 1; text-align: center; padding: 8px 4px; border-right: 1px solid #f0f0f0; }
+  .statBox:last-child { border-right: none; }
+  .stat-num { font-size: 22px; font-weight: 700; color: #2d1f1a; line-height: 1; }
+  .stat-lbl { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 500; backdrop-filter: blur(2px);
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 18px; padding: 28px;
+    width: 100%; max-width: 520px; margin: 16px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; font-weight: 400; margin: 0 0 20px;
+    letter-spacing: -0.3px;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #2d1f1a; color: #fff;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 10px 20px; border-radius: 10px;
+    opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok  { background: #16a34a; }
+
+  .day-entries-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .day-entries-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; font-weight: 400; letter-spacing: -0.2px;
+  }
+  .empty-state { text-align: center; padding: 32px 0; color: #ccc; font-size: 13px; }
+  .empty-state .big { font-size: 32px; margin-bottom: 8px; }
+
+  .type-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  }
+  .chip-trade  { background: #ede9fe; color: var(--rose); }
+  .chip-note   { background: #fef3c7; color: #d97706; }
+  .chip-event  { background: #d1fae5; color: #059669; }
+  .chip-mood   { background: #fce7f3; color: #db2777; }
+
+  .todo-add-row {
+    display: flex; gap: 8px; margin-bottom: 18px;
+  }
+  .todo-add-row input {
+    flex: 1; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 10px 14px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+    background: var(--surface); outline: none; transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .todo-add-row input:focus { border-color: var(--rose); }
+
+  .todo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px;
+    background: var(--surface); border: 1.5px solid #f0f0f0;
+    margin-bottom: 6px; cursor: grab; transition: all 0.15s;
+    user-select: none;
+  }
+  .todo-item:hover { border-color: #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .todo-item.dragging { opacity: 0.4; cursor: grabbing; }
+  .todo-item.drag-over { border-color: var(--rose); background: #f5f5ff; }
+  .todo-item.done-item {
+    background: #fafafa; border-color: #f0f0f0;
+    opacity: 0.6; cursor: default;
+  }
+
+  .todo-drag-handle {
+    color: #ccc; font-size: 14px; cursor: grab; flex-shrink: 0;
+    line-height: 1;
+  }
+  .todo-item.done-item .todo-drag-handle { display: none; }
+
+  .todo-checkbox {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid #ddd; background: var(--surface);
+    cursor: pointer; flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 12px;
+  }
+  .todo-checkbox:hover { border-color: var(--rose); }
+  .todo-checkbox.checked { background: var(--rose); border-color: var(--rose); color: #fff; }
+
+  .todo-text {
+    flex: 1; font-size: 14px; font-weight: 500; color: #2d1f1a;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .todo-item.done-item .todo-text {
+    text-decoration: line-through; color: #aaa; font-weight: 400;
+  }
+
+  .priority-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .p-high   { background: #fee2e2; color: #dc2626; }
+  .p-medium { background: #fef3c7; color: #d97706; }
+  .p-low    { background: #d1fae5; color: #059669; }
+
+  .todo-del {
+    width: 24px; height: 24px; border-radius: 6px; border: none;
+    background: none; cursor: pointer; color: #ccc; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.12s; padding: 0;
+  }
+  .todo-del:hover { background: #fef2f2; color: #dc2626; }
+
+  .todo-section-label {
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 18px 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .todo-section-label::after {
+    content: ''; flex: 1; height: 1px; background: #f0f0f0;
+  }
+
+  .todo-stats {
+    display: flex; gap: 16px; font-size: 12px; color: #aaa; margin-bottom: 16px;
+  }
+  .todo-stats strong { color: #2d1f1a; }
+
+  .goal-card {
+    background: var(--surface); border: 1.5px solid #eee; border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 12px; position: relative;
+  }
+  .goal-card:hover { border-color: #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+  .goal-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; gap:10px; }
+  .goal-icon { font-size:26px; line-height:1; flex-shrink:0; }
+  .goal-name { font-family:'DM Serif Display',serif; font-size:17px; font-weight:400; color:#2d1f1a; letter-spacing:-0.2px; }
+  .goal-meta { font-family:'DM Sans',sans-serif; font-size:12px; color:#aaa; margin-top:2px; }
+  .goal-amounts {
+    display:flex; align-items:baseline; gap:6px;
+    font-family:'DM Sans',sans-serif; margin-bottom:10px;
+  }
+  .goal-saved { font-size:22px; font-weight:700; color:#2d1f1a; }
+  .goal-target { font-size:13px; color:#aaa; }
+  .goal-bar-wrap { background:#f0f0ee; border-radius:999px; height:8px; margin-bottom:8px; overflow:hidden; }
+  .goal-bar-fill {
+    height:100%; border-radius:999px;
+    background: linear-gradient(90deg, var(--rose), var(--sage));
+    transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .goal-bar-fill.complete { background: linear-gradient(90deg, #4a9470, #7bafc4); }
+  .goal-footer { display:flex; align-items:center; justify-content:space-between; font-family:'DM Sans',sans-serif; font-size:12px; }
+  .goal-pct { font-weight:700; color:var(--rose); }
+  .goal-pct.complete { color:#4a9470; }
+  .goal-remaining { color:#aaa; }
+  .goal-actions { display:flex; gap:6px; margin-top:12px; }
+  .goal-btn {
+    font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500;
+    padding:5px 12px; border-radius:8px; border:1.5px solid #e5e5e5;
+    background:var(--surface); color:#555; cursor:pointer; transition:all 0.12s;
+  }
+  .goal-btn:hover { border-color:#aaa; color:#2d1f1a; }
+  .goal-btn.danger:hover { border-color:#dc2626; color:#dc2626; }
+  .goal-complete-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    background:#d1fae5; color:#059669; font-size:11px; font-weight:700;
+    padding:3px 10px; border-radius:20px;
+  }
+
+  [data-theme="dark"] .cal-day { color: #c0a898 !important; }
+  [data-theme="dark"] .cal-day:hover { background: #2a1e1a !important; }
+  [data-theme="dark"] .cal-day.today { background: #3d2820 !important; color: #ede4dc !important; }
+  [data-theme="dark"] .cal-day.other-month { color: #4a3830 !important; }
+  [data-theme="dark"] .cal-day.selected { background: rgba(201,131,122,0.15) !important; color: var(--rose) !important; }
+  [data-theme="dark"] .cal-nav button { background: #2a1e1a !important; border-color: rgba(255,200,180,0.15) !important; color: #c0a898 !important; }
+  [data-theme="dark"] .cal-nav button:hover { background: #3a2820 !important; }
+  /* Tabs */
+  [data-theme="dark"] .dtab.active { background: #2a1e1a !important; color: #ede4dc !important; box-shadow: none !important; }
+  [data-theme="dark"] .dtab { color: #8a7a72 !important; }
+  [data-theme="dark"] .mood-opt { background: #2a1e1a !important; }
+  /* Form fields — text color is the key fix */
+  [data-theme="dark"] .dfield input,
+  [data-theme="dark"] .dfield select,
+  [data-theme="dark"] .dfield textarea { color: #ede4dc !important; border-color: rgba(255,200,180,0.15) !important; }
+  /* Text colors */
+  [data-theme="dark"] .entry-title,
+  [data-theme="dark"] .event-day,
+  [data-theme="dark"] .event-name,
+  [data-theme="dark"] .stat-num,
+  [data-theme="dark"] .goal-name,
+  [data-theme="dark"] .goal-saved,
+  [data-theme="dark"] .todo-text,
+  [data-theme="dark"] .todo-stats strong { color: #ede4dc !important; }
+  [data-theme="dark"] .chip-note    { background: rgba(245,158,11,0.15) !important; color: #f59e0b !important; }
+  [data-theme="dark"] .chip-event   { background: rgba(16,185,129,0.12) !important; color: #34d399 !important; }
+  [data-theme="dark"] .chip-mood    { background: rgba(236,72,153,0.12)  !important; color: #f472b6 !important; }
+  [data-theme="dark"] .p-high       { background: rgba(220,38,38,0.15)   !important; }
+  [data-theme="dark"] .p-medium     { background: rgba(217,119,6,0.15)   !important; }
+  [data-theme="dark"] .p-low        { background: rgba(5,150,105,0.12)   !important; }
+  [data-theme="dark"] .goal-complete-badge { background: rgba(5,150,105,0.15) !important; color: #34d399 !important; }
+  /* Buttons */
+  [data-theme="dark"] .goal-btn { background: #2a1e1a !important; color: #c0a898 !important; border-color: rgba(255,200,180,0.15) !important; }
+  [data-theme="dark"] .btn-ghost { color: #c0a898 !important; border-color: rgba(255,200,180,0.15) !important; }
+  [data-theme="dark"] .btn-ghost:hover { color: #ede4dc !important; border-color: rgba(255,200,180,0.3) !important; }
+</style>
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1 style="font-family:'DM Serif Display',serif; font-size:30px; font-weight:400; margin:0 0 4px; letter-spacing:-0.5px;">Investment Diary</h1>
+    <p style="font-size:13px; color:#888; margin:0;">Track trades, thoughts, mood and upcoming events.</p>
+  </div>
+  <button class="btn-primary" onclick="openNewEntry()">+ New entry</button>
+</div>
+
+<div class="diary-wrap">
+
+  <div>
+      <div class="diary-tabs">
+      <button class="dtab active" data-tab="calendar" onclick="switchTab('calendar')">📅 Calendar</button>
+      <button class="dtab" data-tab="journal" onclick="switchTab('journal')">📓 Journal</button>
+      <button class="dtab" data-tab="mood" onclick="switchTab('mood')">😊 Mood log</button>
+      <button class="dtab" data-tab="todo" onclick="switchTab('todo')">✅ To-do</button>
+      <button class="dtab" data-tab="goals" onclick="switchTab('goals')">🎯 Goals</button>
+    </div>
+
+      <div class="diary-panel active" id="tab-calendar">
+      <div class="dc">
+        <div class="cal-header">
+          <div class="cal-month" id="calMonthLabel">—</div>
+          <div class="cal-nav">
+            <button onclick="calNav(-1)">‹</button>
+            <button onclick="calNav(1)">›</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+          <div class="dc" id="dayPanel">
+        <div class="day-entries-header">
+          <div class="day-entries-title" id="dayPanelTitle">Select a day</div>
+          <button class="btn-ghost" style="font-size:12px; padding:6px 12px;" onclick="openNewEntryForDay()">+ Add</button>
+        </div>
+        <div id="dayEntries">
+          <div class="empty-state"><div class="big">📅</div>Click a day to see entries</div>
+        </div>
+      </div>
+    </div>
+
+      <div class="diary-panel" id="tab-journal">
+      <div class="dc">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <div class="dc-title" style="margin:0;">All entries</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="filterType" onchange="renderJournal()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:1.5px solid #e5e5e5; border-radius:8px; background:var(--surface); outline:none; width:auto;">
+              <option value="">All types</option>
+              <option value="trade">📈 Trades</option>
+              <option value="note">📝 Notes</option>
+              <option value="event">📆 Events</option>
+              <option value="mood">😊 Mood</option>
+            </select>
+            <select id="filterPortfolio" onchange="renderJournal()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:1.5px solid #e5e5e5; border-radius:8px; background:var(--surface); outline:none; width:auto;">
+              <option value="">All portfolios</option>
+            </select>
+          </div>
+        </div>
+        <div id="journalList"></div>
+      </div>
+    </div>
+
+      <div class="diary-panel" id="tab-mood">
+      <div class="dc">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="dc-title" style="margin:0;">Mood &amp; Confidence</div>
+          <div id="moodStatStrip" style="display:flex;gap:16px;"></div>
+        </div>
+        <div id="moodChart" style="height:230px;"></div>
+      </div>
+      <div class="dc" id="moodLogList">
+        <div class="dc-title">Mood entries</div>
+      </div>
+    </div>
+
+      <div class="diary-panel" id="tab-todo">
+      <div class="dc">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-family:'DM Serif Display',serif; font-size:20px; font-weight:400; letter-spacing:-0.3px; margin-bottom:2px;">Tasks</div>
+            <div class="todo-stats" id="todoStats"><span><strong id="todoPending">0</strong> pending</span><span><strong id="todoDone">0</strong> done</span></div>
+          </div>
+          <select id="todoPriorityFilter" onchange="renderTodo()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:1.5px solid #e5e5e5; border-radius:8px; background:var(--surface); outline:none; width:auto;">
+            <option value="">All priorities</option>
+            <option value="high">🔴 High</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+        </div>
+
+              <div class="todo-add-row">
+          <input id="todoInput" placeholder="Add a new task…" onkeydown="if(event.key==='Enter') addTodo()" />
+          <select id="todoPriority" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:10px 10px; border:1.5px solid #e5e5e5; border-radius:10px; background:var(--surface); outline:none; width:auto;">
+            <option value="medium">🟡 Medium</option>
+            <option value="high">🔴 High</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <button class="btn-primary" onclick="addTodo()">Add</button>
+        </div>
+
+              <div id="todoActive"></div>
+
+              <div id="todoDoneSection" style="display:none;">
+          <div class="todo-section-label">Done</div>
+          <div id="todoDoneList"></div>
+          <button class="btn-ghost" style="font-size:12px; padding:6px 14px; margin-top:8px;" onclick="clearDone()">Clear all done</button>
+        </div>
+
+      </div>
+    </div>
+
+      <div class="diary-panel" id="tab-goals">
+      <div class="dc">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;letter-spacing:-0.3px;margin-bottom:2px;">Financial goals</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#aaa;">Track your savings targets and investment milestones</div>
+          </div>
+          <button class="btn-primary" onclick="openGoalModal()">+ New goal</button>
+        </div>
+        <div id="goalsList">
+          <div class="empty-state"><div class="big">🎯</div><p>No goals yet.<br>Add your first financial goal above.</p></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div>
+      <div class="sidebar-card">
+      <div class="sc-title">This month</div>
+      <div class="stat-row">
+        <div class="statBox"><div class="stat-num" id="statTrades">0</div><div class="stat-lbl">Trades</div></div>
+        <div class="statBox"><div class="stat-num" id="statNotes">0</div><div class="stat-lbl">Notes</div></div>
+        <div class="statBox"><div class="stat-num" id="statMoods">0</div><div class="stat-lbl">Mood logs</div></div>
+      </div>
+    </div>
+
+      <div class="sidebar-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div class="sc-title" style="margin:0;">Upcoming events</div>
+        <button class="btn-ghost" style="font-size:11px; padding:5px 10px;" onclick="openNewEntryOfType('event')">+ Add</button>
+      </div>
+      <div id="upcomingEvents">
+        <div class="empty-state"><div class="big">📆</div>No upcoming events</div>
+      </div>
+    </div>
+
+      <div class="sidebar-card">
+      <div class="sc-title">Quick mood log</div>
+      <div class="mood-row" id="quickMoodRow">
+        <div class="mood-opt" data-val="😄" onclick="quickMoodSelect('😄')">😄</div>
+        <div class="mood-opt" data-val="🙂" onclick="quickMoodSelect('🙂')">🙂</div>
+        <div class="mood-opt" data-val="😐" onclick="quickMoodSelect('😐')">😐</div>
+        <div class="mood-opt" data-val="😟" onclick="quickMoodSelect('😟')">😟</div>
+        <div class="mood-opt" data-val="😰" onclick="quickMoodSelect('😰')">😰</div>
+      </div>
+      <div class="dfield">
+        <label>Confidence (1–10)</label>
+        <input type="range" class="conf-slider" id="quickConf" min="1" max="10" value="5" />
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-top:2px;">
+          <span>Low</span><span id="confVal">5</span><span>High</span>
+        </div>
+      </div>
+      <div class="dfield">
+        <label>Quick note (optional)</label>
+        <input id="quickNote" placeholder="e.g. Feeling cautious about market…" />
+      </div>
+      <button class="btn-primary" style="width:100%;" onclick="saveQuickMood()">Log mood</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-backdrop" id="entryModal">
+  <div class="modal">
+    <h2 class="modal-title" id="modalTitle">New entry</h2>
+
+    <div class="dfield">
+      <label>Type</label>
+      <select id="entryType" onchange="onTypeChange()">
+        <option value="note">📝 Daily note</option>
+        <option value="trade">📈 Trade journal</option>
+        <option value="event">📆 Event / reminder</option>
+        <option value="mood">😊 Mood log</option>
+      </select>
+    </div>
+
+    <div class="dfield">
+      <label>Date</label>
+      <input type="date" id="entryDate" />
+    </div>
+
+    <div class="dfield">
+      <label>Title</label>
+      <input id="entryTitle" placeholder="Give this entry a title…" />
+    </div>
+
+      <div id="tradeFields" style="display:none;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="dfield">
+          <label>Symbol</label>
+          <input id="tradeSymbol" placeholder="e.g. AAPL" />
+        </div>
+        <div class="dfield">
+          <label>Action</label>
+          <select id="tradeAction">
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+            <option value="watch">Watch / research</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="dfield">
+          <label>Price</label>
+          <input id="tradePrice" type="number" placeholder="0.00" />
+        </div>
+        <div class="dfield">
+          <label>Quantity</label>
+          <input id="tradeQty" type="number" placeholder="0" />
+        </div>
+      </div>
+    </div>
+
+      <div id="eventFields" style="display:none;">
+      <div class="dfield">
+        <label>Time (optional)</label>
+        <input type="time" id="eventTime" />
+      </div>
+    </div>
+
+      <div id="moodFields" style="display:none;">
+      <div class="dfield">
+        <label>How are you feeling?</label>
+        <div class="mood-row" id="modalMoodRow">
+          <div class="mood-opt" data-val="😄" onclick="modalMoodSelect('😄')">😄</div>
+          <div class="mood-opt" data-val="🙂" onclick="modalMoodSelect('🙂')">🙂</div>
+          <div class="mood-opt" data-val="😐" onclick="modalMoodSelect('😐')">😐</div>
+          <div class="mood-opt" data-val="😟" onclick="modalMoodSelect('😟')">😟</div>
+          <div class="mood-opt" data-val="😰" onclick="modalMoodSelect('😰')">😰</div>
+        </div>
+      </div>
+      <div class="dfield">
+        <label>Confidence (1–10): <span id="modalConfVal">5</span></label>
+        <input type="range" class="conf-slider" id="modalConf" min="1" max="10" value="5"
+               oninput="document.getElementById('modalConfVal').textContent=this.value" />
+      </div>
+    </div>
+
+    <div class="dfield">
+      <label>Portfolio (optional)</label>
+      <select id="entryPortfolio">
+        <option value="">— None —</option>
+      </select>
+    </div>
+
+    <div class="dfield">
+      <label>Notes</label>
+      <textarea id="entryNotes" rows="4" placeholder="Your thoughts, rationale, observations…"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="saveEntryBtn" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="viewModal">
+  <div class="modal">
+    <div id="viewContent"></div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="deleteEntryBtn">Delete</button>
+      <button class="btn-ghost" onclick="document.getElementById('viewModal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="goalModal">
+  <div class="modal" style="max-width:440px;">
+    <h2 class="modal-title" id="goalModalTitle">New goal</h2>
+    <input type="hidden" id="goalEditId" />
+    <div class="dfield">
+      <label>Goal name</label>
+      <input id="goalName" placeholder="e.g. House deposit, Emergency fund, ISA target" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="dfield">
+        <label>Category</label>
+        <select id="goalCategory">
+          <option value="🏠 Property">🏠 Property</option>
+          <option value="💰 Savings">💰 Savings</option>
+          <option value="📈 Investment">📈 Investment</option>
+          <option value="🛡️ Emergency">🛡️ Emergency</option>
+          <option value="✈️ Travel">✈️ Travel</option>
+          <option value="🎓 Education">🎓 Education</option>
+          <option value="🎯 Other">🎯 Other</option>
+        </select>
+      </div>
+      <div class="dfield">
+        <label>Target date (optional)</label>
+        <input type="date" id="goalDeadline" />
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="dfield">
+        <label>Target amount (£)</label>
+        <input type="number" id="goalTarget" placeholder="50000" min="0" step="0.01" />
+      </div>
+      <div class="dfield">
+        <label>Amount saved so far (£)</label>
+        <input type="number" id="goalSaved" placeholder="0" min="0" step="0.01" />
+      </div>
+    </div>
+    <div class="dfield">
+      <label>Link to portfolio <span style="color:#aaa;font-weight:400;">(optional — enables on-track projection)</span></label>
+      <select id="goalPortfolioId" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #e5e5e5;border-radius:10px;background:var(--surface);outline:none;width:100%;">
+        <option value="">— None —</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeGoalModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveGoal()">Save goal</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="goalProgressModal">
+  <div class="modal" style="max-width:380px;">
+    <h2 class="modal-title">Update progress</h2>
+    <input type="hidden" id="progressGoalId" />
+    <div class="dfield">
+      <label id="progressGoalLabel">Amount saved (£)</label>
+      <input type="number" id="progressSaved" min="0" step="0.01"
+             onkeydown="if(event.key==='Enter') saveGoalProgress()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeProgressModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveGoalProgress()">Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  // scope all storage to user ID so switching accounts doesn't bleed data
+  const _uid = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || '{}').id || 'anon'; }
+    catch { return 'anon'; }
+  })();
+  const STORE_KEY = `ff_diary_v2_${_uid}`;
+
+  function loadEntries() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { return []; }
+  }
+  function saveEntries(entries) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  }
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  let portfolios = [];
+
+  async function loadPortfolios() {
+    try {
+      const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+      if (res.ok) {
+        portfolios = await res.json();
+        ['entryPortfolio','filterPortfolio'].forEach(id => {
+          const sel = document.getElementById(id);
+          const base = id === 'filterPortfolio'
+            ? '<option value="">All portfolios</option>'
+            : '<option value="">— None —</option>';
+          sel.innerHTML = base + portfolios.map(p =>
+            `<option value="${p.id}">${p.name}</option>`
+          ).join('');
+        });
+      }
+    } catch(_) {}
+  }
+
+  function portfolioName(id) {
+    const p = portfolios.find(p => String(p.id) === String(id));
+    return p ? p.name : null;
+  }
+
+  const today = new Date();
+  let calYear  = today.getFullYear();
+  let calMonth = today.getMonth();
+  let selectedDate = null;
+
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+  function calNav(dir) { calMonth += dir; if (calMonth > 11) { calMonth=0; calYear++; } if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
+
+  // TODO: this whole renderCalendar fn needs breaking up, it's doing way too much
+  // getting the day-of-week offset right took ages btw
+  function renderCalendar() {
+    const entries = loadEntries();
+    const goals   = loadGoals().filter(g => g.deadline);
+    document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
+
+    const grid = document.getElementById('calGrid');
+    const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+    // figure out how many days in this month and what day of week it starts on
+    const first = new Date(calYear, calMonth, 1).getDay();
+    const days  = new Date(calYear, calMonth+1, 0).getDate();
+    const prev  = new Date(calYear, calMonth, 0).getDate();
+
+    // prev month filler
+    for (let i = first-1; i >= 0; i--) {
+      html += `<div class="cal-day other-month">${prev-i}</div>`;
+    }
+
+    for (let d = 1; d <= days; d++) {
+      const dateStr    = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dayEntries = entries.filter(e => e.date === dateStr);
+      const dayGoals   = goals.filter(g => g.deadline === dateStr);
+      const isToday    = calYear===today.getFullYear() && calMonth===today.getMonth() && d===today.getDate();
+      const isSel      = selectedDate === dateStr;
+
+      const types = [...new Set(dayEntries.map(e => e.type))];
+      if (dayGoals.length) types.push('goal');
+
+      let dots = '';
+      if (types.length) {
+        dots = `<div class="dot-row">${types.map(t => `<div class="cal-dot dot-${t}" title="${t === 'goal' ? dayGoals.map(g=>g.name).join(', ') : t}"></div>`).join('')}</div>`;
+      }
+
+      const hasAnything = dayEntries.length || dayGoals.length;
+      const cls = [
+        'cal-day',
+        isToday ? 'today' : '',
+        isSel   ? 'selected' : '',
+        hasAnything ? 'has-entry' : ''
+      ].filter(Boolean).join(' ');
+
+      html += `<div class="${cls}" onclick="selectDay('${dateStr}')">${d}${dots}</div>`;
+    }
+
+    // next month filler
+    const remaining = 42 - first - days;
+    for (let d = 1; d <= remaining; d++) {
+      html += `<div class="cal-day other-month">${d}</div>`;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  function selectDay(dateStr) {
+    selectedDate = dateStr;
+    renderCalendar();
+    renderDayPanel(dateStr);
+  }
+
+  function renderDayPanel(dateStr) {
+    const entries  = loadEntries().filter(e => e.date === dateStr);
+    const dayGoals = loadGoals().filter(g => g.deadline === dateStr);
+    const d = new Date(dateStr + 'T12:00:00');
+    const label = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+    document.getElementById('dayPanelTitle').textContent = label;
+
+    let html = '';
+
+    // Goal deadline banners
+    dayGoals.forEach(g => {
+      const pct  = g.target > 0 ? Math.min(100, (g.saved / g.target * 100)).toFixed(1) : 0;
+      const icon = g.category.split(' ')[0];
+      const done = parseFloat(pct) >= 100;
+      html += `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;
+          border-radius:10px;background:${done ? '#d1fae5' : '#e0f0fa'};border:1px solid ${done ? '#6ee7b7' : '#7bafc4'};">
+          <span style="font-size:20px;">${icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#2d1f1a;">
+              🎯 Goal deadline: ${esc(g.name)}
+            </div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6b9aaa;">
+              ${pct}% complete · £${Number(g.saved).toLocaleString('en-GB')} of £${Number(g.target).toLocaleString('en-GB')}
+            </div>
+          </div>
+          ${done ? '<span style="font-size:11px;font-weight:700;color:#059669;">✓ Done!</span>' : ''}
+        </div>`;
+    });
+
+    html += entries.map(e => entryItemHTML(e)).join('');
+
+    if (!html) {
+      document.getElementById('dayEntries').innerHTML =
+        `<div class="empty-state"><div class="big">✨</div>No entries for this day</div>`;
+      return;
+    }
+    document.getElementById('dayEntries').innerHTML = html;
+  }
+
+  function renderJournal() {
+    const typeFilter  = document.getElementById('filterType').value;
+    const portFilter  = document.getElementById('filterPortfolio').value;
+    let entries = loadEntries();
+
+    if (typeFilter)  entries = entries.filter(e => e.type === typeFilter);
+    if (portFilter)  entries = entries.filter(e => String(e.portfolio_id) === portFilter);
+
+    entries.sort((a,b) => b.date.localeCompare(a.date));
+
+    const container = document.getElementById('journalList');
+    if (!entries.length) {
+      container.innerHTML = `<div class="empty-state"><div class="big">📓</div>No entries yet. Add your first one!</div>`;
+      return;
+    }
+    container.innerHTML = entries.map(e => entryItemHTML(e)).join('');
+  }
+
+  // map emoji to numeric scores for the mood chart
+  // 5 = best, 1 = worst — might need to fix this if we add more moods, not sure
+  // this is a bit of a hack but it works for now
+  const MOOD_SCORE = { '😄': 5, '🙂': 4, '😐': 3, '😟': 2, '😰': 1 };
+
+  function renderMoodCharts() {
+    const entries = loadEntries()
+      .filter(e => e.type === 'mood' && e.mood)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .slice(-60);
+
+    const moodEl = document.getElementById('moodChart');
+    const stripEl = document.getElementById('moodStatStrip');
+
+    if (!entries.length) {
+      moodEl.innerHTML = `<div class="empty-state"><div class="big">😊</div>No mood entries yet</div>`;
+      stripEl.innerHTML = '';
+      document.getElementById('moodLogList').innerHTML = `<div class="dc-title">Mood entries</div><div class="empty-state">Start logging your mood!</div>`;
+      return;
+    }
+
+    // calcualte stats for the strip — average mood score, avg confidence, and trend direction
+    const scores   = entries.map(e => MOOD_SCORE[e.mood] || 3);
+    const avgMood  = scores.reduce((a,b) => a+b, 0) / scores.length;
+    const confVals = entries.filter(e => e.confidence != null).map(e => e.confidence);
+    const avgConf  = confVals.length ? (confVals.reduce((a,b) => a+b, 0) / confVals.length).toFixed(1) : null;
+    // trend: compare last score to first score in the window — positive means improving
+    const trendDir = scores.length >= 2
+      ? (scores[scores.length-1] - scores[0] > 0 ? '↑' : scores[scores.length-1] - scores[0] < 0 ? '↓' : '→') : '→';
+    const trendCol = trendDir === '↑' ? '#4a9470' : trendDir === '↓' ? '#b85050' : '#aaa';
+    const MOOD_LABEL = ['','😰 Low','😟 Down','😐 Neutral','🙂 Good','😄 Great'];
+    const avgLabel = MOOD_LABEL[Math.round(avgMood)] || '–';
+
+    const statItem = (label, value, color='#2d1f1a') =>
+      `<div style="text-align:right;">
+         <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${label}</div>
+         <div style="font-family:'DM Serif Display',serif;font-size:17px;color:${color};letter-spacing:-0.3px;">${value}</div>
+       </div>`;
+
+    stripEl.innerHTML =
+      statItem('Avg mood', avgLabel) +
+      (avgConf ? statItem('Avg conf', avgConf + '/10') : '') +
+      statItem('Trend (30d)', trendDir, trendCol);
+
+    // traces
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridCol  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const tickFont = { family: 'DM Sans, sans-serif', size: 11, color: isDark ? '#888' : '#aaa' };
+
+    // mood trace on y1, confidence on y2 (dual axis chart)
+    // putting them on two seperate axes so the scales dont clash
+    const traceMood = {
+      name: 'Mood',
+      type: 'scatter', mode: 'lines+markers',
+      x: entries.map(e => e.date),
+      y: entries.map(e => MOOD_SCORE[e.mood] || 3),
+      yaxis: 'y',
+      line:   { color: '#ec4899', width: 2.5, shape: 'spline' },
+      marker: { size: 7, color: '#ec4899', line: { color: '#fff', width: 1.5 } },
+      text:   entries.map(e => e.mood),
+      hovertemplate: '<b>Mood</b>: %{text}<br>%{x}<extra></extra>',
+    };
+
+    const confEntries = entries.filter(e => e.confidence != null);
+    const traceConf = confEntries.length ? {
+      name: 'Confidence',
+      type: 'scatter', mode: 'lines',
+      x: confEntries.map(e => e.date),
+      y: confEntries.map(e => e.confidence),
+      yaxis: 'y2',
+      fill: 'tozeroy',
+      line:      { color: '#7bafc4', width: 2, shape: 'spline' },
+      fillcolor: 'rgba(123,175,196,0.12)',
+      hovertemplate: '<b>Confidence</b>: %{y}/10<br>%{x}<extra></extra>',
+    } : null;
+
+    const traces = traceConf ? [traceConf, traceMood] : [traceMood];
+
+    const layout = {
+      margin:  { t: 10, l: 36, r: traceConf ? 36 : 12, b: 36 },
+      paper_bgcolor: 'transparent',
+      plot_bgcolor:  'transparent',
+      legend: {
+        orientation: 'h', x: 0, y: 1.12,
+        font: { family: 'DM Sans, sans-serif', size: 11 },
+        bgcolor: 'transparent',
+      },
+      hovermode: 'x unified',
+      xaxis: {
+        showgrid: false,
+        tickfont: tickFont,
+        zeroline: false,
+      },
+      yaxis: {
+        range: [0.5, 5.5],
+        tickvals: [1,2,3,4,5],
+        ticktext: ['😰','😟','😐','🙂','😄'],
+        tickfont: { family: 'DM Sans, sans-serif', size: 13 },
+        gridcolor: gridCol,
+        zeroline:  false,
+        title: { text: '', standoff: 4 },
+      },
+    };
+
+    if (traceConf) {
+      layout.yaxis2 = {
+        range: [0, 11],
+        overlaying: 'y', side: 'right',
+        tickfont: tickFont,
+        gridcolor: 'transparent',
+        zeroline:  false,
+        title: { text: 'Confidence', font: { family: 'DM Sans, sans-serif', size: 10, color: '#7bafc4' }, standoff: 4 },
+      };
+    }
+
+    Plotly.react('moodChart', traces, layout, { displayModeBar: false, responsive: true });
+
+    // mood log list
+    const moodListEl = document.getElementById('moodLogList');
+    moodListEl.innerHTML = `<div class="dc-title">Mood entries</div>` +
+      [...entries].reverse().map(e => entryItemHTML(e)).join('');
+  }
+
+  function renderUpcoming() {
+    const todayStr = today.toISOString().slice(0,10);
+    const events = loadEntries()
+      .filter(e => e.type === 'event' && e.date >= todayStr)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .slice(0, 5);
+
+    const container = document.getElementById('upcomingEvents');
+    if (!events.length) {
+      container.innerHTML = `<div class="empty-state"><div class="big">📆</div>No upcoming events</div>`;
+      return;
+    }
+    container.innerHTML = events.map(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      const day = d.getDate();
+      const mon = d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase();
+      const pName = e.portfolio_id ? portfolioName(e.portfolio_id) : null;
+      return `<div class="event-item" onclick="viewEntry('${e.id}')">
+        <div class="event-date-badge">
+          <div class="event-day">${day}</div>
+          <div class="event-mon">${mon}</div>
+        </div>
+        <div>
+          <div class="event-name">${esc(e.title || 'Event')}</div>
+          <div class="event-sub">${pName ? esc(pName) : (e.time || '')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderStats() {
+    const entries = loadEntries();
+    const m = today.getMonth(), y = today.getFullYear();
+    const thisMonth = entries.filter(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
+    document.getElementById('statTrades').textContent = thisMonth.filter(e => e.type==='trade').length;
+    document.getElementById('statNotes').textContent  = thisMonth.filter(e => e.type==='note').length;
+    document.getElementById('statMoods').textContent  = thisMonth.filter(e => e.type==='mood').length;
+  }
+
+  const TYPE_META = {
+    trade: { icon:'📈', cls:'ei-trade', chip:'chip-trade', label:'Trade' },
+    note:  { icon:'📝', cls:'ei-note',  chip:'chip-note',  label:'Note' },
+    event: { icon:'📆', cls:'ei-event', chip:'chip-event', label:'Event' },
+    mood:  { icon:'😊', cls:'ei-mood',  chip:'chip-mood',  label:'Mood' },
+  };
+
+  function entryItemHTML(e) {
+    const meta = TYPE_META[e.type] || TYPE_META.note;
+    const pName = e.portfolio_id ? portfolioName(e.portfolio_id) : null;
+    const d = new Date(e.date + 'T12:00:00');
+    const dateLabel = d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    const moodPart = e.mood ? ` · ${e.mood}` : '';
+    const pPart    = pName ? ` · ${esc(pName)}` : '';
+    const extra    = e.type==='trade' && e.symbol ? ` · ${esc(e.symbol)} ${e.action||''}` : '';
+    return `<div class="entry-item" onclick="viewEntry('${e.id}')">
+      <div class="entry-icon ${meta.cls}">${e.mood && e.type==='mood' ? e.mood : meta.icon}</div>
+      <div class="entry-body">
+        <div class="entry-title">${esc(e.title || '(untitled)')}</div>
+        <div class="entry-meta">${dateLabel}${extra}${moodPart}${pPart}</div>
+      </div>
+      <span class="type-chip ${meta.chip}">${meta.label}</span>
+    </div>`;
+  }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function viewEntry(id) {
+    const entries = loadEntries();
+    const e = entries.find(e => e.id === id);
+    if (!e) return;
+
+    const meta = TYPE_META[e.type] || TYPE_META.note;
+    const pName = e.portfolio_id ? portfolioName(e.portfolio_id) : null;
+    const d = new Date(e.date + 'T12:00:00');
+    const dateLabel = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    let extra = '';
+    if (e.type === 'trade') {
+      extra = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0;padding:12px;background:#f9f9f9;border-radius:10px;">
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Symbol</div><div style="font-size:15px;font-weight:700;">${esc(e.symbol||'—')}</div></div>
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Action</div><div style="font-size:15px;font-weight:700;">${esc(e.action||'—')}</div></div>
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Price</div><div style="font-size:15px;font-weight:700;">${e.price ? '£'+Number(e.price).toFixed(2) : '—'}</div></div>
+      </div>`;
+    }
+    if (e.type === 'mood') {
+      extra = `<div style="margin:12px 0;padding:12px;background:#f9f9f9;border-radius:10px;display:flex;gap:20px;">
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Mood</div><div style="font-size:28px;">${e.mood||'—'}</div></div>
+        ${e.confidence ? `<div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Confidence</div><div style="font-size:22px;font-weight:700;">${e.confidence}/10</div></div>` : ''}
+      </div>`;
+    }
+
+    document.getElementById('viewContent').innerHTML = `
+      <span class="type-chip ${meta.chip}" style="margin-bottom:12px;display:inline-flex;">${meta.label}</span>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;margin:8px 0 4px;letter-spacing:-0.3px;">${esc(e.title||'(untitled)')}</h2>
+      <div style="font-size:13px;color:#aaa;margin-bottom:12px;">${dateLabel}${pName ? ' · '+esc(pName) : ''}</div>
+      ${extra}
+      ${e.notes ? `<div style="font-size:14px;line-height:1.65;color:#4a3028;white-space:pre-wrap;">${esc(e.notes)}</div>` : '<div style="color:#ccc;font-size:13px;">No notes.</div>'}
+    `;
+
+    document.getElementById('deleteEntryBtn').onclick = () => deleteEntry(id);
+    document.getElementById('viewModal').classList.add('open');
+  }
+
+  function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    const entries = loadEntries().filter(e => e.id !== id);
+    saveEntries(entries);
+    document.getElementById('viewModal').classList.remove('open');
+    renderAll();
+    toast('Entry deleted');
+  }
+
+  // tabs
+  function switchTab(tab) {
+    document.querySelectorAll('.diary-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.dtab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+    if (tab === 'mood') renderMoodCharts();
+    if (tab === 'journal') renderJournal();
+    if (tab === 'todo') renderTodo();
+    if (tab === 'goals') renderGoals();
+  }
+
+  // modal
+  let modalMood = '';
+  let editingId = null;
+
+  function openNewEntry() { openModal(null, null, null); }
+  function openNewEntryForDay() { openModal(null, selectedDate, null); }
+  function openNewEntryOfType(type) { openModal(type, null, null); }
+
+  function openModal(type, date, existingId) {
+    editingId = existingId;
+    document.getElementById('modalTitle').textContent = existingId ? 'Edit entry' : 'New entry';
+    document.getElementById('entryType').value  = type || 'note';
+    document.getElementById('entryDate').value  = date || today.toISOString().slice(0,10);
+    document.getElementById('entryTitle').value = '';
+    document.getElementById('entryNotes').value = '';
+    document.getElementById('entryPortfolio').value = '';
+    document.getElementById('tradeSymbol').value = '';
+    document.getElementById('tradePrice').value  = '';
+    document.getElementById('tradeQty').value    = '';
+    document.getElementById('tradeAction').value = 'buy';
+    document.getElementById('eventTime').value   = '';
+    document.getElementById('modalConf').value   = '5';
+    document.getElementById('modalConfVal').textContent = '5';
+    modalMood = '';
+    document.querySelectorAll('#modalMoodRow .mood-opt').forEach(o => o.classList.remove('selected'));
+    onTypeChange();
+    document.getElementById('entryModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('entryModal').classList.remove('open'); }
+
+  function onTypeChange() {
+    const type = document.getElementById('entryType').value;
+    document.getElementById('tradeFields').style.display = type==='trade' ? 'block' : 'none';
+    document.getElementById('eventFields').style.display = type==='event' ? 'block' : 'none';
+    document.getElementById('moodFields').style.display  = type==='mood'  ? 'block' : 'none';
+  }
+
+  function modalMoodSelect(val) {
+    modalMood = val;
+    document.querySelectorAll('#modalMoodRow .mood-opt').forEach(o => {
+      o.classList.toggle('selected', o.dataset.val === val);
+    });
+  }
+
+  function saveEntry() {
+    const type  = document.getElementById('entryType').value;
+    const date  = document.getElementById('entryDate').value;
+    const title = document.getElementById('entryTitle').value.trim();
+    const notes = document.getElementById('entryNotes').value.trim();
+    const portId = document.getElementById('entryPortfolio').value;
+
+    if (!date) return toast('Please pick a date', '');
+
+    const entry = {
+      id:           editingId || genId(),
+      type, date,
+      title:        title || typeDefaultTitle(type, date),
+      notes,
+      portfolio_id: portId || null,
+      created_at:   new Date().toISOString(),
+    };
+
+    if (type === 'trade') {
+      entry.symbol = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+      entry.action = document.getElementById('tradeAction').value;
+      entry.price  = parseFloat(document.getElementById('tradePrice').value) || null;
+      entry.qty    = parseFloat(document.getElementById('tradeQty').value) || null;
+    }
+    if (type === 'event') {
+      entry.time = document.getElementById('eventTime').value;
+    }
+    if (type === 'mood') {
+      entry.mood       = modalMood;
+      entry.confidence = parseInt(document.getElementById('modalConf').value);
+    }
+
+    const entries = loadEntries().filter(e => e.id !== entry.id);
+    entries.push(entry);
+    saveEntries(entries);
+    closeModal();
+    renderAll();
+    toast('Entry saved ✓', 'ok');
+  }
+
+  function typeDefaultTitle(type, date) {
+    const d = new Date(date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    const map = { note:'Note', trade:'Trade', event:'Event', mood:'Mood log' };
+    return `${map[type]||'Entry'} · ${label}`;
+  }
+
+  // quick mood
+  let quickMood = '';
+  function quickMoodSelect(val) {
+    quickMood = val;
+    document.querySelectorAll('#quickMoodRow .mood-opt').forEach(o => {
+      o.classList.toggle('selected', o.dataset.val === val);
+    });
+  }
+  document.getElementById('quickConf').addEventListener('input', function() {
+    document.getElementById('confVal').textContent = this.value;
+  });
+  function saveQuickMood() {
+    if (!quickMood) return toast('Pick a mood first!', '');
+    const entry = {
+      id:         genId(),
+      type:       'mood',
+      date:       today.toISOString().slice(0,10),
+      title:      `Mood log · ${today.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,
+      mood:       quickMood,
+      confidence: parseInt(document.getElementById('quickConf').value),
+      notes:      document.getElementById('quickNote').value.trim(),
+      portfolio_id: null,
+      created_at: new Date().toISOString(),
+    };
+    const entries = loadEntries();
+    entries.push(entry);
+    saveEntries(entries);
+    quickMood = '';
+    document.querySelectorAll('#quickMoodRow .mood-opt').forEach(o => o.classList.remove('selected'));
+    document.getElementById('quickNote').value = '';
+    document.getElementById('quickConf').value = '5';
+    document.getElementById('confVal').textContent = '5';
+    renderAll();
+    toast('Mood logged ✓', 'ok');
+  }
+
+  // toast
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 2800);
+  }
+
+  // render all
+  function renderAll() {
+    renderCalendar();
+    renderJournal();
+    renderTodo();
+    renderUpcoming();
+    renderStats();
+    if (selectedDate) renderDayPanel(selectedDate);
+    const activeTab = document.querySelector('.dtab.active')?.dataset?.tab;
+    if (activeTab === 'mood') renderMoodCharts();
+  }
+
+  // close modals on backdrop click
+  document.getElementById('entryModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById('viewModal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  // to-do
+  const TODO_KEY = `ff_todos_v1_${_uid}`;
+
+  function loadTodos() {
+    try { return JSON.parse(localStorage.getItem(TODO_KEY) || '[]'); } catch { return []; }
+  }
+  function saveTodos(todos) { localStorage.setItem(TODO_KEY, JSON.stringify(todos)); }
+
+  function addTodo() {
+    const input = document.getElementById('todoInput');
+    const text  = input.value.trim();
+    if (!text) return;
+    const priority = document.getElementById('todoPriority').value;
+    const todos = loadTodos();
+    // Insert at top of active list (highest sort_order + 1)
+    const maxOrder = todos.filter(t => !t.done).reduce((m, t) => Math.max(m, t.sort_order || 0), 0);
+    todos.push({ id: genId(), text, priority, done: false, sort_order: maxOrder + 1, created_at: new Date().toISOString() });
+    saveTodos(todos);
+    input.value = '';
+    renderTodo();
+    toast('Task added ✓', 'ok');
+  }
+
+  function toggleTodo(id) {
+    const todos = loadTodos();
+    const t = todos.find(t => t.id === id);
+    if (!t) return;
+    t.done = !t.done;
+    t.done_at = t.done ? new Date().toISOString() : null;
+    saveTodos(todos);
+    renderTodo();
+  }
+
+  function deleteTodo(id) {
+    saveTodos(loadTodos().filter(t => t.id !== id));
+    renderTodo();
+  }
+
+  function clearDone() {
+    saveTodos(loadTodos().filter(t => !t.done));
+    renderTodo();
+  }
+
+  function renderTodo() {
+    const filter = document.getElementById('todoPriorityFilter').value;
+    let todos = loadTodos();
+
+    const active = todos
+      .filter(t => !t.done && (!filter || t.priority === filter))
+      .sort((a, b) => {
+        // Priority order: high > medium > low, then by sort_order
+        const po = { high: 0, medium: 1, low: 2 };
+        const pd = (po[a.priority] ?? 1) - (po[b.priority] ?? 1);
+        if (pd !== 0) return pd;
+        return (b.sort_order || 0) - (a.sort_order || 0);
+      });
+
+    const done = todos
+      .filter(t => t.done && (!filter || t.priority === filter))
+      .sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+
+    // Stats
+    document.getElementById('todoPending').textContent = todos.filter(t => !t.done).length;
+    document.getElementById('todoDone').textContent    = todos.filter(t => t.done).length;
+
+    // Active list
+    const activeEl = document.getElementById('todoActive');
+    if (!active.length) {
+      activeEl.innerHTML = `<div class="empty-state" style="padding:24px 0;"><div class="big">✅</div>${filter ? 'No tasks with this priority' : 'Nothing pending — nice!'}</div>`;
+    } else {
+      activeEl.innerHTML = active.map(t => todoItemHTML(t, false)).join('');
+      initDragDrop();
+    }
+
+    // Done list
+    const doneSection = document.getElementById('todoDoneSection');
+    const doneEl = document.getElementById('todoDoneList');
+    if (done.length) {
+      doneSection.style.display = 'block';
+      doneEl.innerHTML = done.map(t => todoItemHTML(t, true)).join('');
+    } else {
+      doneSection.style.display = 'none';
+    }
+  }
+
+  function todoItemHTML(t, isDone) {
+    const pClass = { high: 'p-high', medium: 'p-medium', low: 'p-low' }[t.priority] || 'p-medium';
+    const pLabel = { high: '🔴 High', medium: '🟡 Medium', low: '🟢 Low' }[t.priority] || 'Medium';
+    return `
+      <div class="todo-item${isDone ? ' done-item' : ''}" data-id="${t.id}" draggable="${!isDone}">
+        <span class="todo-drag-handle" title="Drag to reorder">⠿</span>
+        <div class="todo-checkbox ${isDone ? 'checked' : ''}" onclick="toggleTodo('${t.id}')">
+          ${isDone ? '✓' : ''}
+        </div>
+        <div class="todo-text" title="${esc(t.text)}">${esc(t.text)}</div>
+        <span class="priority-badge ${pClass}">${pLabel}</span>
+        <button class="todo-del" onclick="deleteTodo('${t.id}')" title="Delete">✕</button>
+      </div>`;
+  }
+
+  // drag & drop reorder
+  let dragSrc = null;
+
+  function initDragDrop() {
+    document.querySelectorAll('#todoActive .todo-item').forEach(item => {
+      item.addEventListener('dragstart', e => {
+        dragSrc = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        document.querySelectorAll('#todoActive .todo-item').forEach(i => i.classList.remove('drag-over'));
+        // Save new order based on DOM position
+        const ids = [...document.querySelectorAll('#todoActive .todo-item')].map(i => i.dataset.id);
+        const todos = loadTodos();
+        ids.forEach((id, idx) => {
+          const t = todos.find(t => t.id === id);
+          if (t) t.sort_order = ids.length - idx;
+        });
+        saveTodos(todos);
+      });
+      item.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (item !== dragSrc) {
+          document.querySelectorAll('#todoActive .todo-item').forEach(i => i.classList.remove('drag-over'));
+          item.classList.add('drag-over');
+        }
+      });
+      item.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragSrc && dragSrc !== item) {
+          const container = document.getElementById('todoActive');
+          const items = [...container.querySelectorAll('.todo-item')];
+          const srcIdx  = items.indexOf(dragSrc);
+          const destIdx = items.indexOf(item);
+          if (srcIdx < destIdx) item.after(dragSrc);
+          else item.before(dragSrc);
+        }
+        item.classList.remove('drag-over');
+      });
+    });
+  }
+
+  // init
+  window.addEventListener('load', async () => {
+    await loadPortfolios();
+    renderAll();
+    // Select today by default
+    const todayStr = today.toISOString().slice(0,10);
+    selectDay(todayStr);
+  });
+
+  // goals
+  const GOAL_KEY = `ff-goals_${_uid}`;
+
+  function loadGoals() {
+    try { return JSON.parse(localStorage.getItem(GOAL_KEY) || '[]'); } catch { return []; }
+  }
+  function saveGoals(goals) {
+    localStorage.setItem(GOAL_KEY, JSON.stringify(goals));
+  }
+
+  function _goalCountdownBadge(deadline) {
+    if (!deadline) return { txt: '', badge: '' };
+    const ms   = new Date(deadline) - new Date();
+    const days = Math.ceil(ms / 86400000);
+    if (days > 0) {
+      const txt = new Date(deadline).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+      const col = days <= 30 ? '#b85050' : days <= 90 ? '#d4a96a' : '#7bafc4';
+      const bg  = days <= 30 ? '#fef2f2' : days <= 90 ? '#fef9ec' : '#e0f0fa';
+      const lbl = days === 1 ? '1 day' : days < 30 ? `${days}d` : days < 365 ? `${Math.round(days/30)}mo` : `${(days/365).toFixed(1)}yr`;
+      return { txt, badge: `<span style="display:inline-flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${bg};color:${col};border:1px solid ${col}33;white-space:nowrap;">⏱ ${lbl} left</span>` };
+    } else if (days === 0) {
+      return { txt: 'Due today!', badge: `<span style="display:inline-flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#fef3c7;color:#d97706;border:1px solid #fcd34d;white-space:nowrap;">⏱ Due today</span>` };
+    } else {
+      return { txt: 'Overdue', badge: `<span style="display:inline-flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#fef2f2;color:#b85050;border:1px solid #fecaca;white-space:nowrap;">⚠ Overdue</span>` };
+    }
+  }
+
+  function renderGoals() {
+    const goals = loadGoals();
+    const el = document.getElementById('goalsList');
+    if (!goals.length) {
+      el.innerHTML = '<div class="empty-state"><div class="big">🎯</div><p>No goals yet.<br>Add your first financial goal above.</p></div>';
+      return;
+    }
+    el.innerHTML = goals.map(g => {
+      const pct       = g.target > 0 ? Math.min(100, (g.saved / g.target) * 100) : 0;
+      const done      = pct >= 100;
+      const icon      = g.category.split(' ')[0];
+      const catName   = g.category.split(' ').slice(1).join(' ');
+      const remaining = g.target - g.saved;
+      const { txt: deadlineTxt, badge: countdownBadge } = _goalCountdownBadge(g.deadline);
+      const pName = g.portfolioId ? (portfolios.find(p => String(p.id) === String(g.portfolioId)) || {}).name : null;
+
+      return `
+        <div class="goal-card" id="gc-${g.id}">
+          <div class="goal-header">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <div class="goal-icon">${icon}</div>
+              <div>
+                <div class="goal-name">${esc(g.name)}</div>
+                <div class="goal-meta">${catName}${g.deadline ? ' · ' + deadlineTxt : ''}${pName ? ` · 📊 ${esc(pName)}` : ''}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0;">
+              ${done ? '<span class="goal-complete-badge">✓ Complete</span>' : countdownBadge}
+            </div>
+          </div>
+          <div class="goal-amounts">
+            <span class="goal-saved">£${Number(g.saved).toLocaleString('en-GB', {minimumFractionDigits:0, maximumFractionDigits:2})}</span>
+            <span class="goal-target">of £${Number(g.target).toLocaleString('en-GB', {minimumFractionDigits:0, maximumFractionDigits:0})} target</span>
+          </div>
+          <div class="goal-bar-wrap">
+            <div class="goal-bar-fill ${done ? 'complete' : ''}" style="width:${pct.toFixed(1)}%"></div>
+          </div>
+          <div class="goal-footer">
+            <span class="goal-pct ${done ? 'complete' : ''}">${pct.toFixed(1)}%</span>
+            <span class="goal-remaining">
+              ${done ? '🎉 Goal reached!' : `£${Number(remaining).toLocaleString('en-GB', {minimumFractionDigits:0, maximumFractionDigits:0})} to go`}
+            </span>
+          </div>
+          <div id="gp-${g.id}" style="margin-top:10px;">
+            ${g.portfolioId && g.deadline ? `<div style="font-size:11px;color:#aaa;padding:8px 0 2px;">📡 Loading portfolio projection…</div>` : ''}
+          </div>
+          <div class="goal-actions">
+            <button class="goal-btn" onclick="openProgressModal('${g.id}')">+ Add funds</button>
+            <button class="goal-btn" onclick="openGoalModal('${g.id}')">Edit</button>
+            <button class="goal-btn danger" onclick="deleteGoal('${g.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // fire off async projections for linked goals
+    goals.forEach(g => {
+      if (g.portfolioId && g.deadline && g.target) {
+        loadGoalProjection(g.id, g.portfolioId, g.target, g.deadline);
+      }
+    });
+  }
+
+  async function loadGoalProjection(goalId, portfolioId, targetAmount, targetDate) {
+    const el = document.getElementById(`gp-${goalId}`);
+    if (!el) return;
+    try {
+      const params = new URLSearchParams({ target_amount: targetAmount, target_date: targetDate });
+      const res = await fetch(`/analytics/portfolio/${portfolioId}/goal-projection?${params}`, {
+        headers: { Authorization: tok() }
+      });
+      if (!res.ok) { el.innerHTML = ''; return; }
+      const d = await res.json();
+
+      const statusColor = d.status === 'on_track' ? '#4a9470' : d.status === 'close' ? '#d4a96a' : '#b85050';
+      const statusBg    = d.status === 'on_track' ? '#f0faf5' : d.status === 'close' ? '#fef9ec' : '#fef2f2';
+      const statusLabel = d.status === 'on_track' ? '✅ On track' : d.status === 'close' ? '⚠️ Close, needs attention' : '🔴 Off track';
+      // fmtGBP + fmtPct come from /static/js/utils.js
+      const pct = v => v != null ? `${(v * 100).toFixed(1)}%` : '';
+      const reqTip = d.required_return != null && d.ann_return != null
+        ? `Needs ${pct(d.required_return)}/yr · current pace ${pct(d.ann_return)}/yr${d.is_estimated ? ' (estimated)' : ''}`
+        : '';
+
+      el.innerHTML = `
+        <div style="background:${statusBg};border:1px solid ${statusColor}33;border-radius:10px;padding:10px 12px;margin-top:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+            <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:${statusColor};">${statusLabel}</span>
+            <span style="font-family:'DM Sans',sans-serif;font-size:11px;color:#888;">${d.portfolio_name}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:'DM Sans',sans-serif;">
+            ${d.current_value  != null ? `<div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:#2d1f1a;">${fmtGBP(d.current_value)}</div><div style="font-size:10px;color:#aaa;">Portfolio now</div></div>` : ''}
+            ${d.projected_value != null ? `<div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:${statusColor};">${fmtGBP(d.projected_value)}</div><div style="font-size:10px;color:#aaa;">Projected by deadline</div></div>` : ''}
+            ${d.target_amount  != null ? `<div style="text-align:center;"><div style="font-size:13px;font-weight:700;color:#2d1f1a;">${fmtGBP(d.target_amount)}</div><div style="font-size:10px;color:#aaa;">Target</div></div>` : ''}
+          </div>
+          ${reqTip ? `<div style="margin-top:8px;font-family:'DM Sans',sans-serif;font-size:11px;color:#888;">${reqTip}</div>` : ''}
+        </div>`;
+    } catch(_) { el.innerHTML = ''; }
+  }
+
+  function openGoalModal(id = null) {
+    document.getElementById('goalEditId').value = id || '';
+    document.getElementById('goalModalTitle').textContent = id ? 'Edit goal' : 'New goal';
+
+    // populate portfolio dropdown
+    const pSel = document.getElementById('goalPortfolioId');
+    pSel.innerHTML = '<option value="">— None —</option>' +
+      portfolios.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+    if (id) {
+      const g = loadGoals().find(g => g.id === id);
+      if (g) {
+        document.getElementById('goalName').value      = g.name;
+        document.getElementById('goalCategory').value  = g.category;
+        document.getElementById('goalTarget').value    = g.target;
+        document.getElementById('goalSaved').value     = g.saved;
+        document.getElementById('goalDeadline').value  = g.deadline || '';
+        pSel.value = g.portfolioId || '';
+      }
+    } else {
+      document.getElementById('goalName').value     = '';
+      document.getElementById('goalCategory').value = '🏠 Property';
+      document.getElementById('goalTarget').value   = '';
+      document.getElementById('goalSaved').value    = '0';
+      document.getElementById('goalDeadline').value = '';
+      pSel.value = '';
+    }
+    document.getElementById('goalModal').classList.add('open');
+    setTimeout(() => document.getElementById('goalName').focus(), 100);
+  }
+
+  function closeGoalModal() {
+    document.getElementById('goalModal').classList.remove('open');
+  }
+
+  function saveGoal() {
+    const name        = document.getElementById('goalName').value.trim();
+    const category    = document.getElementById('goalCategory').value;
+    const target      = parseFloat(document.getElementById('goalTarget').value) || 0;
+    const saved       = parseFloat(document.getElementById('goalSaved').value) || 0;
+    const deadline    = document.getElementById('goalDeadline').value || null;
+    const portfolioId = document.getElementById('goalPortfolioId').value || null;
+    const editId      = document.getElementById('goalEditId').value;
+
+    if (!name)   return toast('Enter a goal name', 'err');
+    if (!target) return toast('Enter a target amount', 'err');
+
+    const goals = loadGoals();
+    if (editId) {
+      const idx = goals.findIndex(g => g.id === editId);
+      if (idx > -1) goals[idx] = { ...goals[idx], name, category, target, saved, deadline, portfolioId };
+    } else {
+      goals.push({ id: String(Date.now()), name, category, target, saved, deadline, portfolioId, created: new Date().toISOString() });
+    }
+    saveGoals(goals);
+    closeGoalModal();
+    renderGoals();
+    toast(editId ? 'Goal updated ✓' : 'Goal created ✓', 'ok');
+  }
+
+  function deleteGoal(id) {
+    if (!confirm('Delete this goal?')) return;
+    saveGoals(loadGoals().filter(g => g.id !== id));
+    renderGoals();
+    toast('Goal deleted');
+  }
+
+  function openProgressModal(id) {
+    const g = loadGoals().find(g => g.id === id);
+    if (!g) return;
+    document.getElementById('progressGoalId').value = id;
+    document.getElementById('progressGoalLabel').textContent = `Amount saved — currently £${Number(g.saved).toLocaleString('en-GB')} of £${Number(g.target).toLocaleString('en-GB')}`;
+    document.getElementById('progressSaved').value = g.saved;
+    document.getElementById('goalProgressModal').classList.add('open');
+    setTimeout(() => document.getElementById('progressSaved').select(), 100);
+  }
+
+  function closeProgressModal() {
+    document.getElementById('goalProgressModal').classList.remove('open');
+  }
+
+  function saveGoalProgress() {
+    const id    = document.getElementById('progressGoalId').value;
+    const saved = parseFloat(document.getElementById('progressSaved').value) || 0;
+    const goals = loadGoals();
+    const idx   = goals.findIndex(g => g.id === id);
+    if (idx > -1) {
+      goals[idx].saved = saved;
+      saveGoals(goals);
+      closeProgressModal();
+      renderGoals();
+      const pct = goals[idx].target > 0 ? (saved / goals[idx].target * 100).toFixed(1) : 0;
+      toast(pct >= 100 ? '🎉 Goal complete!' : `Progress updated — ${pct}%`, 'ok');
+    }
+  }
+
+  // Close goal modals on backdrop click
+  document.getElementById('goalModal').addEventListener('click', function(e) { if (e.target === this) closeGoalModal(); });
+  document.getElementById('goalProgressModal').addEventListener('click', function(e) { if (e.target === this) closeProgressModal(); });
+  // end goals
+</script>
+{% endblock %}

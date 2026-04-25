@@ -1,0 +1,1737 @@
+{% extends "base.html" %}
+{% block title %}Invest | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .card,.icard,.s-card{background:var(--surface)!important;border-color:rgba(45,31,26,0.1)!important;box-shadow:0 2px 12px rgba(45,31,26,0.06);}
+  h1,h2,h3,h4{color:var(--dark);}
+  .muted{color:var(--muted)!important;}
+  th{color:var(--muted)!important;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;}
+  td{border-color:rgba(45,31,26,0.06)!important;}
+  tr:hover td{background:var(--warm)!important;}
+  .positive,.chg-pos{color:#4a9470!important;}
+  .negative,.chg-neg{color:#b85050!important;}
+</style>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: #2d1f1a;
+    letter-spacing: -0.5px;
+    margin: 0;
+  }
+
+  .page-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin: 4px 0 0 0;
+  }
+
+  .balance-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #2d1f1a;
+    color: #fff;
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .bal-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .balance-amount {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+  }
+
+  .balance-deposit-btn {
+    margin-left: auto;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .balance-deposit-btn:hover { background: rgba(255,255,255,0.2); }
+
+  .invest-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .invest-grid { grid-template-columns: 1fr; }
+  }
+
+  .icard {
+    background: var(--surface);
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+
+  .card-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #2d1f1a;
+    margin: 0 0 16px 0;
+  }
+
+  .tab-row {
+    display: flex;
+    background: #f3f3f3;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 18px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--surface);
+    color: #2d1f1a;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .field label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    letter-spacing: 0.02em;
+  }
+
+  .field input, .field select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    background: var(--surface);
+    color: #2d1f1a;
+    transition: border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  .price-preview {
+    background: #f8f8f8;
+    border: 1px solid #e5e5e5;
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 14px;
+    min-height: 38px;
+  }
+
+  .price-preview strong { color: #2d1f1a; font-size: 15px; }
+
+  /* Buttons */
+  .btn-buy {
+    width: 100%;
+    padding: 11px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-buy:hover { opacity: 0.88; }
+
+  .btn-sell {
+    width: 100%;
+    padding: 11px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-sell:hover { opacity: 0.88; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 11px;
+    background: #2d1f1a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .quote-strip {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    background: #fafaf9;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .quote-item { display: flex; flex-direction: column; gap: 2px; }
+  .quote-key { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+  .quote-val { font-size: 15px; font-weight: 600; color: #2d1f1a; }
+  .quote-val.up { color: #16a34a; }
+  .quote-val.down { color: #dc2626; }
+
+  .pnl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .pnl-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .pnl-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f7f7f7;
+    color: #222;
+    vertical-align: middle;
+  }
+
+  .pnl-table tr:last-child td { border-bottom: none; }
+
+  .badge-up {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-down {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-neutral {
+    background: #f3f3f3;
+    color: #555;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  .trade-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+  .trade-row:last-child { border-bottom: none; }
+
+  .trade-side-buy {
+    background: #d1fae5;
+    color: #065f46;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .trade-side-sell {
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #2d1f1a;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.err { background: #dc2626; }
+  .toast.ok { background: #16a34a; }
+
+  /* TODO: make this a proper component at some point */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 360px;
+    width: 90%;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 6px 0;
+  }
+  .modal-desc { font-size: 13px; color: #666; margin: 0 0 18px 0; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .btn-outline {
+    padding: 9px 18px;
+    background: transparent;
+    color: #555;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn-outline:hover { border-color: #aaa; }
+
+  .empty-state {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #aaa;
+    text-align: center;
+    padding: 24px 0;
+  }
+
+  [data-theme="dark"] #symbolDropdown {
+    background: #1e1614 !important;
+    border-color: rgba(255,200,180,0.12) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
+  }
+  [data-theme="dark"] #symbolDropdown .ac-item:hover,
+  [data-theme="dark"] #symbolDropdown .ac-item[style*="#f5efe6"] {
+    background: #2a1e1a !important;
+  }
+  [data-theme="dark"] #symbolDropdown span[style*="color:#2d1f1a"] { color:#ede4dc !important; }
+  [data-theme="dark"] #symbolDropdown span[style*="color:#a08c82"] { color:#8a7a72 !important; }
+  [data-theme="dark"] #symbolDropdown span[style*="background:#f5efe6"] {
+    background: #2a1e1a !important; color:#c0a898 !important;
+  }
+
+
+  [data-theme="dark"] .page-title { color: #ede4dc !important; }
+  [data-theme="dark"] .card-heading { color: #ede4dc !important; }
+  [data-theme="dark"] .icard { border-color: rgba(255,200,180,0.1) !important; }
+
+  [data-theme="dark"] .balance-bar { background: #2a1e1a !important; border: 1px solid rgba(255,200,180,0.12); }
+
+  [data-theme="dark"] .tab-row { background: #2a1e1a !important; }
+  [data-theme="dark"] .tab-btn { color: #8a7a72 !important; }
+  [data-theme="dark"] .tab-btn.active { background: #3a2820 !important; color: #ede4dc !important; box-shadow: none !important; }
+
+  [data-theme="dark"] .field label { color: #8a7a72 !important; }
+  [data-theme="dark"] .field input,
+  [data-theme="dark"] .field select { color: #ede4dc !important; border-color: rgba(255,200,180,0.15) !important; }
+
+  [data-theme="dark"] .price-preview { background: #2a1e1a !important; border-color: rgba(255,200,180,0.1) !important; color: #a09088 !important; }
+  [data-theme="dark"] .price-preview strong { color: #ede4dc !important; }
+
+  /* buttons - swap to rose on dark so they don't disappear */
+  [data-theme="dark"] .btn-primary { background: linear-gradient(135deg, #c9837a, #8b5e52) !important; }
+  [data-theme="dark"] .btn-outline { color: #c0a898 !important; border-color: rgba(255,200,180,0.2) !important; }
+  [data-theme="dark"] .btn-outline:hover { border-color: rgba(255,200,180,0.4) !important; color: #ede4dc !important; }
+
+  [data-theme="dark"] .quote-strip { background: #2a1e1a !important; border-color: rgba(255,200,180,0.1) !important; }
+  [data-theme="dark"] .quote-val { color: #ede4dc !important; }
+
+  [data-theme="dark"] .pnl-table th { color: #8a7a72 !important; border-color: rgba(255,200,180,0.08) !important; }
+  [data-theme="dark"] .pnl-table td { color: #ede4dc !important; border-color: rgba(255,200,180,0.06) !important; }
+
+  [data-theme="dark"] .badge-up      { background: rgba(22,163,74,0.15)  !important; color: #4ade80 !important; }
+  [data-theme="dark"] .badge-down    { background: rgba(220,38,38,0.15)  !important; color: #f87171 !important; }
+  [data-theme="dark"] .badge-neutral { background: rgba(255,200,180,0.08) !important; color: #a09088 !important; }
+
+  [data-theme="dark"] .trade-row { border-color: rgba(255,200,180,0.07) !important; }
+  [data-theme="dark"] .trade-side-buy  { background: rgba(22,163,74,0.15)  !important; color: #4ade80 !important; }
+  [data-theme="dark"] .trade-side-sell { background: rgba(220,38,38,0.15)  !important; color: #f87171 !important; }
+
+  [data-theme="dark"] .pv-val { color: #ede4dc !important; }
+
+  [data-theme="dark"] .pv-range-btn { color: #8a7a72 !important; border-color: rgba(255,200,180,0.12) !important; }
+  [data-theme="dark"] .pv-range-btn:hover,
+  [data-theme="dark"] .pv-range-btn.active { background: #3a2820 !important; color: #ede4dc !important; border-color: rgba(255,200,180,0.3) !important; }
+
+  [data-theme="dark"] .modal-desc { color: #8a7a72 !important; }
+</style>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Invest</h1>
+    <p class="page-sub">Paper trade at live prices, or log manual entries.</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <label for="portfolioSelect" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#666;">Portfolio:</label>
+    <select id="portfolioSelect" onchange="onPortfolioChange()"
+      style="font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 12px;border:1.5px solid #e5e5e5;border-radius:9px;background:var(--surface);">
+      <option value="">Loading…</option>
+    </select>
+    <button id="createPortfolioBtn" onclick="openCreatePortfolio()" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 14px;background:#6366f1;color:#fff;border:none;border-radius:9px;cursor:pointer;">
+      + New portfolio
+    </button>
+  </div>
+</div>
+
+<div id="noPortfolioBanner" style="display:none;align-items:center;gap:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:16px 20px;margin-bottom:20px;">
+  <span style="font-size:24px;">📂</span>
+  <div style="font-family:'DM Sans',sans-serif;">
+    <div style="font-weight:600;font-size:14px;color:#1e40af;margin-bottom:2px;">No portfolios yet</div>
+    <div style="font-size:13px;color:#3b82f6;">Create a portfolio to start tracking your investments.</div>
+  </div>
+  <button onclick="openCreatePortfolio()" style="margin-left:auto;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;cursor:pointer;white-space:nowrap;">
+    Create portfolio
+  </button>
+</div>
+
+<div class="balance-bar">
+  <div>
+    <div class="bal-label">Virtual cash balance</div>
+    <div class="balance-amount" id="balanceDisplay">£—</div>
+  </div>
+  <button class="balance-deposit-btn" onclick="openDeposit()">+ Add funds</button>
+</div>
+
+<div class="invest-grid">
+
+  <div>
+    <div class="icard">
+      <h2 class="card-heading">Trade</h2>
+
+          <div class="field">
+        <label>Stock symbol <span id="symbolNameTag" style="font-weight:400;color:#a08c82;font-size:12px;margin-left:6px;"></span></label>
+        <div style="position:relative;">
+          <input id="tradeSymbol" placeholder="e.g. AAPL or type Apple…"
+                 autocomplete="off"
+                 oninput="clearQuote(); symbolAutocomplete(this.value)"
+                 onkeydown="handleSymbolKey(event)"
+                 onblur="setTimeout(()=>closeSymbolDropdown(),180)" />
+          <div id="symbolDropdown" style="
+            display:none; position:absolute; top:100%; left:0; right:0; z-index:999;
+            background:var(--surface); border:1.5px solid rgba(45,31,26,0.12); border-top:none;
+            border-radius:0 0 10px 10px; box-shadow:0 6px 20px rgba(45,31,26,0.1);
+            max-height:220px; overflow-y:auto; font-family:'DM Sans',sans-serif;
+          "></div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="fetchQuoteForTrade()" style="margin-bottom:14px;">
+        Get quote
+      </button>
+
+          <div class="quote-strip" id="quoteStrip" style="display:none;">
+        <div class="quote-item">
+          <span class="quote-key">Price</span>
+          <span class="quote-val" id="qPrice">—</span>
+        </div>
+        <div class="quote-item">
+          <span class="quote-key">Change</span>
+          <span class="quote-val" id="qChange">—</span>
+        </div>
+        <div class="quote-item">
+          <span class="quote-key">High</span>
+          <span class="quote-val" id="qHigh">—</span>
+        </div>
+        <div class="quote-item">
+          <span class="quote-key">Low</span>
+          <span class="quote-val" id="qLow">—</span>
+        </div>
+      </div>
+
+          <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('paper')">Paper trade</button>
+        <button class="tab-btn" onclick="switchTab('manual')">Manual entry</button>
+      </div>
+
+          <div class="tab-panel active" id="tab-paper">
+        <div class="tab-row" style="margin-bottom:14px;">
+          <button class="tab-btn active" id="buySellTab-buy" onclick="switchBuySell('buy')">Buy</button>
+          <button class="tab-btn" id="buySellTab-sell" onclick="switchBuySell('sell')">Sell</button>
+        </div>
+
+        <div class="field">
+          <label>Quantity (shares)</label>
+          <input id="paperQty" type="number" min="0.0001" step="0.0001" placeholder="e.g. 10"
+                 oninput="updatePaperTotal()" />
+        </div>
+
+        <div class="price-preview" id="paperTotal">
+          Enter a quantity to see total cost
+        </div>
+
+        <button class="btn-buy" id="paperBtn" onclick="executePaperTrade()">Buy</button>
+      </div>
+
+          <div class="tab-panel" id="tab-manual">
+        <div class="field">
+          <label>Side</label>
+          <select id="manualSide">
+            <option value="BUY">Buy</option>
+            <option value="SELL">Sell</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Quantity (shares)</label>
+          <input id="manualQty" type="number" min="0.0001" step="0.0001" placeholder="e.g. 5" />
+        </div>
+        <div class="field">
+          <label>Price per share (£)</label>
+          <input id="manualPrice" type="number" min="0.01" step="0.01" placeholder="e.g. 182.50" />
+        </div>
+        <button class="btn-primary" onclick="executeManualTrade()">Log trade</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div>
+
+      <div class="icard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <h2 class="card-heading" style="margin:0;" id="chartTitle">Investment chart</h2>
+          <p style="font-family:'DM Sans',sans-serif;font-size:12px;color:#aaa;margin:3px 0 12px 0;" id="chartSubtitle">
+            Search a symbol and get a quote to see your investment over time.
+          </p>
+        </div>
+        <div style="display:flex;gap:6px;" id="rangeButtons">
+          <button onclick="loadChart(30)"  class="range-btn" data-days="30">1M</button>
+          <button onclick="loadChart(90)"  class="range-btn" data-days="90">3M</button>
+          <button onclick="loadChart(180)" class="range-btn" data-days="180">6M</button>
+          <button onclick="loadChart(365)" class="range-btn" data-days="365" id="defaultRange">1Y</button>
+        </div>
+      </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;" id="chartToggle" style="display:none;">
+        <button class="range-btn active" id="modeInvest" onclick="setChartMode('invest')">My investment</button>
+        <button class="range-btn" id="modePrice"  onclick="setChartMode('price')">Share price</button>
+      </div>
+
+      <p id="chartMsg" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#aaa;text-align:center;padding:48px 0;margin:0;"></p>
+      <div id="priceChart" style="height:300px;display:none;"></div>
+      <p id="chartNote" style="display:none;font-family:'DM Sans',sans-serif;font-size:11px;color:#aaa;text-align:center;margin:6px 0 0 0;padding:0;"></p>
+    </div>
+
+  </div>
+</div>
+
+<div class="icard" style="margin-top:4px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div>
+      <h2 class="card-heading" style="margin:0;">Positions &amp; P&amp;L</h2>
+      <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#aaa;margin:4px 0 0 0;">Live prices vs your average cost basis</p>
+    </div>
+    <button onclick="loadPnl()" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6366f1;background:none;border:none;cursor:pointer;padding:6px 10px;border:1px solid #e5e5e5;border-radius:8px;">↻ Refresh</button>
+  </div>
+
+  <div id="pnlSummary" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#aaa;text-align:center;padding:32px 0;">
+    Select a portfolio to see your positions
+  </div>
+
+  <table class="pnl-table" id="pnlTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Live price</th>
+        <th>You invested</th>
+        <th>Now worth</th>
+        <th>P&amp;L</th>
+      </tr>
+    </thead>
+    <tbody id="pnlBody"></tbody>
+  </table>
+
+  <div id="pnlTotals" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0;">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="font-family:'DM Sans',sans-serif;">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Total invested</div>
+        <div id="totalInvested" style="font-size:20px;font-weight:700;color:#2d1f1a;">—</div>
+      </div>
+      <div style="font-family:'DM Sans',sans-serif;">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Current value</div>
+        <div id="totalCurrent" style="font-size:20px;font-weight:700;color:#2d1f1a;">—</div>
+      </div>
+      <div style="font-family:'DM Sans',sans-serif;">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Total P&amp;L</div>
+        <div id="totalPnl" style="font-size:20px;font-weight:700;">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="icard" id="portfolioValueCard" style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 class="card-heading" style="margin:0 0 2px;">Portfolio value over time</h2>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a08c82;" id="pvChartMeta">Loading…</div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="pv-range-btn active" data-days="30"  onclick="setPVRange(30)">1M</button>
+      <button class="pv-range-btn"        data-days="90"  onclick="setPVRange(90)">3M</button>
+      <button class="pv-range-btn"        data-days="180" onclick="setPVRange(180)">6M</button>
+      <button class="pv-range-btn"        data-days="365" onclick="setPVRange(365)">1Y</button>
+      <button class="pv-range-btn"        data-days="0"   onclick="setPVRange(0)">ALL</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;" id="pvKpiStrip"></div>
+  <div id="pvChart" style="height:260px;"></div>
+</div>
+
+<style>
+  .pv-range-btn {
+    font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;
+    padding:5px 12px;border-radius:20px;border:1.5px solid rgba(45,31,26,0.15);
+    background:var(--surface);color:#a08c82;cursor:pointer;transition:all 0.15s;
+  }
+  .pv-range-btn:hover { border-color:var(--rose);color:var(--dark); }
+  .pv-range-btn.active { background:var(--dark);color:#fff;border-color:var(--dark); }
+  .pv-stat { background:var(--warm);border-radius:12px;padding:12px 14px; }
+  .pv-lbl { font-size:10px;font-weight:700;color:#a08c82;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px; }
+  .pv-val   { font-family:'Instrument Serif',serif;font-size:20px;color:#2d1f1a;letter-spacing:-0.3px; }
+</style>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:4px;">
+
+  <div class="icard" id="pieCard" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h2 class="card-heading" style="margin:0;">Portfolio allocation</h2>
+      <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#aaa;">By market value</span>
+    </div>
+    <div id="pieChart" style="height:320px;"></div>
+  </div>
+
+  <div class="icard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 class="card-heading" style="margin:0;">Transaction history</h2>
+      <button onclick="loadHistory()" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6366f1;background:none;border:none;cursor:pointer;padding:6px 10px;border:1px solid #e5e5e5;border-radius:8px;">↻ Refresh</button>
+    </div>
+    <div id="historyContainer" style="max-height:320px;overflow-y:auto;">
+      <div class="empty-state">Select a portfolio to see transactions</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="depositModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Add virtual funds</h3>
+    <p class="modal-desc">Add paper money to your balance. This is for simulation only — no real money involved.</p>
+    <div class="field">
+      <label>Amount (£)</label>
+      <input id="depositAmount" type="number" min="1" step="100" placeholder="e.g. 5000"
+             onkeydown="if(event.key==='Enter') confirmDeposit()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeDeposit()">Cancel</button>
+      <button class="btn-primary" style="width:auto;margin-top:0;" onclick="confirmDeposit()">Add funds</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="createPortfolioModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Create a portfolio</h3>
+    <p class="modal-desc">Give your portfolio a name — you can create multiple to track different strategies.</p>
+    <div class="field">
+      <label>Portfolio name</label>
+      <input id="newPortfolioName" placeholder="e.g. Growth Portfolio, ISA, Tech Plays"
+             onkeydown="if(event.key==='Enter') createPortfolio()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeCreatePortfolio()">Cancel</button>
+      <button class="btn-primary" style="width:auto;margin-top:0;" onclick="createPortfolio()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<style>
+  .range-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 7px;
+    background: var(--surface);
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .range-btn:hover, .range-btn.active { background: #2d1f1a; color: #fff; border-color: #2d1f1a; }
+</style>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  let currentPortfolioId = null;
+  let currentSymbol = null;
+  let currentPrice = null;
+  let paperSide = 'buy';
+  let currentTab = 'paper';
+  let currentChartDays = 365;
+
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // portfolios
+  async function loadPortfolios() {
+    const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const portfolios = await res.json();
+    const sel = document.getElementById('portfolioSelect');
+    const createBtn = document.getElementById('createPortfolioBtn');
+    const banner = document.getElementById('noPortfolioBanner');
+
+    if (!portfolios.length) {
+      sel.style.display = 'none';
+      createBtn.style.display = 'inline-block';
+      banner.style.display = 'flex';
+      return;
+    }
+
+    sel.style.display = 'inline-block';
+    createBtn.style.display = 'none';
+    banner.style.display = 'none';
+    sel.innerHTML = portfolios.map(p =>
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    currentPortfolioId = portfolios[0].id;
+    onPortfolioChange();
+  }
+
+  function openCreatePortfolio() {
+    document.getElementById('createPortfolioModal').classList.add('open');
+    setTimeout(() => document.getElementById('newPortfolioName').focus(), 100);
+  }
+
+  function closeCreatePortfolio() {
+    document.getElementById('createPortfolioModal').classList.remove('open');
+    document.getElementById('newPortfolioName').value = '';
+  }
+
+  async function createPortfolio() {
+    const name = document.getElementById('newPortfolioName').value.trim();
+    if (!name) return toast('Enter a portfolio name', 'err');
+
+    const res = await fetch('/portfolios/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ name })
+    });
+
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Could not create portfolio', 'err');
+
+    toast(`Portfolio "${data.name}" created!`, 'ok');
+    closeCreatePortfolio();
+    loadPortfolios();
+  }
+
+  function onPortfolioChange() {
+    currentPortfolioId = parseInt(document.getElementById('portfolioSelect').value);
+    if (currentPortfolioId) {
+      loadPnl();
+      loadHistory();
+    }
+  }
+
+  // balance
+  async function loadBalance() {
+    const res = await fetch('/trading/balance', { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('balanceDisplay').textContent = '£' + Number(data.balance || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // deposit modal
+  function openDeposit() { document.getElementById('depositModal').classList.add('open'); document.getElementById('depositAmount').focus(); }
+  function closeDeposit() { document.getElementById('depositModal').classList.remove('open'); }
+
+  async function confirmDeposit() {
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+    if (!amount || amount <= 0) return toast('Enter a valid amount', 'err');
+
+    const res = await fetch('/trading/deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ amount })
+    });
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Deposit failed', 'err');
+
+    closeDeposit();
+    document.getElementById('depositAmount').value = '';
+    document.getElementById('balanceDisplay').textContent = '£' + Number(data.balance || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    toast(`£${amount.toLocaleString()} added to balance`, 'ok');
+  }
+
+  // fetch quote for trade panel
+  async function fetchQuoteForTrade() {
+    const sym = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+    if (!sym) return toast('Enter a stock symbol', 'err');
+
+    currentSymbol = sym;
+    const res = await fetch(`/market/public/quote/${sym}`);
+    if (!res.ok) return toast(`Could not find quote for ${sym}`, 'err');
+
+    const q = await res.json();
+    if (!q.price) return toast(`No price available for ${sym}`, 'err');
+
+    currentPrice = q.price;
+
+    const strip = document.getElementById('quoteStrip');
+    strip.style.display = 'flex';
+    document.getElementById('qPrice').textContent = '£' + Number(q.price).toFixed(2);
+
+    const chg = Number(q.change_pct);
+    const chgEl = document.getElementById('qChange');
+    chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    chgEl.className = 'quote-val ' + (chg >= 0 ? 'up' : 'down');
+
+    document.getElementById('qHigh').textContent = '£' + Number(q.high).toFixed(2);
+    document.getElementById('qLow').textContent  = '£' + Number(q.low).toFixed(2);
+
+    updatePaperTotal();
+    loadChart(currentChartDays);
+
+    document.getElementById('chartTitle').textContent = `${sym} — price chart`;
+  }
+
+  function clearQuote() {
+    currentSymbol = null;
+    currentPrice = null;
+    document.getElementById('quoteStrip').style.display = 'none';
+    document.getElementById('paperTotal').textContent = 'Enter a quantity to see total cost';
+  }
+
+  // symbol autocomplete with debounce so we dont spam the api on every keypress
+  // this took forever to figure out — the blur/mousedown timing is fiddly
+  let _acTimer = null;
+  let _acResults = [];
+  let _acIdx = -1;
+
+  function symbolAutocomplete(val) {
+    const q = val.trim();
+    clearTimeout(_acTimer);
+    if (q.length < 1) { closeSymbolDropdown(); return; }
+    // wait 260ms before sending the request — not sure if thats the right delay
+    _acTimer = setTimeout(async () => {
+      try {
+        const res  = await fetch(`/prices/search?q=${encodeURIComponent(q)}`);
+        _acResults = res.ok ? await res.json() : [];
+      } catch (_) { _acResults = []; }
+      renderSymbolDropdown();
+    }, 260);
+  }
+
+  function renderSymbolDropdown() {
+    const dd = document.getElementById('symbolDropdown');
+    if (!_acResults.length) { dd.style.display = 'none'; return; }
+    _acIdx = -1;
+    dd.style.display = 'block';
+    dd.innerHTML = _acResults.map((r, i) => `
+      <div class="ac-item" data-i="${i}" onmousedown="pickSymbol(${i})" style="
+        display:flex; align-items:center; justify-content:space-between;
+        padding:9px 14px; cursor:pointer; border-bottom:1px solid rgba(45,31,26,0.05);
+        transition:background 0.1s;
+      "
+        onmouseover="this.style.background='#f5efe6'"
+        onmouseout="this.style.background='transparent'">
+        <div>
+          <span style="font-weight:600;font-size:13px;color:#2d1f1a;">${r.symbol}</span>
+          <span style="font-size:12px;color:#a08c82;margin-left:8px;">${r.name}</span>
+        </div>
+        <span style="font-size:10px;color:#c0a898;background:#f5efe6;padding:2px 7px;border-radius:20px;white-space:nowrap;">${r.exchange || r.type}</span>
+      </div>
+    `).join('');
+  }
+
+  function pickSymbol(i) {
+    const r = _acResults[i];
+    if (!r) return;
+    document.getElementById('tradeSymbol').value = r.symbol;
+    document.getElementById('symbolNameTag').textContent = r.name ? `· ${r.name}` : '';
+    closeSymbolDropdown();
+    fetchQuoteForTrade();
+  }
+
+  function closeSymbolDropdown() {
+    document.getElementById('symbolDropdown').style.display = 'none';
+  }
+
+  function handleSymbolKey(e) {
+    const dd = document.getElementById('symbolDropdown');
+    const items = dd.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _acIdx = Math.min(_acIdx + 1, items.length - 1);
+      items.forEach((el, i) => el.style.background = i === _acIdx ? '#f5efe6' : 'transparent');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _acIdx = Math.max(_acIdx - 1, 0);
+      items.forEach((el, i) => el.style.background = i === _acIdx ? '#f5efe6' : 'transparent');
+    } else if (e.key === 'Enter') {
+      if (_acIdx >= 0 && _acResults[_acIdx]) {
+        e.preventDefault();
+        pickSymbol(_acIdx);
+      } else {
+        fetchQuoteForTrade();
+      }
+    } else if (e.key === 'Escape') {
+      closeSymbolDropdown();
+    }
+  }
+  // tabs
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-row .tab-btn').forEach((b, i) => {
+      b.className = 'tab-btn' + ((i === 0 && tab === 'paper') || (i === 1 && tab === 'manual') ? ' active' : '');
+    });
+    document.getElementById('tab-paper').className  = 'tab-panel' + (tab === 'paper'  ? ' active' : '');
+    document.getElementById('tab-manual').className = 'tab-panel' + (tab === 'manual' ? ' active' : '');
+  }
+
+  function switchBuySell(side) {
+    paperSide = side;
+    document.getElementById('buySellTab-buy').className  = 'tab-btn' + (side === 'buy'  ? ' active' : '');
+    document.getElementById('buySellTab-sell').className = 'tab-btn' + (side === 'sell' ? ' active' : '');
+    document.getElementById('paperBtn').textContent = side === 'buy' ? 'Buy' : 'Sell';
+    document.getElementById('paperBtn').className = side === 'buy' ? 'btn-buy' : 'btn-sell';
+    updatePaperTotal();
+  }
+
+  function updatePaperTotal() {
+    const qty = parseFloat(document.getElementById('paperQty').value);
+    const el  = document.getElementById('paperTotal');
+    if (!currentPrice || !qty || qty <= 0) {
+      el.textContent = 'Enter a quantity to see total cost';
+      return;
+    }
+    const total = qty * currentPrice;
+    const label = paperSide === 'buy' ? 'Total cost' : 'Proceeds';
+    el.innerHTML = `${label}: <strong>£${total.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> @ £${currentPrice.toFixed(2)} × ${qty} shares`;
+  }
+
+  // paper trade
+  async function executePaperTrade() {
+    if (!currentPortfolioId) return toast('Select a portfolio first', 'err');
+
+    const qty = parseFloat(document.getElementById('paperQty').value);
+    if (!qty || qty <= 0) return toast('Enter a valid quantity', 'err');
+
+    // Auto-fetch quote if user typed a symbol but didn't click "Get quote"
+    if (!currentSymbol) {
+      const sym = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+      if (!sym) return toast('Enter a stock symbol first', 'err');
+      await fetchQuoteForTrade();
+      if (!currentSymbol) return; // fetchQuoteForTrade already shows error
+    }
+
+    const btn = document.getElementById('paperBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    try {
+      const endpoint = paperSide === 'buy' ? '/trading/buy' : '/trading/sell';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ portfolio_id: currentPortfolioId, symbol: currentSymbol, quantity: qty })
+      });
+
+      const data = await res.json();
+      if (!res.ok) return toast(data.detail || 'Trade failed', 'err');
+
+      const action = paperSide === 'buy' ? 'Bought' : 'Sold';
+      toast(`${action} ${qty} × ${currentSymbol} @ £${Number(data.price).toFixed(2)}`, 'ok');
+      document.getElementById('paperQty').value = '';
+      updatePaperTotal();
+
+      // Update balance immediately from response
+      document.getElementById('balanceDisplay').textContent =
+        '£' + Number(data.balance || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      loadPnl();
+      loadHistory();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = paperSide === 'buy' ? 'Buy' : 'Sell';
+    }
+  }
+
+  // manual trade entry
+  async function executeManualTrade() {
+    if (!currentPortfolioId) return toast('Select a portfolio', 'err');
+
+    const symbol = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+    const side   = document.getElementById('manualSide').value;
+    const qty    = parseFloat(document.getElementById('manualQty').value);
+    const price  = parseFloat(document.getElementById('manualPrice').value);
+
+    if (!symbol) return toast('Enter a stock symbol', 'err');
+    if (!qty || qty <= 0) return toast('Enter a valid quantity', 'err');
+    if (!price || price <= 0) return toast('Enter a valid price', 'err');
+
+    const res = await fetch('/trading/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ portfolio_id: currentPortfolioId, symbol, side, quantity: qty, price })
+    });
+
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Trade failed', 'err');
+
+    toast(`Logged ${side} ${qty} × ${symbol} @ £${price}`, 'ok');
+    document.getElementById('manualQty').value = '';
+    document.getElementById('manualPrice').value = '';
+    loadPnl();
+    loadHistory();
+  }
+
+  // load profit and loss for all holdings in the current portfoloi
+  // pnl_pct comes back from the API already calculated so we just format it
+  async function loadPnl() {
+    if (!currentPortfolioId) return;
+
+    const res = await fetch(`/trading/pnl/${currentPortfolioId}`, { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const summary = document.getElementById('pnlSummary');
+    const table   = document.getElementById('pnlTable');
+    const totals  = document.getElementById('pnlTotals');
+    const body    = document.getElementById('pnlBody');
+
+    if (!data.holdings.length) {
+      summary.style.display = 'block';
+      summary.textContent = 'No holdings in this portfolio yet.';
+      table.style.display = 'none';
+      totals.style.display = 'none';
+      return;
+    }
+
+    summary.style.display = 'none';
+    table.style.display = 'table';
+    totals.style.display = 'block';
+
+    body.innerHTML = data.holdings.map(h => {
+      const isUp     = h.pnl !== null && h.pnl >= 0;
+      const pnlClass = h.pnl === null ? 'badge-neutral' : isUp ? 'badge-up' : 'badge-down';
+      // format pnl as +£x.xx (+y%) — pnl_pct comes back from the api already
+      const pnlText  = h.pnl === null
+        ? '—'
+        : `${isUp ? '+' : '-'}£${Math.abs(h.pnl).toFixed(2)} (${isUp ? '+' : ''}${Number(h.pnl_pct).toFixed(2)}%)`;
+      const liveColor = h.live_price === null ? '#888' : h.live_price >= h.avg_buy_price ? '#16a34a' : '#dc2626';
+      const nowWorth  = h.value !== null ? Number(h.value) : null;
+      const invested  = Number(h.cost);
+      // colour the "now worth" cell relative to what they put in
+      const worthColor = nowWorth === null ? '#222' : nowWorth >= invested ? '#16a34a' : '#dc2626';
+      return `
+        <tr>
+          <td>
+            <strong style="font-size:14px;">${h.symbol}</strong>
+            <div style="color:#aaa;font-size:11px;margin-top:2px;">${Number(h.quantity).toFixed(4)} shares @ £${Number(h.avg_buy_price).toFixed(2)}</div>
+          </td>
+          <td style="color:${liveColor};font-weight:600;">${h.live_price !== null ? '£' + Number(h.live_price).toFixed(2) : '—'}</td>
+          <td>
+            <div style="font-weight:600;">£${invested.toFixed(2)}</div>
+            <div style="color:#aaa;font-size:11px;">${Number(h.quantity).toFixed(4)} × £${Number(h.avg_buy_price).toFixed(2)}</div>
+          </td>
+          <td>
+            <div style="font-weight:700;font-size:15px;color:${worthColor};">${nowWorth !== null ? '£' + nowWorth.toFixed(2) : '—'}</div>
+            ${nowWorth !== null ? `<div style="color:${worthColor};font-size:11px;">${nowWorth >= invested ? '+' : '-'}£${Math.abs(nowWorth - invested).toFixed(2)}</div>` : ''}
+          </td>
+          <td><span class="${pnlClass}">${pnlText}</span></td>
+        </tr>`;
+    }).join('');
+
+    const totalPnlEl = document.getElementById('totalPnl');
+    document.getElementById('totalInvested').textContent = '£' + Number(data.total_cost || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 });
+    document.getElementById('totalCurrent').textContent  = '£' + Number(data.total_value || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 });
+    // total pnl across the whole portfoloi, shown with sign and percentage
+    const tpnl = data.total_pnl || 0;
+    const tpct = data.total_pnl_pct || 0;
+    totalPnlEl.textContent = `${tpnl >= 0 ? '+' : '-'}£${Math.abs(tpnl).toFixed(2)} (${tpct >= 0 ? '+' : ''}${Number(tpct).toFixed(2)}%)`;
+    totalPnlEl.style.color = tpnl >= 0 ? '#16a34a' : '#dc2626';
+
+    // Render pie chart with live holding values
+    renderPieChart(data.holdings);
+    loadPortfolioValueChart(currentPortfolioId, 30);
+  }
+
+  // chart
+  let chartMode = 'invest';   // 'invest' | 'price'
+  let chartCache = null;      // last fetched data
+
+  function setChartMode(mode) {
+    chartMode = mode;
+    document.getElementById('modeInvest').classList.toggle('active', mode === 'invest');
+    document.getElementById('modePrice').classList.toggle('active', mode === 'price');
+    if (chartCache) renderChart(chartCache);
+  }
+
+  function renderChart(data) {
+    const chartDiv = document.getElementById('priceChart');
+    chartDiv.style.display = 'block';
+    document.getElementById('chartMsg').style.display = 'none';
+
+    const isSparse = data.source === 'trades_only';
+    const s = data.series;
+
+    if (!s || !s.length) {
+      document.getElementById('chartMsg').textContent = 'No data to display.';
+      document.getElementById('chartMsg').style.display = 'block';
+      chartDiv.style.display = 'none';
+      return;
+    }
+
+    const x = s.map(p => p.date);
+    const y = chartMode === 'invest' ? s.map(p => p.value) : s.map(p => p.close);
+    const yLabel = chartMode === 'invest' ? 'Value (£)' : 'Share price (£)';
+
+    const first = y[0], last = y[y.length - 1];
+    const isUp    = last >= first;
+    const lineCol = isUp ? '#16a34a' : '#dc2626';
+    const fillCol = isUp ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)';
+
+    const traces = [];
+
+    if (isSparse) {
+      // Sparse: draw connecting line + big annotated markers
+      traces.push({
+        type: 'scatter',
+        mode: 'lines+markers',
+        x, y,
+        name: chartMode === 'invest' ? 'Holding value' : 'Price at trade',
+        line: { color: lineCol, width: 2.5, dash: 'solid' },
+        marker: {
+          size: 10,
+          color: y.map((v, i) => {
+            if (i === y.length - 1) return lineCol;          // today = green/red
+            return '#6366f1';                                 // trades = indigo
+          }),
+          line: { color: '#fff', width: 2 },
+          symbol: 'circle',
+        },
+        fill: 'tozeroy',
+        fillcolor: fillCol,
+        hovertemplate: chartMode === 'invest'
+          ? '<b>%{x}</b><br>Value: <b>£%{y:.2f}</b><br>Qty: ' + s.map(p => p.qty.toFixed(4)).join('<br>Qty: ') .split('<br>Qty: ')[0] + '<extra></extra>'
+          : '<b>%{x}</b><br>Price: <b>£%{y:.2f}</b><extra></extra>',
+        customdata: s.map(p => ({ qty: p.qty, cost: p.cost })),
+        hovertemplate: '<b>%{x}</b><br>' +
+          (chartMode === 'invest' ? 'Value: <b>£%{y:.2f}</b>' : 'Price: <b>£%{y:.2f}</b>') +
+          '<br>Qty held: %{customdata.qty}<br>Cost basis: £%{customdata.cost:.2f}<extra></extra>',
+      });
+
+      // Cost basis line
+      if (chartMode === 'invest') {
+        traces.push({
+          type: 'scatter', mode: 'lines',
+          x, y: s.map(p => p.cost),
+          name: 'Cost basis',
+          line: { color: '#d1d5db', width: 1.5, dash: 'dot' },
+          hovertemplate: '%{x}<br>Cost: £%{y:.2f}<extra></extra>',
+        });
+      }
+
+    } else {
+      // Dense candle data: smooth area chart
+      traces.push({
+        type: 'scatter', mode: 'lines',
+        x, y,
+        name: chartMode === 'invest' ? 'Market value' : 'Share price',
+        line: { color: lineCol, width: 2.5 },
+        fill: 'tozeroy', fillcolor: fillCol,
+        hovertemplate: '<b>%{x}</b><br>' +
+          (chartMode === 'invest' ? 'Value: £%{y:.2f}' : 'Price: £%{y:.2f}') +
+          '<extra></extra>',
+      });
+
+      if (chartMode === 'invest') {
+        traces.push({
+          type: 'scatter', mode: 'lines',
+          x, y: s.map(p => p.cost),
+          name: 'Cost basis',
+          line: { color: '#d1d5db', width: 1.5, dash: 'dot' },
+          hovertemplate: '%{x}<br>Cost: £%{y:.2f}<extra></extra>',
+        });
+      }
+    }
+
+    // Gain/loss annotation on final point
+    const gainAmt  = last - s[s.length-1].cost;
+    const gainPct  = s[s.length-1].cost > 0 ? (gainAmt / s[s.length-1].cost * 100) : 0;
+    const gainText = `${gainAmt >= 0 ? '+' : ''}£${gainAmt.toFixed(2)} (${gainPct.toFixed(2)}%)`;
+
+    const annotations = chartMode === 'invest' ? [{
+      x: x[x.length-1], y: last,
+      xanchor: 'right', yanchor: 'bottom',
+      text: `<b>${gainText}</b>`,
+      showarrow: false,
+      font: { family: 'DM Sans', size: 12, color: isUp ? '#16a34a' : '#dc2626' },
+      bgcolor: 'rgba(255,255,255,0.85)',
+      bordercolor: isUp ? '#16a34a' : '#dc2626',
+      borderwidth: 1, borderpad: 4,
+    }] : [];
+
+    // Note for sparse charts
+    const noteText = isSparse
+      ? '📌 Showing trade snapshots (free Finnhub tier — upgrade for full daily history)'
+      : '';
+
+    Plotly.newPlot('priceChart', traces, {
+      margin: { t: 24, l: 60, r: 16, b: isSparse ? 60 : 40 },
+      annotations,
+      legend: { font: { family: 'DM Sans', size: 11 }, orientation: 'h', y: -0.22 },
+      xaxis: {
+        showgrid: false,
+        tickfont: { family: 'DM Sans', size: 11, color: '#aaa' },
+        type: isSparse ? 'category' : '-',
+      },
+      yaxis: {
+        tickprefix: '£', showgrid: true, gridcolor: '#f0f0f0',
+        tickfont: { family: 'DM Sans', size: 11, color: '#aaa' },
+        title: { text: yLabel, font: { size: 11, color: '#aaa' } },
+      },
+      plot_bgcolor: '#fff', paper_bgcolor: '#fff',
+      hoverlabel: { bgcolor: '#2d1f1a', font: { family: 'DM Sans', color: '#fff', size: 12 } },
+    }, { responsive: true, displayModeBar: false });
+
+    // Show note below chart for sparse mode
+    const noteEl = document.getElementById('chartNote');
+    if (noteEl) {
+      noteEl.textContent = noteText;
+      noteEl.style.display = noteText ? 'block' : 'none';
+    }
+  }
+
+  async function loadChart(days) {
+    if (!currentSymbol || !currentPortfolioId) return;
+    currentChartDays = days;
+
+    document.querySelectorAll('.range-btn:not(#modeInvest):not(#modePrice)').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.days) === days);
+    });
+
+    const msg = document.getElementById('chartMsg');
+    msg.textContent = 'Loading your investment data…';
+    msg.style.display = 'block';
+    document.getElementById('priceChart').style.display = 'none';
+
+    try {
+      const res = await fetch(
+        `/trading/investment-chart/${currentPortfolioId}?symbol=${currentSymbol}&days=${days}`,
+        { headers: { Authorization: tok() } }
+      );
+
+      if (res.status === 404) {
+        // No personal trades yet — fall back to raw price chart
+        msg.textContent = 'No trades in this symbol yet — showing market price instead.';
+        await loadRawPriceChart(days);
+        return;
+      }
+
+      if (!res.ok) { msg.textContent = 'Chart unavailable'; return; }
+
+      chartCache = await res.json();
+
+      // Show mode toggle now that we have personal data
+      document.getElementById('chartToggle').style.display = 'flex';
+      document.getElementById('chartTitle').textContent = `${currentSymbol} — your investment`;
+      document.getElementById('chartSubtitle').textContent =
+        `Showing value of your ${currentSymbol} holding over time vs cost basis`;
+
+      renderChart(chartCache);
+    } catch(e) {
+      msg.textContent = 'Could not load chart';
+      console.error(e);
+    }
+  }
+
+  async function loadRawPriceChart(days) {
+    const msg      = document.getElementById('chartMsg');
+    const chartDiv = document.getElementById('priceChart');
+
+    const res = await fetch(`/market/public/candles/${currentSymbol}?resolution=D&limit=${days}`);
+    if (!res.ok) { msg.textContent = 'Chart data unavailable'; return; }
+
+    const data = await res.json();
+    if (!data.timestamps?.length) { msg.textContent = 'No chart data for this range.'; return; }
+
+    msg.style.display = 'none';
+    chartDiv.style.display = 'block';
+
+    const dates  = data.timestamps.map(ts => new Date(ts*1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'2-digit' }));
+    const prices = data.prices;
+    const isUp   = prices[prices.length-1] >= prices[0];
+
+    Plotly.newPlot('priceChart', [{
+      type: 'scatter', mode: 'lines',
+      x: dates, y: prices,
+      line: { color: isUp ? '#16a34a' : '#dc2626', width: 2 },
+      fill: 'tozeroy', fillcolor: isUp ? 'rgba(22,163,74,0.07)' : 'rgba(220,38,38,0.07)',
+      hovertemplate: '%{x}<br><b>£%{y:.2f}</b><extra></extra>',
+    }], {
+      margin: { t: 8, l: 55, r: 16, b: 40 },
+      xaxis: { showgrid: false, tickfont: { family: 'DM Sans', size: 11, color: '#aaa' } },
+      yaxis: { tickprefix: '£', showgrid: true, gridcolor: '#f0f0f0', tickfont: { family: 'DM Sans', size: 11, color: '#aaa' } },
+      plot_bgcolor: '#fff', paper_bgcolor: '#fff',
+      hoverlabel: { bgcolor: '#2d1f1a', font: { family: 'DM Sans', color: '#fff', size: 12 } },
+    }, { responsive: true, displayModeBar: false });
+  }
+
+  // pie/donut chart showing how the portfoloi is allocated by market value
+  // this was a pain to build from scratch with canvas — spent ages on the animation
+  function renderPieChart(holdings) {
+    const withValue = holdings.filter(h => h.value !== null && h.value > 0);
+    if (!withValue.length) return;
+
+    const pieCard = document.getElementById('pieCard');
+    pieCard.style.display = 'block';
+
+    const labels  = withValue.map(h => h.symbol);
+    const values  = withValue.map(h => Number(h.value));
+    const total   = values.reduce((a,b) => a+b, 0);
+
+    // Warm palette colours
+    const COLORS = ['#c9837a','#7a9e8e','#7bafc4','#d4a574','#a07890',
+                    '#8b5e52','#5a8f7b','#5b8fa8','#b8894a','#7a5f6e'];
+
+    // canvas donut
+    // Replace the Plotly div with a canvas + legend layout
+    const pieEl = document.getElementById('pieChart');
+    pieEl.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;gap:32px;height:100%;flex-wrap:wrap;padding:8px;">
+        <div style="position:relative;flex-shrink:0;">
+          <canvas id="donutCanvas" width="260" height="260" style="display:block;"></canvas>
+          <div id="donutCenter" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+            <div style="font-family:'Instrument Serif',serif;font-size:22px;color:#2d1f1a;letter-spacing:-0.5px;" id="donutCenterVal">Portfolio</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a08c82;margin-top:2px;" id="donutCenterSub">Allocation</div>
+          </div>
+        </div>
+        <div id="donutLegend" style="display:flex;flex-direction:column;gap:8px;min-width:140px;"></div>
+      </div>`;
+
+    // Build legend
+    const legendEl = document.getElementById('donutLegend');
+    legendEl.innerHTML = labels.map((lbl,i) => {
+      const pct = (values[i]/total*100).toFixed(1);
+      return `<div class="donut-leg-item" data-idx="${i}" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};flex-shrink:0;"></div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#2d1f1a;">${lbl}</div>
+          <div style="font-size:11px;color:#a08c82;">${pct}% · £${Number(values[i]).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // draw donut
+    const canvas = document.getElementById('donutCanvas');
+    const ctx    = canvas.getContext('2d');
+    const cx = 130, cy = 130, outerR = 110, innerR = 68, gap = 0.025;
+
+    // compute start/end angles for each segment — start at top (-pi/2) and go clockwise
+    // each segment takes up pct * 2*pi radians of the circle, with a small gap between them
+    const segments = values.map((v,i) => ({
+      label: labels[i], value: v,
+      pct: v/total,
+      color: COLORS[i % COLORS.length],
+      startAngle: 0, endAngle: 0,
+    }));
+    let cursor = -Math.PI / 2;
+    segments.forEach(s => {
+      s.startAngle = cursor + gap;
+      s.endAngle   = cursor + s.pct * 2 * Math.PI - gap;
+      cursor += s.pct * 2 * Math.PI;
+    });
+
+    // Draw function — progress 0→1 (Apple Fitness swirl)
+    function drawDonut(progress, highlightIdx = -1) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      segments.forEach((s, i) => {
+        const span      = s.endAngle - s.startAngle;
+        const drawEnd   = s.startAngle + span * Math.min(progress * segments.length - i, 1);
+        if (drawEnd <= s.startAngle) return;
+
+        const isHover   = i === highlightIdx;
+        const r         = isHover ? outerR + 6 : outerR;
+        const rIn       = isHover ? innerR - 2 : innerR;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, r,   s.startAngle, drawEnd);
+        ctx.arc(cx, cy, rIn, drawEnd, s.startAngle, true);
+        ctx.closePath();
+
+        if (isHover) {
+          // Glow effect
+          ctx.shadowColor = s.color;
+          ctx.shadowBlur  = 14;
+        }
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Thin white separator
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 1, s.startAngle, drawEnd);
+        ctx.strokeStyle = 'rgba(250,247,242,0.8)';
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+      });
+    }
+
+    // entry animation
+    let animProgress = 0;
+    let animRAF = null;
+    const ANIM_DURATION = 1100; // ms
+    let animStart = null;
+
+    // easing functions for the donut animation
+    // easeInOutQuart felt the smoothest after trying a few — this took forever to figure out
+    function easeOutCubic(t) { return 1 - Math.pow(1-t, 3); }
+    function easeInOutQuart(t) { return t < 0.5 ? 8*t*t*t*t : 1-Math.pow(-2*t+2,4)/2; }
+
+    function animStep(ts) {
+      if (!animStart) animStart = ts;
+      const raw  = Math.min((ts - animStart) / ANIM_DURATION, 1);
+      animProgress = easeInOutQuart(raw);
+      drawDonut(animProgress);
+      if (raw < 1) animRAF = requestAnimationFrame(animStep);
+      else { animProgress = 1; drawDonut(1); }
+    }
+    animRAF = requestAnimationFrame(animStep);
+
+    // hover interactions
+    let hoverIdx = -1;
+
+    function getHoveredSegment(mx, my) {
+      const dx = mx - cx, dy = my - cy;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < innerR || dist > outerR + 8) return -1;
+      let angle = Math.atan2(dy, dx);
+      return segments.findIndex(s => angle >= s.startAngle - 0.05 && angle <= s.endAngle + 0.05);
+    }
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+      const idx = getHoveredSegment(mx, my);
+      if (idx !== hoverIdx) {
+        hoverIdx = idx;
+        drawDonut(1, hoverIdx);
+        // Update centre text
+        if (idx >= 0) {
+          document.getElementById('donutCenterVal').textContent  = segments[idx].label;
+          document.getElementById('donutCenterSub').textContent  = (segments[idx].pct*100).toFixed(1) + '%';
+        } else {
+          document.getElementById('donutCenterVal').textContent  = 'Portfolio';
+          document.getElementById('donutCenterSub').textContent  = 'Allocation';
+        }
+        // Highlight legend row
+        document.querySelectorAll('.donut-leg-item').forEach((el,i) => {
+          el.style.background = i === idx ? 'rgba(45,31,26,0.06)' : '';
+        });
+      }
+    });
+    canvas.addEventListener('mouseleave', () => {
+      hoverIdx = -1;
+      drawDonut(1, -1);
+      document.getElementById('donutCenterVal').textContent = 'Portfolio';
+      document.getElementById('donutCenterSub').textContent = 'Allocation';
+      document.querySelectorAll('.donut-leg-item').forEach(el => el.style.background = '');
+    });
+
+    // Legend hover
+    document.querySelectorAll('.donut-leg-item').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        const i = parseInt(el.dataset.idx);
+        hoverIdx = i;
+        drawDonut(1, i);
+        document.getElementById('donutCenterVal').textContent = segments[i].label;
+        document.getElementById('donutCenterSub').textContent = (segments[i].pct*100).toFixed(1) + '%';
+      });
+      el.addEventListener('mouseleave', () => {
+        hoverIdx = -1;
+        drawDonut(1, -1);
+        document.getElementById('donutCenterVal').textContent = 'Portfolio';
+        document.getElementById('donutCenterSub').textContent = 'Allocation';
+      });
+    });
+  }
+
+  // transaction history
+  async function loadHistory() {
+    if (!currentPortfolioId) return;
+
+    const res = await fetch(`/trading/history/${currentPortfolioId}`, { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const container = document.getElementById('historyContainer');
+
+    if (!data.trades.length) {
+      container.innerHTML = '<div class="empty-state">No transactions yet. Make your first trade above.</div>';
+      return;
+    }
+
+    container.innerHTML = data.trades.map(t => `
+      <div class="trade-row">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="${t.side === 'BUY' ? 'trade-side-buy' : 'trade-side-sell'}">${t.side}</span>
+          <div>
+            <div style="font-weight:600;">${t.symbol}</div>
+            <div style="color:#aaa;font-size:12px;">${t.quantity} shares @ £${t.price.toFixed(2)}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:600;">£${t.total.toLocaleString('en-GB', { minimumFractionDigits: 2 })}</div>
+          <div style="color:#aaa;font-size:12px;">${t.ts ? new Date(t.ts).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // init — run when page loads
+  window.addEventListener('load', () => {
+    loadPortfolios();
+    loadBalance();
+    // set default active range button
+    document.getElementById('defaultRange').classList.add('active');
+  });
+
+  // portfolio value chart
+  let pvRangeDays = 30;
+  let pvCache = null;
+
+  function setPVRange(days) {
+    pvRangeDays = days;
+    document.querySelectorAll('.pv-range-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.days) === days);
+    });
+    if (pvCache) renderPVChart(pvCache, days);
+  }
+
+  async function loadPortfolioValueChart(portfolioId, days) {
+    if (!portfolioId) return;
+    // Always show the card
+    document.getElementById('portfolioValueCard').style.display = 'block';
+    document.getElementById('pvChartMeta').textContent = 'Loading…';
+    try {
+      const res = await fetch(`/analytics/portfolio/${portfolioId}/timeseries`, {
+        headers: { Authorization: tok() }
+      });
+      if (!res.ok) {
+        showPVNoData();
+        return;
+      }
+      const data = await res.json();
+      if (!data.series || !data.series.length) {
+        showPVNoData();
+        return;
+      }
+      pvCache = data;
+      if (data.synthetic) {
+        document.getElementById('pvChartMeta').innerHTML +=
+          ' <span style="font-size:11px;background:#f5efe6;color:#8b5e52;padding:2px 8px;border-radius:20px;font-weight:600;">Simulated · upload CSV for real data</span>';
+      }
+      renderPVChart(data, days);
+    } catch(e) {
+      showPVNoData();
+      console.error(e);
+    }
+  }
+
+  function showPVNoData() {
+    document.getElementById('pvChartMeta').textContent = 'No price data available';
+    document.getElementById('pvKpiStrip').innerHTML = `
+      <div class="pv-stat" style="grid-column:1/-1;text-align:center;padding:20px;">
+        <div style="font-size:28px;margin-bottom:8px;">📈</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#a08c82;line-height:1.6;">
+          No price data yet. Make sure your holdings use recognised ticker symbols and data will load automatically.
+        </div>
+      </div>`;
+    document.getElementById('pvChart').innerHTML = '';
+  }
+
+  function renderPVChart(data, days) {
+    let series = data.series || [];
+    let returns = data.daily_returns || [];
+
+    if (days > 0 && series.length) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      series  = series.filter(p => new Date(p.date) >= cutoff);
+      returns = returns.filter(r => new Date(r.date) >= cutoff);
+    }
+
+    if (!series.length) {
+      document.getElementById('pvChartMeta').textContent = 'No data for this range';
+      return;
+    }
+
+    const first = series[0].value;
+    const last  = series[series.length-1].value;
+    const change = last - first;
+    const changePct = ((change / first) * 100).toFixed(2);
+    const isUp = change >= 0;
+    const color = isUp ? '#4a9470' : '#b85050';
+
+    document.getElementById('pvChartMeta').innerHTML =
+      `<span style="font-weight:600;color:${color};">${isUp?'▲':'▼'} ${Math.abs(changePct)}%</span>
+       <span style="color:#a08c82;margin-left:8px;">${series.length} days of data</span>`;
+
+    const maxVal = Math.max(...series.map(s=>s.value));
+    const minVal = Math.min(...series.map(s=>s.value));
+    // annualised volatility = std dev of daily returns * sqrt(252)
+    // 252 = trading days in a year, the sqrt scales daily vol up to annual
+    // not sure why its square root specifically but thats what the formula says
+    const volatility = returns.length > 1
+      ? (Math.sqrt(returns.reduce((s,r)=>s+Math.pow(r.return,2),0)/returns.length)*Math.sqrt(252)*100).toFixed(1)
+      : '—';
+
+    document.getElementById('pvKpiStrip').innerHTML = `
+      <div class="pv-stat"><div class="pv-lbl">Current</div><div class="pv-val">£${Number(last).toLocaleString('en-GB',{minimumFractionDigits:0})}</div></div>
+      <div class="pv-stat"><div class="pv-lbl">Change</div><div class="pv-val" style="color:${color};">${isUp?'+':''}${changePct}%</div></div>
+      <div class="pv-stat"><div class="pv-lbl">Peak</div><div class="pv-val">£${Number(maxVal).toLocaleString('en-GB',{minimumFractionDigits:0})}</div></div>
+      <div class="pv-stat"><div class="pv-lbl">Volatility (ann.)</div><div class="pv-val">${volatility}%</div></div>`;
+
+    // Plotly chart with warm gradient fill
+    Plotly.newPlot('pvChart', [{
+      type: 'scatter', mode: 'lines',
+      x: series.map(p => p.date),
+      y: series.map(p => Number(p.value)),
+      line: { color: isUp ? '#7a9e8e' : '#c9837a', width: 2.5, shape: 'spline' },
+      fill: 'tozeroy',
+      fillcolor: isUp ? 'rgba(122,158,142,0.1)' : 'rgba(201,131,122,0.1)',
+      hovertemplate: '<b>%{x}</b><br>£%{y:,.2f}<extra></extra>',
+    }], {
+      margin: { t: 4, l: 50, r: 16, b: 36 },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      xaxis: { showgrid: false, tickfont: { family: 'DM Sans', size: 11, color: '#a08c82' } },
+      yaxis: { showgrid: true, gridcolor: 'rgba(45,31,26,0.06)', tickfont: { family: 'DM Sans', size: 11, color: '#a08c82' }, tickprefix: '£' },
+    }, { displayModeBar: false, responsive: true });
+  }
+
+</script>
+
+{% endblock %}

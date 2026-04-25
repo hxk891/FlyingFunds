@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block title %}About | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .container { max-width:none !important; padding:0 !important; margin:0 !important; }
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+
+  .about-page { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--dark); }
+
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity 0.7s ease,transform 0.7s ease;}
+  .reveal.visible{opacity:1;transform:none;}
+
+  .about-hero {
+    background:var(--warm);padding:110px 48px 80px;
+    position:relative;overflow:hidden;text-align:center;
+    border-bottom:1px solid rgba(45,31,26,0.08);
+  }
+  .about-hero::before{
+    content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+    width:600px;height:600px;
+    background:radial-gradient(circle,rgba(201,131,122,0.18),transparent 60%);
+    pointer-events:none;
+  }
+  .about-hero::after{
+    content:'';position:absolute;bottom:-80px;right:-60px;
+    width:380px;height:380px;
+    background:radial-gradient(circle,rgba(122,158,142,0.15),transparent 60%);
+    pointer-events:none;
+  }
+  .about-hero-inner{position:relative;z-index:1;max-width:680px;margin:0 auto;}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--rose);margin-bottom:18px;}
+  .about-hero-title{
+    font-family:'Instrument Serif',serif;
+    font-size:clamp(38px,5.5vw,68px);font-weight:400;
+    line-height:1.06;letter-spacing:-1.5px;color:var(--dark);margin-bottom:22px;
+  }
+  .about-hero-title em{font-style:italic;color:var(--muted);}
+  .about-hero-desc{font-size:16px;color:var(--muted);line-height:1.75;margin:0 auto;}
+
+  /* Section scaffold */
+  .section{padding:88px 48px;max-width:1100px;margin:0 auto;}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:12px;}
+  .section-title{font-family:'Instrument Serif',serif;font-size:clamp(30px,4vw,50px);font-weight:400;line-height:1.1;letter-spacing:-1px;color:var(--dark);margin-bottom:16px;}
+  .section-title em{font-style:italic;color:var(--muted);}
+  .section-body{font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:14px;}
+
+  /* MISSION */
+  .mission-bg{background:var(--cream);}
+  .mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;}
+  .mission-cards{display:flex;flex-direction:column;gap:12px;}
+  .m-card{
+    display:flex;align-items:center;gap:14px;
+    padding:16px 20px;background:#fff;
+    border:1.5px solid rgba(45,31,26,0.08);border-radius:14px;
+    transition:transform 0.2s;
+  }
+  .m-card:hover{transform:translateX(4px);}
+  .m-card-icon{font-size:22px;flex-shrink:0;color:var(--dark);}
+  .m-card-lbl{font-size:11px;color:var(--muted);}
+  .m-card-val{font-size:14px;font-weight:600;}
+
+  /* VALUES */
+  .values-bg{background:var(--blush);}
+  .values-inner{max-width:1100px;margin:0 auto;padding:88px 48px;}
+  .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px;}
+  .value-card{
+    padding:28px 24px;background:#fff;
+    border:1.5px solid rgba(45,31,26,0.08);border-radius:18px;
+    transition:all 0.22s;
+  }
+  .value-card:hover{border-color:var(--rose);transform:translateY(-4px);box-shadow:0 12px 32px rgba(201,131,122,0.12);}
+  .v-icon{font-size:26px;margin-bottom:12px;display:block;}
+  .v-title{font-family:'Instrument Serif',serif;font-size:19px;color:var(--dark);margin-bottom:8px;}
+  .v-desc{font-size:13px;color:var(--muted);line-height:1.65;}
+
+  /* TECH */
+  .tech-strip{
+    background:var(--dark);padding:40px 48px;
+    display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  }
+  .tech-lbl{font-size:11px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;margin-right:8px;}
+  .tech-badge{
+    font-size:12px;font-weight:500;padding:7px 16px;
+    background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.65);
+    border:1px solid rgba(255,255,255,0.1);border-radius:40px;transition:all 0.15s;
+  }
+  .tech-badge:hover{background:rgba(255,255,255,0.12);color:#fff;}
+
+  /* STORY */
+  .story-bg{background:var(--warm);}
+  .story-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;}
+  .story-block h3{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;color:var(--dark);margin-bottom:14px;letter-spacing:-0.4px;}
+  .story-block p{font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:12px;}
+
+  /* CONTACT */
+  .contact-section{
+    background:var(--dark);color:#fff;
+    padding:100px 48px;position:relative;overflow:hidden;
+  }
+  .contact-section::before{
+    content:'';position:absolute;bottom:-160px;right:-80px;
+    width:500px;height:500px;
+    background:radial-gradient(circle,rgba(122,158,142,0.1),transparent 60%);
+    pointer-events:none;
+  }
+  .contact-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1;}
+  .contact-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--sage);margin-bottom:14px;}
+  .contact-title{font-family:'Instrument Serif',serif;font-size:clamp(34px,5vw,58px);font-weight:400;line-height:1.08;letter-spacing:-1px;color:#fff;margin-bottom:0;}
+  .contact-title em{font-style:italic;color:rgba(255,255,255,0.35);}
+
+  .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-top:56px;}
+
+  /* Info side */
+  .ci h3{font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;color:#fff;margin-bottom:10px;letter-spacing:-0.3px;}
+  .ci p{font-size:14px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:24px;}
+  .channels{display:flex;flex-direction:column;gap:10px;}
+  .channel{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;transition:all 0.18s;text-decoration:none;
+  }
+  .channel:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.16);}
+  .ch-icon{font-size:18px;flex-shrink:0;}
+  .ch-lbl{font-size:11px;color:rgba(255,255,255,0.4);}
+  .ch-val{font-size:13px;font-weight:500;color:#fff;}
+
+  .socials{display:flex;gap:8px;margin-top:24px;}
+  .soc-btn{
+    width:40px;height:40px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+    color:rgba(255,255,255,0.55);font-size:14px;text-decoration:none;
+    transition:all 0.18s;
+  }
+  .soc-btn:hover{background:rgba(255,255,255,0.14);color:#fff;transform:translateY(-2px);}
+
+  /* Form */
+  .support-form{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:30px;}
+  .sf-title{font-family:'Instrument Serif',serif;font-size:20px;font-weight:400;color:#fff;margin-bottom:6px;letter-spacing:-0.3px;}
+  .sf-desc{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:22px;}
+  .ff{margin-bottom:12px;}
+  .ff label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
+  .ff input,.ff select,.ff textarea{
+    width:100%;font-family:'DM Sans',sans-serif;font-size:13px;
+    padding:10px 13px;background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);border-radius:10px;
+    color:#fff;outline:none;box-sizing:border-box;transition:border-color 0.15s;resize:vertical;
+  }
+  .ff input:focus,.ff select:focus,.ff textarea:focus{border-color:var(--rose);}
+  .ff input::placeholder,.ff textarea::placeholder{color:rgba(255,255,255,0.2);}
+  .ff select option{background:#2d1f1a;}
+  .ff-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn-send{
+    font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+    padding:12px 28px;background:#fff;color:var(--dark);
+    border:none;border-radius:40px;cursor:pointer;width:100%;
+    margin-top:4px;transition:all 0.2s;
+  }
+  .btn-send:hover{background:var(--warm);transform:translateY(-1px);}
+  .form-ok{display:none;text-align:center;padding:24px;color:var(--sage-lt);font-size:15px;}
+  .form-ok .big{font-size:36px;margin-bottom:10px;}
+
+  /* FOOTER */
+  .about-footer{
+    background:#1a0f0c;border-top:1px solid rgba(255,255,255,0.06);
+    padding:36px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+  }
+  .footer-brand{font-family:'Instrument Serif',serif;font-size:18px;color:#fff;letter-spacing:-0.3px;}
+  .footer-links{display:flex;gap:22px;}
+  .footer-links a{font-size:13px;color:rgba(255,255,255,0.4);text-decoration:none;transition:color 0.15s;}
+  .footer-links a:hover{color:#fff;}
+  .footer-copy{font-size:11px;color:rgba(255,255,255,0.22);}
+
+  @media(max-width:900px){
+    .mission-grid,.story-grid,.contact-grid{grid-template-columns:1fr;}
+    .values-grid{grid-template-columns:1fr;}
+    .ff-row{grid-template-columns:1fr;}
+    .section,.values-inner{padding:64px 24px;}
+    .about-hero{padding:90px 24px 60px;}
+    .contact-section{padding:72px 24px;}
+  }
+
+  /* DARK MODE — keep intentionally-dark sections dark */
+  /* var(--dark) flips to #ede4dc in dark mode which makes white text invisible */
+  [data-theme="dark"] .contact-section,
+  [data-theme="dark"] .tech-strip { background: #180f0c !important; }
+  [data-theme="dark"] .btn-send { background: #ede4dc !important; color: #1a1008 !important; }
+
+  /* Mission cards & value cards */
+  [data-theme="dark"] .m-card {
+    background: #1e1614 !important;
+    border-color: rgba(255,200,180,0.1) !important;
+  }
+  [data-theme="dark"] .m-card-val { color: #ede4dc !important; }
+
+  [data-theme="dark"] .value-card {
+    background: #1e1614 !important;
+    border-color: rgba(255,200,180,0.1) !important;
+  }
+  [data-theme="dark"] .value-card:hover { border-color: rgba(201,131,122,0.4) !important; }
+  [data-theme="dark"] .v-title { color: #ede4dc !important; }
+</style>
+
+<div class="about-page">
+
+  <!-- HERO -->
+  <div class="about-hero">
+    <div class="about-hero-inner">
+      <div class="eyebrow">About FlyingFunds</div>
+      <h1 class="about-hero-title">Built for investors who want to<br><em>understand, not just track</em></h1>
+      <p class="about-hero-desc">FlyingFunds is a portfolio management and financial literacy platform designed to make professional-grade analytics accessible to everyone, from first-time investors to students.</p>
+    </div>
+  </div>
+
+  <!-- MISSION -->
+  <div class="mission-bg">
+    <div class="section">
+      <div class="mission-grid">
+        <div class="reveal">
+          <div class="section-label" style="color:var(--rose);">Our mission</div>
+          <h2 class="section-title">Investing should be<br><em>understood, not feared</em></h2>
+          <p class="section-body">Most investment tools show you numbers. FlyingFunds explains what they mean. We combine real portfolio tracking, live market data, and financial education so you can make decisions with confidence - not guesswork.</p>
+          <p class="section-body">Whether you're a beginner learning what Sharpe ratio is, or an intermediate investor stress-testing your portfolio, FlyingFunds meets you where you are.</p>
+        </div>
+        <div class="mission-cards reveal" style="transition-delay:.12s;">
+          <div class="m-card"><span class="m-card-icon">📊</span><div><div class="m-card-lbl">Risk metrics computed</div><div class="m-card-val">VaR · Sharpe · Drawdown · Volatility</div></div></div>
+          <div class="m-card"><span class="m-card-icon">⚡</span><div><div class="m-card-lbl">Market data</div><div class="m-card-val">Real-time via Finnhub API</div></div></div>
+          <div class="m-card"><span class="m-card-icon">🎓</span><div><div class="m-card-lbl">Concepts covered</div><div class="m-card-val">CAPM · MPT · EMH · Behavioural Finance</div></div></div>
+          <div class="m-card"><span class="m-card-icon">💸</span><div><div class="m-card-lbl">Paper trading balance</div><div class="m-card-val">£10,000 virtual cash to practise</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VALUES -->
+  <div class="values-bg">
+    <div class="values-inner">
+      <div class="reveal" style="text-align:center;">
+        <div class="section-label" style="color:var(--sage);">What we stand for</div>
+        <h2 class="section-title">Our values</h2>
+      </div>
+      <div class="values-grid">
+        <div class="value-card reveal" style="transition-delay:.05s"><span class="v-icon">🔍</span><div class="v-title">Transparency</div><div class="v-desc">Every metric is explained. No black boxes. You see how your numbers are calculated and what they mean for your portfolio.</div></div>
+        <div class="value-card reveal" style="transition-delay:.1s"><span class="v-icon">🎓</span><div class="v-title">Education first</div><div class="v-desc">Tools without context are just noise. We connect every feature to the underlying finance theory so learning happens naturally.</div></div>
+        <div class="value-card reveal" style="transition-delay:.15s"><span class="v-icon">🛡</span><div class="v-title">Risk awareness</div><div class="v-desc">Understanding risk isn't optional, it's the foundation of good investing. We make risk visible, quantified, and actionable.</div></div>
+        <div class="value-card reveal" style="transition-delay:.2s"><span class="v-icon">⚡</span><div class="v-title">Real data</div><div class="v-desc">Live quotes, real market news, actual analytics. No fake simulations — your practice reflects the real world.</div></div>
+        <div class="value-card reveal" style="transition-delay:.25s"><span class="v-icon">🌱</span><div class="v-title">Built for growth</div><div class="v-desc">From beginner to advanced, the platform grows with you. Start with basics, progress to efficient frontiers and factor models.</div></div>
+        <div class="value-card reveal" style="transition-delay:.3s"><span class="v-icon">🤝</span><div class="v-title">Accessibility</div><div class="v-desc">Professional-grade analytics. FlyingFunds brings institutional tools to everyone.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH STRIP -->
+  <div class="tech-strip">
+    <span class="tech-lbl">Built with</span>
+    <span class="tech-badge">FastAPI</span><span class="tech-badge">Python 3.9</span>
+    <span class="tech-badge">SQLite</span><span class="tech-badge">SQLAlchemy</span>
+    <span class="tech-badge">Plotly.js</span><span class="tech-badge">Finnhub API</span>
+    <span class="tech-badge">NewsAPI</span><span class="tech-badge">Jinja2</span>
+    <span class="tech-badge">JWT Auth</span><span class="tech-badge">bcrypt</span>
+  </div>
+
+  <!-- STORY -->
+  <div class="story-bg">
+    <div class="section">
+      <div class="reveal" style="margin-bottom:44px;">
+        <div class="section-label" style="color:var(--sky);">Our story</div>
+        <h2 class="section-title">Where it came from</h2>
+      </div>
+      <div class="story-grid">
+        <div class="story-block reveal" style="transition-delay:.05s;">
+          <h3>The problem we saw</h3>
+          <p>Most investment apps fall into two camps: oversimplified (great for beginners, useless for learning) or overwhelming (powerful but impenetrable without a finance degree).</p>
+          <p>Meanwhile, students and self-taught investors are left trying to connect theory to practice with spreadsheets and disconnected tools. There is no single platform that tracked your portfolio AND taught you what the numbers meant.</p>
+        </div>
+        <div class="story-block reveal" style="transition-delay:.1s;">
+          <h3>What we built</h3>
+          <p>FlyingFunds started as a final-year University project at the intersection of software engineering and investment management. The goal: a platform that doesn't just show you your Sharpe ratio, but explains why it matters, how to improve it, and what the theory says.</p>
+          <p>The result is a platform that tracks real portfolios with live data, teaches finance through interactive tools, and grows with you from your first stock to a diversified multi-asset portfolio.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="contact-section">
+    <div class="contact-inner">
+      <div class="reveal">
+        <div class="contact-eyebrow">Get in touch</div>
+        <h2 class="contact-title">We'd love to<br><em>hear from you</em></h2>
+      </div>
+      <div class="contact-grid">
+        <!-- Info -->
+        <div class="ci reveal" style="transition-delay:.08s;">
+          <h3>Contact & support</h3>
+          <p>Have a question, found a bug, or want to suggest a feature? Reach out!.</p>
+          <div class="channels">
+            <a class="channel" href="mailto:support@flyingfunds.app">
+              <span class="ch-icon">✉️</span>
+              <div><div class="ch-lbl">Email support</div><div class="ch-val">support@flyingfunds.app</div></div>
+            </a>
+            <a class="channel" href="mailto:hello@flyingfunds.app">
+              <span class="ch-icon">💬</span>
+              <div><div class="ch-lbl">General enquiries</div><div class="ch-val">hello@flyingfunds.app</div></div>
+            </a>
+            <div class="channel" style="cursor:default;">
+              <span class="ch-icon">⏱</span>
+              <div><div class="ch-lbl">Response time</div><div class="ch-val">Usually within 24 hours</div></div>
+            </div>
+          </div>
+          <div class="socials">
+            <a href="#" class="soc-btn" title="Twitter / X">𝕏</a>
+            <a href="#" class="soc-btn" title="LinkedIn">in</a>
+            <a href="#" class="soc-btn" title="GitHub">⌥</a>
+            <a href="#" class="soc-btn" title="Instagram">◎</a>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="support-form reveal" style="transition-delay:.14s;">
+          <div class="sf-title">Send us a message</div>
+          <div class="sf-desc">Bug report, feature request, or just a question? Use this form.</div>
+          <div id="sfWrap">
+            <div class="ff-row">
+              <div class="ff"><label>First name</label><input id="sfFirst" placeholder="First Name" /></div>
+              <div class="ff"><label>Last name</label><input id="sfLast" placeholder="Last Name" /></div>
+            </div>
+            <div class="ff"><label>Email</label><input id="sfEmail" type="email" placeholder="email@example.com" /></div>
+            <div class="ff">
+              <label>Type</label>
+              <select id="sfType">
+                <option value="">Select a category…</option>
+                <option value="bug">🐛 Bug report</option>
+                <option value="feature">✨ Feature request</option>
+                <option value="account">🔐 Account issue</option>
+                <option value="data">📊 Data / analytics question</option>
+                <option value="general">💬 General question</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="ff"><label>Message</label><textarea id="sfMsg" rows="4" placeholder="Tell us what's on your mind…"></textarea></div>
+            <button class="btn-send" id="sfBtn" onclick="sendForm()">Send message →</button>
+          </div>
+          <div class="form-ok" id="sfOk">
+            <div class="big">✅</div>
+            <div>Message received! We'll get back to you!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="about-footer">
+    <div class="footer-brand">✦ FlyingFunds</div>
+    <div class="footer-links">
+      <a href="/">Home</a><a href="/about">About</a>
+      <a href="/market">Market</a><a href="/login">Sign in</a><a href="/signup">Sign up</a>
+    </div>
+    <div class="footer-copy">© 2025 FlyingFunds · For educational use</div>
+  </div>
+
+</div>
+
+<script>
+  // scroll reveal — unobserve after firing so it doesn't re-trigger on scroll back up
+  // const REVEAL_THRESHOLD = 0.15; // tried 0.15 but felt too late, back to 0.1
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
+  },{threshold:0.1});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+  function sendForm(){
+    const first=document.getElementById('sfFirst').value.trim();
+    const email=document.getElementById('sfEmail').value.trim();
+    const type=document.getElementById('sfType').value;
+    const msg=document.getElementById('sfMsg').value.trim();
+    const btn=document.getElementById('sfBtn');
+    if(!first||!email||!type||!msg){
+      btn.style.background='#c9837a';btn.style.color='#fff';
+      btn.textContent='Please fill in all fields';
+      setTimeout(()=>{btn.style.background='';btn.style.color='';btn.textContent='Send message →';},2500);
+      return;
+    }
+    btn.disabled=true;btn.textContent='Sending…';
+    setTimeout(()=>{
+      document.getElementById('sfWrap').style.display='none';
+      document.getElementById('sfOk').style.display='block';
+    },1100);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,2190 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | FlyingFunds{% endblock %}
+{% block content %}
+<script src="/static/js/insights.js?v=4"></script>
+<style>
+  .card,.icard,.s-card{background:var(--surface)!important;border-color:rgba(45,31,26,0.1)!important;box-shadow:0 2px 12px rgba(45,31,26,0.06);}
+  h1,h2,h3,h4{color:var(--dark);}
+  .muted{color:var(--muted)!important;}
+  th{color:var(--muted)!important;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;}
+  td{border-color:rgba(45,31,26,0.06)!important;}
+  tr:hover td{background:var(--warm)!important;}
+  .positive,.chgPos{color:#4a9470!important;}
+  .negative,.chgNeg{color:#b85050!important;}
+</style>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .dashHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .dashGreeting {
+    font-family: 'DM Serif Display', serif;
+    font-size: 34px;
+    font-weight: 400;
+    color: #d1bcb2;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .dashSub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin: 4px 0 0 0;
+  }
+
+  .dashActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btnPrimary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    background: #2d1f1a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+  }
+  .btnPrimary:hover { opacity: 0.82; color: #fff; }
+
+  .btnOutline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 16px;
+    background: var(--surface);
+    color: #444;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.2s;
+  }
+  .btnOutline:hover { border-color: #aaa; color: #2d1f1a; }
+
+  .kpiStrip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .kpiCard {
+    background: var(--surface);
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+
+  .statLbl {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 6px;
+  }
+
+  .bigNum {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: #2d1f1a;
+    letter-spacing: -0.5px;
+  }
+
+  .cardSub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .positive { color: #16a34a; }
+  .negative { color: #dc2626; }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .s-card {
+    background: var(--surface);
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+
+  .sectionTitle {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #2d1f1a;
+    margin: 0 0 4px 0;
+  }
+
+  .sCardDesc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 14px 0;
+  }
+
+  .portfolioRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .portfolioRow:last-child { border-bottom: none; }
+
+  .portfolioName {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2d1f1a;
+  }
+  .portSub {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .insightPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+  .pillBullish { background: #d1fae5; color: #065f46; }
+  .pillBearish { background: #fee2e2; color: #991b1b; }
+  .pillNeutral { background: #f3f4f6; color: #374151; }
+
+  .mktTable { width: 100%; border-collapse: collapse; }
+  .mktTable th {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #888;
+    text-align: left;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .mktTable td {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid #f7f7f7;
+    color: #2d1f1a;
+  }
+  .mktTable tr:last-child td { border-bottom: none; }
+
+  .suggestCard {
+    background: linear-gradient(135deg, #2d1f1a 0%, #6b3d35 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .suggestCard h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    margin: 0 0 6px 0;
+  }
+  .suggestCard p {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin: 0 0 14px 0;
+  }
+
+  .suggestItem {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .suggestItem:last-child { margin-bottom: 0; }
+
+  .notifItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .notifItem:last-child { border-bottom: none; }
+  .notifIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .notifText { font-size: 13px; color: #333; line-height: 1.4; }
+  .notifTime { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  /* Profile banner — compact strip */
+  .profileBanner {
+    background: #2d1f1a;
+    border-radius: 14px;
+    padding: 11px 18px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .profileAvatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+
+  /* badgessit at the far right */
+  .profileInfo {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* badges pushed right */
+  .bannerNameRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .profileInfo h2 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .profileInfo p {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin: 3px 0 0;
+  }
+
+  .profileBadges {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .badge {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.75);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 900px) {
+    .kpiStrip { grid-template-columns: repeat(2,1fr); }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .profileBadges { display: none; }
+  }
+
+  @media (max-width: 560px) {
+    .kpiStrip { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<!-- Profile banner -->
+<div class="profileBanner" id="profileBanner">
+  <div class="profileAvatar" id="bannerAvatar">👤</div>
+  <div class="profileInfo">
+    <div class="bannerNameRow">
+      <h2 id="bannerName">Welcome back</h2>
+      <!-- Interests / level badges -->
+      <div class="profileBadges" id="bannerBadges"></div>
+    </div>
+    <p id="bannerSub">Loading…</p>
+    <p id="bannerStatLine" style="display:none;font-size:11px;color:rgba(255,255,255,0.45);margin:2px 0 0;font-family:'DM Sans',sans-serif;"></p>
+  </div>
+</div>
+
+<!-- Single metrics strip: P&L · Sharpe · Drawdown · VaR · Ann.Return -->
+<div class="kpiStrip" style="margin-bottom:16px;" id="riskMetricsStrip">
+  <div class="kpiCard" id="riskCardPnl">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div class="statLbl" style="margin:0;">Total P&amp;L</div>
+      <span style="font-size:15px;">💰</span>
+    </div>
+    <div class="bigNum" id="kpiPnl" style="color:#ccc;">—</div>
+    <div class="cardSub" id="kpiPnlSub">unrealised</div>
+  </div>
+  <div class="kpiCard" id="riskCardSharpe">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div class="statLbl" style="margin:0;">Sharpe Ratio</div>
+      <span style="font-size:15px;">📊</span>
+    </div>
+    <div class="bigNum" id="kpiSharpe" style="color:#ccc;">—</div>
+    <div class="cardSub">risk-adjusted return</div>
+  </div>
+  <div class="kpiCard" id="riskCardDrawdown">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div class="statLbl" style="margin:0;">Max Drawdown</div>
+      <span style="font-size:15px;">📉</span>
+    </div>
+    <div class="bigNum" id="kpiDrawdown" style="color:#ccc;">—</div>
+    <div class="cardSub">worst peak-to-trough</div>
+  </div>
+  <div class="kpiCard" id="riskCardVar">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div class="statLbl" style="margin:0;">VaR 95%</div>
+      <span style="font-size:15px;">⚠️</span>
+    </div>
+    <div class="bigNum" id="kpiVar" style="color:#ccc;">—</div>
+    <div class="cardSub">daily loss at confidence</div>
+  </div>
+  <div class="kpiCard" id="riskCardReturn">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div class="statLbl" style="margin:0;">Ann. Return</div>
+      <span style="font-size:15px;">📈</span>
+    </div>
+    <div class="bigNum" id="kpiAnnReturn" style="color:#ccc;">—</div>
+    <div class="cardSub">annualised performance</div>
+  </div>
+</div>
+
+<!-- allocation treemap + portfolio intelligence -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:start;" id="innovRow">
+
+<div class="s-card" id="allocCard" style="min-width:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <div>
+      <h3 class="sectionTitle" style="margin:0 0 2px;">Allocation</h3>
+      <p class="sCardDesc" id="allocDesc" style="margin:0;">By weight</p>
+    </div>
+    <div style="display:flex;gap:3px;">
+      <button class="pvRange active" id="allocTabHoldings" onclick="switchAllocTab('holdings')">Holdings</button>
+      <button class="pvRange"        id="allocTabClass"    onclick="switchAllocTab('class')">Asset class</button>
+    </div>
+  </div>
+  <div id="allocationChart" style="height:220px;width:100%;"></div>
+  <div id="allocationLegend" style="display:none;"></div>
+</div>
+
+<!-- Invested vs Market Value — semi-circle comparison chart -->
+<div class="s-card" id="ivCompCard" style="min-width:0;display:flex;flex-direction:column;">
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+    <h3 class="sectionTitle" style="margin:0;">Invested vs Value</h3>
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#7a9e8e;background:rgba(122,158,142,0.12);border:1px solid rgba(122,158,142,0.25);padding:3px 9px;border-radius:20px;font-family:'DM Sans',sans-serif;">Live</span>
+  </div>
+  <p class="sCardDesc" style="margin-bottom:4px;">Capital deployed vs current market worth</p>
+
+  <!-- Semi-circle: render at 2× height, clip at midpoint to hide the empty bottom half -->
+  <div style="position:relative;width:100%;height:155px;overflow:hidden;flex-shrink:0;">
+    <div id="ivChart" style="width:100%;height:310px;"></div>
+    <!-- P&L overlay sits on the flat diameter edge -->
+    <div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;white-space:nowrap;">
+      <div id="ivPnlVal" style="font-family:'Instrument Serif',serif;font-size:22px;letter-spacing:-0.5px;color:#2d1f1a;">—</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#a08c82;">P&amp;L</div>
+    </div>
+  </div>
+
+  <!-- Legend row -->
+  <div style="display:flex;gap:0;border-top:1px solid rgba(45,31,26,0.08);margin-top:auto;">
+    <div style="flex:1;text-align:center;padding:12px 8px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:4px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:rgba(201,131,122,0.75);display:inline-block;"></span>
+        <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#a08c82;">Invested</span>
+      </div>
+      <div id="ivInvestedVal" style="font-family:'Instrument Serif',serif;font-size:17px;color:#c9837a;letter-spacing:-0.3px;">—</div>
+    </div>
+    <div style="width:1px;background:rgba(45,31,26,0.08);margin:8px 0;"></div>
+    <div style="flex:1;text-align:center;padding:12px 8px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:4px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:rgba(122,158,142,0.75);display:inline-block;"></span>
+        <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#a08c82;">Market Value</span>
+      </div>
+      <div id="ivMktValVal" style="font-family:'Instrument Serif',serif;font-size:17px;color:#7a9e8e;letter-spacing:-0.3px;">—</div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /innovRow -->
+
+<!-- Shadow Portfolio — immediately below innovation row -->
+<div class="s-card" style="margin-bottom:16px;" id="shadowCard">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+    <h3 class="sectionTitle" style="margin:0;">Shadow Portfolio</h3>
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#7bafc4;background:rgba(123,175,196,0.1);border:1px solid rgba(123,175,196,0.25);padding:3px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;">What if you'd held?</span>
+    <span id="shadowLoader" style="display:none;font-size:12px;color:#a08c82;font-family:'DM Sans',sans-serif;margin-left:auto;">Loading…</span>
+  </div>
+  <p id="shadowDesc" class="sCardDesc" style="margin-bottom:14px;">Tracks what your sold positions would be worth today, quantifying the real cost of every sell decision.</p>
+  <div id="shadowContent">
+    <div style="text-align:center;padding:28px 0;color:#888;font-family:'DM Sans',sans-serif;font-size:13px;">Loading shadow portfolio…</div>
+  </div>
+</div>
+
+<!-- Portfolio value chart -->
+<div style="margin-bottom:16px;" id="chartRow">
+<div class="s-card" id="dashPVCard" style="min-width:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h3 class="sectionTitle" style="margin:0 0 2px;">Portfolio value</h3>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a08c82;" id="dashPVMeta">—</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <select id="dashPVPortfolioSel" onchange="dashSwitchPortfolio()"
+        style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 10px;border:1.5px solid rgba(45,31,26,0.15);border-radius:20px;background:var(--surface);color:#2d1f1a;outline:none;cursor:pointer;max-width:160px;">
+      </select>
+      <div style="display:flex;gap:4px;">
+        <button class="pvRange active" data-days="30"  onclick="dashSetRange(30)">1M</button>
+        <button class="pvRange"        data-days="90"  onclick="dashSetRange(90)">3M</button>
+        <button class="pvRange"        data-days="180" onclick="dashSetRange(180)">6M</button>
+        <button class="pvRange"        data-days="365" onclick="dashSetRange(365)">1Y</button>
+        <button class="pvRange"        data-days="0"   onclick="dashSetRange(0)">ALL</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button class="modeBtn active" data-mode="value"    onclick="dashSetMode('value')">Value</button>
+    <button class="modeBtn"        data-mode="returns"  onclick="dashSetMode('returns')">Returns</button>
+    <button class="modeBtn"        data-mode="drawdown" onclick="dashSetMode('drawdown')">Drawdown</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;" id="dashPVKpis"></div>
+  <div id="dashPVChart" style="height:220px;"></div>
+</div>
+</div>
+
+<style>
+  .pvRange, .modeBtn {
+    font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;
+    padding:4px 11px;border-radius:20px;border:1.5px solid rgba(45,31,26,0.15);
+    background:var(--surface);color:#a08c82;cursor:pointer;transition:all 0.15s;
+  }
+  .pvRange:hover, .modeBtn:hover { border-color:var(--rose);color:#2d1f1a; }
+  .pvRange.active, .modeBtn.active { background:#2d1f1a;color:#fff;border-color:#2d1f1a; }
+  .pvStat { background:#f5efe6;border-radius:10px;padding:10px 12px; }
+  .pvLbl { font-size:10px;font-weight:700;color:#a08c82;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px; }
+  .pvVal { font-family:'Instrument Serif',serif;font-size:18px;color:#2d1f1a;letter-spacing:-0.3px; }
+
+  .riskBadge {
+    display:inline-block;font-size:10px;font-weight:700;
+    font-family:'DM Sans',sans-serif;padding:2px 9px;
+    border-radius:999px;text-transform:uppercase;letter-spacing:0.04em;
+    margin-top:6px;
+  }
+
+  @media (max-width:820px) {
+    #chartRow { grid-template-columns:1fr!important; }
+  }
+
+  /* innovation row — stacks on narrow screens */
+  @media (max-width:900px) {
+    #innovRow { grid-template-columns:1fr!important; }
+  }
+
+  .intelScenarioBtn, .haloQBtn {
+    font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;
+    padding:5px 11px;border-radius:20px;cursor:pointer;transition:all 0.15s;
+    border:1.5px solid rgba(45,31,26,0.12);background:var(--surface);color:#2d1f1a;
+  }
+  .intelScenarioBtn:hover,.haloQBtn:hover {
+    border-color:var(--rose,#c9837a);background:rgba(201,131,122,0.06);
+  }
+  .intelScenarioBtn.active { background:#2d1f1a;color:#fff;border-color:#2d1f1a; }
+  #intelSection { padding:20px 22px; }
+  /* inside the half-width innovRow, use single col for sub-grids */
+  #innovRow #intelSection .grid2 { grid-template-columns:1fr!important; gap:10px; }
+  @media (max-width:820px) { #intelSection .grid2 { grid-template-columns:1fr; } }
+
+  /* treemap glassmorphic: backdrop on alloc card */
+  #allocCard {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  [data-theme="dark"] #allocCard {
+    background: rgba(30,22,20,0.72);
+  }
+</style>
+
+<!-- portfolios + live market -->
+<!-- portfolio comparison char -->
+<div class="s-card" style="margin-bottom:16px;" id="compareCard">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h3 class="sectionTitle">Portfolio comparison</h3>
+      <p class="sCardDesc">Returns indexed to 0% at period start</p>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:12px;color:#a08c82;cursor:pointer;margin-right:4px;">
+        <input type="checkbox" id="benchmarkToggle" checked onchange="renderCompareChart()"
+          style="accent-color:#c9837a;width:13px;height:13px;cursor:pointer;">
+        vs S&P 500
+      </label>
+      <div style="display:flex;gap:4px;" id="compareRangeBtns">
+        <button class="pvRange" data-days="30" onclick="setCompareRange(30)">1M</button>
+        <button class="pvRange active" data-days="90" onclick="setCompareRange(90)">3M</button>
+        <button class="pvRange" data-days="180" onclick="setCompareRange(180)">6M</button>
+        <button class="pvRange" data-days="365" onclick="setCompareRange(365)">1Y</button>
+        <button class="pvRange" data-days="0" onclick="setCompareRange(0)">ALL</button>
+      </div>
+    </div>
+  </div>
+  <div id="compareChart" style="height:240px;"></div>
+</div>
+
+<div class="grid2" style="margin-bottom:16px;">
+
+  <div class="s-card">
+    <h3 class="sectionTitle">Your portfolios</h3>
+    <p class="sCardDesc">Click to open a portfolio</p>
+    <div id="portfolioRows"><p class="sCardDesc">Loading…</p></div>
+    <div style="margin-top:12px;">
+      <a href="/portfolios-ui" class="btnOutline">View all</a>
+    </div>
+
+    <!-- Goal Tracker (inline) -->
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(45,31,26,0.08);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-family:'DM Serif Display',serif;font-size:15px;letter-spacing:-0.2px;">🎯 Goals</span>
+        <a href="/diary" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#7a9e8e;text-decoration:none;font-weight:600;">Manage →</a>
+      </div>
+      <div id="dashGoalsList">
+        <div style="color:#aaa;font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 0;">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="s-card">
+    <h3 class="sectionTitle">Live market</h3>
+    <p class="sCardDesc">Your holdings' latest prices</p>
+    <table class="mktTable">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Price</th>
+          <th>P&L</th>
+          <th>Day %</th>
+        </tr>
+      </thead>
+      <tbody id="mktBody">
+        <tr><td colspan="4" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#888;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- PORTFOLIO INTELLIGENC-->
+<div class="s-card" style="margin-bottom:16px;" id="intelSection">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+    <h3 class="sectionTitle" style="margin:0;">Portfolio Intelligence</h3>
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--rose,#c9837a);background:rgba(201,131,122,0.1);border:1px solid rgba(201,131,122,0.2);padding:3px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;">Powered by Halo</span>
+    <span id="intelLevelBadge" style="display:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 9px;border-radius:20px;font-family:'DM Sans',sans-serif;"></span>
+    <span id="intelPortfolioLabel" style="margin-left:auto;font-size:12px;color:#888;font-family:'DM Sans',sans-serif;"></span>
+    <span id="intelLoader" style="display:none;font-size:12px;color:#a08c82;font-family:'DM Sans',sans-serif;">Updating…</span>
+  </div>
+
+  <div class="grid2" style="margin-bottom:14px;">
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="statLbl" style="margin-bottom:10px;">Health score</div>
+      <div id="healthScoreContainer" style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Loading…</div>
+    </div>
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="statLbl" style="margin-bottom:10px;">Portfolio summary</div>
+      <div id="portfolioSummaryText" style="font-size:13px;color:#555;font-family:'DM Sans',sans-serif;line-height:1.7;">Loading…</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:0;">
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="statLbl" style="margin-bottom:10px;">Behavioural insights</div>
+      <div id="behaviouralInsightsContainer" style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Loading…</div>
+    </div>
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="statLbl" style="margin-bottom:10px;">What-if engine</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="scenarioBtns">
+        <button class="intelScenarioBtn" onclick="runScenario('market_drop10',this)">📉 −10%</button>
+        <button class="intelScenarioBtn" onclick="runScenario('market_drop20',this)">📉 −20%</button>
+        <button class="intelScenarioBtn" onclick="runScenario('market_drop30',this)">📉 −30%</button>
+        <button class="intelScenarioBtn" onclick="runScenario('rebalance_equal',this)">⚖️ Rebalance</button>
+        <button class="intelScenarioBtn" onclick="runScenario('add_5pct_cash',this)">💰 +5%</button>
+      </div>
+      <div id="whatIfResult" style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Select a scenario above.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- smart alerts(!!!!) -->
+<div id="smartAlertsBar" style="display:none;margin-bottom:12px;"></div>
+
+<!-- links -->
+<div class="grid3" style="margin-bottom:16px;">
+  <a href="/market" class="s-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">📈</span>
+    <div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#2d1f1a;">Market</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Live quotes &amp; charts</div>
+    </div>
+  </a>
+  <a href="/news" class="s-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">📰</span>
+    <div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#2d1f1a;">News</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Market headlines</div>
+    </div>
+  </a>
+  <a href="/settings" class="s-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">⚙️</span>
+    <div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#2d1f1a;">Settings</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Profile &amp; preferences</div>
+    </div>
+  </a>
+</div>
+
+<script>
+  function tok() { return localStorage.getItem('token') || ''; }
+  function getUser() {
+    try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
+  }
+
+  const typeLabels = { student: '🎓 Student', personal: '💰 Personal', business: '📊 Business' };
+  const levelLabels = { beginner: '🌱 Beginner', intermediate: '📚 Intermediate', advanced: '⚡ Advanced' };
+
+  // track the user's experience level so we can adapt what we show
+  // default to advanced so nothing breaks before the API call comes back
+  window._userLevel = 'advanced';
+
+  function renderBanner(user) {
+    document.getElementById('bannerAvatar').textContent = user.avatar || '👤';
+    const name = user.username || user.email?.split('@')[0] || 'there';
+    document.getElementById('bannerName').textContent = `Hey, ${name} 👋`;
+
+    // time of day it is for the greetting
+    const now = new Date();
+    const h = now.getHours();
+    const timeLabel = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('bannerSub').textContent = `${timeLabel} · ${now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}`;
+
+    const badges = [];
+    if (user.user_type && typeLabels[user.user_type]) badges.push(typeLabels[user.user_type]);
+    if (user.level && levelLabels[user.level]) badges.push(levelLabels[user.level]);
+    if (user.markets?.length) badges.push(`${user.markets.length} interests`);
+
+    document.getElementById('bannerBadges').innerHTML = badges.map(b => `<span class="badge">${b}</span>`).join('');
+  }
+
+  // compare portfolios of different sizes fairly
+  let compareRangeDays = 90;
+  let comparePortfolios = [];
+  let compareBenchmark = null;
+
+  function setCompareRange(days) {
+    compareRangeDays = days;
+    document.querySelectorAll('#compareRangeBtns .pvRange').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.days) === days));
+    renderCompareChart();
+  }
+
+  function renderCompareChart() {
+    if (!comparePortfolios.length && !compareBenchmark) return;
+    const colors = ['#c9837a','#7a9e8e','#7bafc4','#8b5e52','#a08c82','#d4a96a','#6b8cba','#b07ea8'];
+
+    const sliceSeries = (series) => {
+      let s = [...(series || [])];
+      if (compareRangeDays > 0 && s.length) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - compareRangeDays);
+        s = s.filter(pt => new Date(pt.date) >= cutoff);
+      }
+      return s;
+    };
+
+    const traces = comparePortfolios.map((p, i) => {
+      const series = sliceSeries(p.series);
+      if (!series.length) return null;
+      const base = series[0].value;
+      // normalise to percentage return: (current - base) / base * 100
+      // this way all portfolois start at 0% and we can see who grew more
+      return {
+        type: 'scatter', mode: 'lines', name: p.name,
+        x: series.map(s => s.date),
+        y: series.map(s => ((s.value - base) / base * 100)),
+        line: { color: colors[i % colors.length], width: 2.5, shape: 'spline' },
+        hovertemplate: `<b>${p.name}</b><br>%{x}<br><b>%{y:.2f}%</b><extra></extra>`,
+      };
+    }).filter(Boolean);
+
+    // add the s&p 500 benchmark trace toggle is on
+    const showBenchmark = document.getElementById('benchmarkToggle')?.checked;
+    if (showBenchmark && compareBenchmark?.series?.length) {
+      const series = sliceSeries(compareBenchmark.series);
+      if (series.length) {
+        const base = series[0].value;
+        traces.push({
+          type: 'scatter', mode: 'lines', name: compareBenchmark.name,
+          x: series.map(s => s.date),
+          y: series.map(s => ((s.value - base) / base * 100)),
+          line: { color: '#b0b0b0', width: 1.5, dash: 'dot', shape: 'spline' },
+          hovertemplate: `<b>${compareBenchmark.name}</b><br>%{x}<br><b>%{y:.2f}%</b><extra></extra>`,
+        });
+      }
+    }
+
+    if (!traces.length) return;
+
+    Plotly.react('compareChart', traces, {
+      margin: { t:10, l:52, r:12, b:40 },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      xaxis: {
+        showgrid: false,
+        tickfont: { family:'DM Sans', size:11, color:'#a08c82' },
+        linecolor: 'rgba(45,31,26,0.08)',
+      },
+      yaxis: {
+        showgrid: true, gridcolor: 'rgba(45,31,26,0.07)',
+        ticksuffix: '%',
+        zeroline: true, zerolinecolor: 'rgba(45,31,26,0.18)', zerolinewidth: 1.5,
+        tickfont: { family:'DM Sans', size:11, color:'#a08c82' },
+      },
+      legend: {
+        font: { family:'DM Sans', size:12 },
+        bgcolor: 'transparent',
+        x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top',
+      },
+      hovermode: 'x unified',
+      hoverlabel: { bgcolor: '#fff', bordercolor: '#e0cfc8', font: { family:'DM Sans', size:12 } },
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  async function loadCompareChart(portfolios) {
+    const card = document.getElementById('compareCard');
+    if (!card || !portfolios.length) return;
+
+    // fetch portfolio timeseries and benchmark at the same time to save waitting
+    comparePortfolios = [];
+    compareBenchmark  = null;
+
+    const [portResults, benchResult] = await Promise.all([
+      Promise.allSettled(
+        portfolios.map(p =>
+          fetch(`/analytics/portfolio/${p.id}/timeseries`, { headers: { Authorization: tok() } })
+            .then(r => r.ok ? r.json() : null).catch(() => null)
+        )
+      ),
+      fetch('/analytics/benchmark/timeseries', { headers: { Authorization: tok() } })
+        .then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+
+    portfolios.forEach((p, i) => {
+      const data = portResults[i].status === 'fulfilled' ? portResults[i].value : null;
+      if (data?.series?.length) comparePortfolios.push({ name: p.name, series: data.series });
+    });
+
+    if (benchResult?.series?.length) {
+      compareBenchmark = { name: benchResult.name || 'S&P 500', series: benchResult.series };
+    }
+
+    // Need at least 1 portfolio OR benchmark to show anything
+    if (!comparePortfolios.length) { card.style.display = 'none'; return; }
+    renderCompareChart();
+  }
+
+  async function loadPortfolios() {
+    try {
+      const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+      if (!res.ok) return;
+      const portfolios = await res.json();
+
+      if (!portfolios.length) {
+        document.getElementById('portfolioRows').innerHTML = `
+          <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#888;">No portfolios yet.</p>
+        `;
+        return;
+      }
+
+      document.getElementById('portfolioRows').innerHTML = portfolios.slice(0,5).map(p => `
+        <a href="/dashboard/${p.id}" style="text-decoration:none;">
+          <div class="portfolioRow">
+            <div>
+              <div class="portfolioName">${p.name}</div>
+              <div class="portSub">${p.holding_count} holding${p.holding_count !== 1 ? 's' : ''} · ${p.category || 'General'}</div>
+            </div>
+            <span style="color:#888;font-size:18px;">›</span>
+          </div>
+        </a>
+      `).join('');
+
+      // Load market data pass full array so function can read holdings from all portfolios
+      loadFirstPortfolioMarket(portfolios);
+      loadKpis(portfolios);
+      // Build portfolio selector and load chart for first 
+      initDashPVChart(portfolios);
+      // multi-portfolio comparison chart
+      loadCompareChart(portfolios);
+    } catch (e) { console.error(e); }
+  }
+
+  async function loadKpis(portfolios) {
+    // fire all analytics fetches at once, not one by one
+    const results = await Promise.allSettled(
+      portfolios.slice(0, 3).map(p =>
+        fetch(`/analytics/portfolio/${p.id}`, { headers: { Authorization: tok() } })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      )
+    );
+
+    let totalInvested = 0;
+    results.forEach((res, i) => {
+      const d = res.status === 'fulfilled' ? res.value : null;
+      if (!d) return;
+      totalInvested += d.total_invested || 0;
+    });
+
+    // Feed the IV chart
+    _totalInvested = totalInvested;
+    tryRenderIVChart();
+
+    //intelligence layer for first portfolio (non-blocking)
+    fetchAndUpdateIntel(portfolios[0].id, portfolios[0].name);
+    // SP runs independently so intel layer load doesn't block it
+    loadShadowPortfolio(portfolios[0].id);
+  }
+
+  async function loadFirstPortfolioMarket(portfolios) {
+    try {
+      // portfolios already has holdings from the list endpoint no extra fetches needed
+      // merge all holdings across every portfolio into one symbol map
+      const symbolMap = {};
+      portfolios.forEach(p => {
+        (p.holdings || []).forEach(h => {
+          if (!symbolMap[h.symbol]) symbolMap[h.symbol] = { quantity: 0, totalCost: 0 };
+          symbolMap[h.symbol].quantity  += h.quantity;
+          symbolMap[h.symbol].totalCost += h.avg_buy_price * h.quantity;
+        });
+      });
+
+      const allHoldings = Object.entries(symbolMap).map(([symbol, d]) => ({
+        symbol,
+        quantity:      d.quantity,
+        avg_buy_price: d.quantity > 0 ? d.totalCost / d.quantity : 0,
+      }));
+
+      if (!allHoldings.length) {
+        document.getElementById('mktBody').innerHTML =
+          '<tr><td colspan="4" style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#888;">No holdings found.</td></tr>';
+        return;
+      }
+
+      // fetch all quotes in parallel
+      const quoteResults = await Promise.allSettled(
+        allHoldings.map(h =>
+          fetch(`/market/public/quote/${h.symbol}`)
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null)
+        )
+      );
+
+      let marketValue = 0;
+      let totalCost   = 0;
+      const rows = [];
+
+      allHoldings.forEach((h, i) => {
+        const q = quoteResults[i].status === 'fulfilled' ? quoteResults[i].value : null;
+        if (!q) return;
+        const price  = q.price || 0;
+        const val    = price * h.quantity;
+        const cost   = h.avg_buy_price * h.quantity;
+        marketValue += val;
+        totalCost   += cost;
+
+        const pct = Number(q.change_pct || 0);
+
+        // pnl = current value minus what we paid for it
+        const pnl    = val - cost;
+        const clrDay = pct >= 0 ? '#16a34a' : '#dc2626';
+        const clrPnl = pnl >= 0 ? '#16a34a' : '#dc2626';
+        rows.push(`<tr>
+          <td><strong>${h.symbol}</strong></td>
+          <td>£${Number(price).toFixed(2)}</td>
+          <td style="color:${clrPnl};font-weight:500;">${pnl >= 0 ? '+' : ''}£${Math.abs(pnl).toFixed(2)}</td>
+          <td style="color:${clrDay};font-weight:500;">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</td>
+        </tr>`);
+      });
+
+      document.getElementById('mktBody').innerHTML = rows.join('') ||
+        '<tr><td colspan="4" style="color:#888;font-size:13px;font-family:\'DM Sans\',sans-serif;">No quote data available.</td></tr>';
+
+      if (marketValue > 0) {
+        // KPI strip
+        // Feed the IV chart both values now known
+        _totalMktValue = marketValue;
+        tryRenderIVChart();
+
+        // total pnl across all holdings, and pnl as a percentage of cost
+        const pnl    = marketValue - totalCost;
+        const pnlPct = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+        const pnlEl  = document.getElementById('kpiPnl');
+        pnlEl.textContent = (pnl >= 0 ? '+' : '') + '£' + Math.abs(pnl).toFixed(2);
+        pnlEl.className   = 'bigNum ' + (pnl >= 0 ? 'positive' : 'negative');
+        document.getElementById('kpiPnlSub').textContent = (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '% vs cost';
+
+        // Banner stat line separate element, never overwritten by renderBanner
+        updateBannerStats(marketValue, pnl, pnlPct);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  function updateBannerStats(mktVal, pnl, pnlPct) {
+    const el = document.getElementById('bannerStatLine');
+    if (!el) return;
+    // fmtGBP from utils.js
+    const pnlColor = pnl >= 0 ? '#6ee7b7' : '#fca5a5';
+    const sign     = pnl >= 0 ? '+' : '−';
+    el.innerHTML   = `<span style="color:rgba(255,255,255,0.65);">${fmtGBP(Math.abs(mktVal))}</span>`
+                   + ` &nbsp;·&nbsp; <span style="color:${pnlColor};">${sign}${fmtGBP(Math.abs(pnl))}&nbsp;(${Math.abs(pnlPct).toFixed(1)}%)</span>`;
+    el.style.display = 'block';
+  }
+
+  function renderNotifications(user) {
+    const notifs = [];
+
+    // Personalised based on user profile
+    const level = user.level || '';
+    if (level === 'beginner') notifs.push({ icon: '💡', text: 'Tip: Add holdings using recognised ticker symbols and your portfolio chart will build automatically.', time: 'Now' });
+    if (level === 'advanced') notifs.push({ icon: '📊', text: 'Your risk metrics are ready. Check VaR and Sharpe in the dashboard.', time: 'Now' });
+    if (user.markets?.includes('Dividends')) notifs.push({ icon: '💰', text: 'Log dividends in the trading panel to track income separately.', time: 'Today' });
+    if (user.markets?.includes('ETFs')) notifs.push({ icon: '📈', text: 'ETF holdings can be tracked like regular stocks using their ticker symbols.', time: 'Today' });
+
+    notifs.push({ icon: '🤖', text: 'Insights are ready. FlyingFunds can analyse your portfolio now.', time: 'Always on' });
+    notifs.push({ icon: '🔔', text: 'Configure email alerts in Settings → Notifications.', time: 'Reminder' });
+
+    const notifContainer = document.getElementById('notifList');
+    if (!notifContainer) return;
+    notifContainer.innerHTML = notifs.slice(0,5).map(n => `
+      <div class="notifItem">
+        <div class="notifIcon">${n.icon}</div>
+        <div>
+          <div class="notifText">${n.text}</div>
+          <div class="notifTime">${n.time}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.addEventListener('load', async () => {
+    if (!tok()) {
+      window.location.href = '/login';
+      return;
+    }
+
+    // Refresh user from API render banner with fresh data
+    let user = getUser();
+    // Render immediately with whatever we have stored (avoids blank name flash)
+    if (user && (user.username || user.email)) renderBanner(user);
+    // Apply cached level immediately so the cards aren't in the wrong state
+    // while the API call is in flight (gets overwritten with fresh value below)
+    if (user && user.level) {
+      window._userLevel = user.level;
+      applyAdaptiveUI(user.level);
+    }
+
+    try {
+      const res = await fetch('/users/me', { headers: { Authorization: tok() } });
+      if (res.ok) {
+        const apiUser = await res.json();
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        user = { ...stored, ...apiUser };
+        localStorage.setItem('user', JSON.stringify(user));
+        // Re-render with fresh API data (ensures username/avatar are up to date)
+        renderBanner(user);
+        // Apply adaptive display based on the user's experience level
+        if (apiUser.level) {
+          window._userLevel = apiUser.level;
+          applyAdaptiveUI(apiUser.level);
+        }
+      }
+    } catch {}
+
+    try { renderNotifications(user); } catch(e) {}
+    loadPortfolios();
+  });
+
+  let dashPVAllPortfolios = [];
+  let dashPVCurrentId     = null;
+  let dashPVCache         = {};   // keyed by portfoloi id so we dont refetch
+  let dashPVRangeDays     = 30;
+  let dashPVMode          = 'value';
+
+  function dashSetRange(days) {
+    dashPVRangeDays = days;
+    document.querySelectorAll('.pvRange').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.days) === days));
+    if (dashPVCurrentId && dashPVCache[dashPVCurrentId])
+      renderDashPVChart(dashPVCache[dashPVCurrentId]);
+  }
+
+  function dashSetMode(mode) {
+    dashPVMode = mode;
+    document.querySelectorAll('.modeBtn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === mode));
+    if (dashPVCurrentId && dashPVCache[dashPVCurrentId])
+      renderDashPVChart(dashPVCache[dashPVCurrentId]);
+  }
+
+  async function dashSwitchPortfolio() {
+    const sel   = document.getElementById('dashPVPortfolioSel');
+    const id    = parseInt(sel.value);
+    const port  = dashPVAllPortfolios?.find(p => p.id === id);
+    const pName = port?.name || 'Portfolio';
+
+    dashPVCurrentId = id;
+
+    // use cache if we have it, otherwise fetch fresh data
+    if (dashPVCache[id]) {
+      renderDashPVChart(dashPVCache[id]);
+    } else {
+      fetchDashPVData(id);
+    }
+
+    // 2. Update intelligence section — fetch analytics + risk in parallel
+    await fetchAndUpdateIntel(id, pName);
+    // 3. Reload shadow portfolio for the newly selected portfolio
+    loadShadowPortfolio(id);
+  }
+
+  async function fetchAndUpdateIntel(portfolioId, portfolioName) {
+    const loader = document.getElementById('intelLoader');
+    if (loader) loader.style.display = 'inline';
+    const lbl = document.getElementById('intelPortfolioLabel');
+    if (lbl) lbl.textContent = portfolioName || '';
+
+    try {
+      // all three fetches at once — not sure if promise.all is right here but it seems to work
+      const [analyticsRes, riskRes, tsRes] = await Promise.all([
+        fetch(`/analytics/portfolio/${portfolioId}`,             { headers: { Authorization: tok() } }),
+        fetch(`/analytics/portfolio/${portfolioId}/risk`,        { headers: { Authorization: tok() } }),
+        fetch(`/analytics/portfolio/${portfolioId}/timeseries`,  { headers: { Authorization: tok() } }),
+      ]);
+
+      // Base analytics (holdings, weights, total_invested)
+      const base = analyticsRes.ok ? await analyticsRes.json() : {};
+
+      // Risk metrics (sharpe, var, cvar, drawdown, volatility, annualised_return)
+      const risk = riskRes.ok ? await riskRes.json() : {};
+
+      // Timeseries (for cumulative return context)
+      const ts   = tsRes.ok   ? await tsRes.json()   : {};
+
+      // Merge everything into one object for the intelligence layer
+      const merged = {
+        ...base,
+        // Risk metrics live inside risk.metrics
+        sharpe_ratio:          risk.metrics?.sharpe_ratio,
+        var:                   risk.metrics?.var,
+        cvar:                  risk.metrics?.cvar,
+        max_drawdown:          risk.metrics?.max_drawdown,
+        annualised_volatility: risk.metrics?.annualised_volatility,
+        annualised_return:     risk.metrics?.annualised_return,
+        cumulative_return:     risk.metrics?.cumulative_return,
+        n_days:                risk.metrics?.n_days,
+        // Attach timeseries for richer context
+        _series:               ts.series        || [],
+        _daily_returns:        ts.daily_returns  || [],
+        _synthetic:            ts.synthetic      || false,
+      };
+
+      updateIntelligenceLayer(merged, portfolioName, [], portfolioId);
+
+      // New visual components allocation donut + risk strip
+      renderAllocationChart(base.holdings || []);
+      updateRiskStrip(risk.metrics || {});
+
+    } catch(e) { console.error('Intel update failed:', e); }
+    finally    { if (loader) loader.style.display = 'none'; }
+  }
+
+  function initDashPVChart(portfolios) {
+    dashPVAllPortfolios = portfolios;
+    const sel = document.getElementById('dashPVPortfolioSel');
+    sel.innerHTML = portfolios.map(p =>
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    dashPVCurrentId = portfolios[0].id;
+    fetchDashPVData(portfolios[0].id);
+  }
+
+  async function fetchDashPVData(portfolioId) {
+    // Always show the card
+    document.getElementById('dashPVCard').style.display = 'block';
+    document.getElementById('dashPVMeta').textContent = 'Loading…';
+
+    // Check holdings first if portfolio is empty, skip the price fetch
+    try {
+      const pRes = await fetch(`/portfolios/${portfolioId}`, { headers: { Authorization: tok() } });
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        if (!(pData.holdings && pData.holdings.length)) {
+          showDashPVEmpty();
+          return;
+        }
+      }
+    } catch(e) {}
+
+    try {
+      const res = await fetch(`/analytics/portfolio/${portfolioId}/timeseries`, {
+        headers: { Authorization: tok() }
+      });
+      if (!res.ok) { showDashPVNoData(); return; }
+      const data = await res.json();
+      if (!data.series || !data.series.length) { showDashPVNoData(); return; }
+      dashPVCache[portfolioId] = data;
+      renderDashPVChart(data);
+    } catch(e) { showDashPVNoData(); console.error(e); }
+  }
+
+  function showDashPVEmpty() {
+    document.getElementById('dashPVMeta').textContent = 'No holdings yet';
+    document.getElementById('dashPVKpis').innerHTML = '';
+    document.getElementById('dashPVChart').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;font-family:'DM Sans',sans-serif;text-align:center;gap:10px;padding:32px;">
+        <div style="font-size:40px;">🚀</div>
+        <div style="font-size:16px;font-weight:700;color:#2d1f1a;">Ready to grow your portfolio?</div>
+        <div style="font-size:13px;color:#a08c82;max-width:220px;line-height:1.5;">Add your first investment and your portfolio chart will appear here.</div>
+        <a href="/invest" style="margin-top:6px;padding:10px 24px;background:#c9837a;color:#fff;border-radius:30px;font-weight:700;font-size:14px;text-decoration:none;letter-spacing:0.01em;transition:opacity 0.15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Invest now ✦</a>
+      </div>`;
+  }
+
+  function showDashPVNoData() {
+    document.getElementById('dashPVMeta').textContent = 'No price data available';
+    document.getElementById('dashPVKpis').innerHTML = '';
+    document.getElementById('dashPVChart').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#a08c82;font-family:'DM Sans',sans-serif;font-size:13px;text-align:center;gap:8px;padding:24px;">
+        <div style="font-size:32px;">📊</div>
+        <div style="font-weight:600;color:#2d1f1a;margin-bottom:4px;">Chart unavailable</div>
+        <div>Could not load price data for your holdings.<br>Check that your symbols are valid tickers.</div>
+      </div>`;
+  }
+
+  function renderDashPVChart(data) {
+    let series  = [...(data.series || [])];
+    let returns = [...(data.daily_returns || [])];
+
+    if (dashPVRangeDays > 0 && series.length) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - dashPVRangeDays);
+      series  = series.filter(p => new Date(p.date) >= cutoff);
+      returns = returns.filter(r => new Date(r.date) >= cutoff);
+    }
+
+    if (!series.length) {
+      document.getElementById('dashPVMeta').textContent = 'No data for this range';
+      return;
+    }
+
+    const first     = series[0].value;
+    const last      = series[series.length-1].value;
+    // percentage change from start to end of selected period
+    const change    = last - first;
+    const changePct = ((change / first) * 100).toFixed(2);
+    const isUp      = change >= 0;
+    const lineColor = isUp ? '#7a9e8e' : '#c9837a';
+    const fillColor = isUp ? 'rgba(122,158,142,0.1)' : 'rgba(201,131,122,0.1)';
+
+    const synthBadge = data.synthetic
+      ? ' <span style="font-size:11px;background:#f5efe6;color:#8b5e52;padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px;">Estimated · no live data found</span>'
+      : '';
+    document.getElementById('dashPVMeta').innerHTML =
+      `<span style="font-weight:600;color:${isUp?'#4a9470':'#b85050'};">${isUp?'▲':'▼'} ${Math.abs(changePct)}%</span>
+       <span style="color:#a08c82;margin-left:8px;">vs period start</span>${synthBadge}`;
+
+    // KPIs
+    const maxVal = Math.max(...series.map(s=>s.value));
+    const minVal = Math.min(...series.map(s=>s.value));
+    // annualised volatility: std dev of daily returns * sqrt(252 trading days per year)
+    // the sqrt(252) bit scales from daily to annual not sure if this is beleived to be exact
+    // but standard approach and works
+    const ann_vol = returns.length > 1
+      ? (Math.sqrt(returns.reduce((s,r)=>s+Math.pow(r.return,2),0)/returns.length)*Math.sqrt(252)*100).toFixed(1)
+      : '—';
+
+    document.getElementById('dashPVKpis').innerHTML = `
+      <div class="pvStat"><div class="pvLbl">Current</div><div class="pvVal">£${Number(last).toLocaleString('en-GB',{minimumFractionDigits:0})}</div></div>
+      <div class="pvStat"><div class="pvLbl">Change</div><div class="pvVal" style="color:${isUp?'#4a9470':'#b85050'};">${isUp?'+':''}${changePct}%</div></div>
+      <div class="pvStat"><div class="pvLbl">Peak</div><div class="pvVal">£${Number(maxVal).toLocaleString('en-GB',{minimumFractionDigits:0})}</div></div>
+      <div class="pvStat"><div class="pvLbl">Volatility</div><div class="pvVal" id="kpiVol">${ann_vol}%</div></div>`;
+    if (_intel.metrics?.annualised_volatility && window.FlyingFundsInsights)
+      setTimeout(() => window.FlyingFundsInsights.attachMetricTooltip('kpiVol','volatility',_intel.metrics.annualised_volatility), 60);
+
+    // build the plotly trace depending on which mode is selected
+    let trace;
+    if (dashPVMode === 'value') {
+      trace = {
+        type:'scatter', mode:'lines',
+        x: series.map(p=>p.date), y: series.map(p=>Number(p.value)),
+        line: { color: lineColor, width: 2.5, shape: 'spline' },
+        fill: 'tozeroy', fillcolor: fillColor,
+        hovertemplate: '<b>%{x}</b><br>£%{y:,.2f}<extra></extra>',
+      };
+    } else if (dashPVMode === 'returns') {
+      trace = {
+        type:'bar',
+        x: returns.map(r=>r.date),
+        y: returns.map(r=>Number(r.return)*100),
+        marker: { color: returns.map(r => r.return >= 0 ? '#4a9470' : '#b85050'), opacity: 0.8 },
+        hovertemplate: '<b>%{x}</b><br>%{y:.2f}%<extra></extra>',
+      };
+    } else {
+      // drawdown mode track peak equity and see how far below we are
+      // drawdown = (equity / peak - 1) * 100, so it's always negative or zero
+      let equity = 1, peak = 1;
+      const dd = returns.map(r => {
+        equity *= (1 + Number(r.return));
+        peak = Math.max(peak, equity);
+        return ((equity / peak) - 1) * 100;
+      });
+      trace = {
+        type:'scatter', mode:'lines',
+        x: returns.map(r=>r.date), y: dd,
+        line: { color: '#c9837a', width: 2, shape: 'spline' },
+        fill: 'tozeroy', fillcolor: 'rgba(201,131,122,0.12)',
+        hovertemplate: '<b>%{x}</b><br>%{y:.2f}%<extra></extra>',
+      };
+    }
+
+    const yTickPrefix = dashPVMode === 'value' ? '£' : '';
+    const yTickSuffix = dashPVMode !== 'value' ? '%' : '';
+
+    Plotly.react('dashPVChart', [trace], {
+      margin: { t: 4, l: 50, r: 12, b: 36 },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      xaxis: { showgrid: false, tickfont: { family:'DM Sans', size:11, color:'#a08c82' } },
+      yaxis: { showgrid: true, gridcolor: 'rgba(45,31,26,0.06)', tickfont: { family:'DM Sans', size:11, color:'#a08c82' }, tickprefix: yTickPrefix, ticksuffix: yTickSuffix },
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  // smart alerts compare current vs previous metrics and show warnings
+  // not sure 
+  let _prevAlertState = {};
+
+  function checkSmartAlerts(currentMetrics, prevMetrics, holdings) {
+    const alerts = [];
+    if (!currentMetrics) return;
+
+    const pct = v => (Number(v) * 100).toFixed(1) + '%';
+    const f2  = v => Number(v).toFixed(2);
+
+    // check if sharpe ratio got worse since last load
+    if (currentMetrics.sharpe_ratio !== undefined && prevMetrics?.sharpe_ratio !== undefined) {
+      const delta = Number(currentMetrics.sharpe_ratio) - Number(prevMetrics.sharpe_ratio);
+      if (delta < -0.2) alerts.push({ type:'warn', icon:'📉', text:`Sharpe ratio dropped ${Math.abs(delta).toFixed(2)} points — risk-adjusted performance has weakened since last check.` });
+      else if (delta > 0.2) alerts.push({ type:'good', icon:'📈', text:`Sharpe ratio improved by ${delta.toFixed(2)} — risk-adjusted returns are strengthening.` });
+    }
+
+    // 2. Volatility spike
+    if (currentMetrics.annualised_volatility !== undefined && prevMetrics?.annualised_volatility !== undefined) {
+      const cur  = Number(currentMetrics.annualised_volatility);
+      const prev = Number(prevMetrics.annualised_volatility);
+      const chg  = ((cur - prev) / prev) * 100;
+      if (chg > 20) alerts.push({ type:'warn', icon:'⚡', text:`Portfolio volatility increased ${chg.toFixed(0)}% — from ${pct(prev)}/yr to ${pct(cur)}/yr. Review recent additions for high-beta holdings.` });
+    }
+
+    // 3. Drawdown worsened
+    if (currentMetrics.max_drawdown !== undefined && prevMetrics?.max_drawdown !== undefined) {
+      const cur  = Math.abs(Number(currentMetrics.max_drawdown));
+      const prev = Math.abs(Number(prevMetrics.max_drawdown));
+      if (cur > prev + 0.05) alerts.push({ type:'warn', icon:'🔻', text:`Max drawdown worsened from ${(prev*100).toFixed(1)}% to ${(cur*100).toFixed(1)}% — your portfolio's worst historical decline has deepened.` });
+    }
+
+    // check if any single holding is too big a portion of the portfoloi
+    if (holdings?.length > 0) {
+      const maxW = Math.max(...holdings.map(h => Number(h.weight)||0));
+      const topH = holdings.find(h => Number(h.weight) === maxW);
+      if (maxW > 0.45) alerts.push({ type:'warn', icon:'🎯', text:`${topH?.symbol||'Top holding'} now represents ${pct(maxW)} of your portfolio — above safe concentration limits. Consider rebalancing.` });
+    }
+
+    // 5. Negative return alert
+    if (currentMetrics.annualised_return !== undefined) {
+      const ret = Number(currentMetrics.annualised_return);
+      if (ret < -0.1) alerts.push({ type:'bad', icon:'🚨', text:`Portfolio annualised return is ${pct(currentMetrics.annualised_return)}/yr — you are losing value. Review your holdings for deteriorating fundamentals.` });
+    }
+
+    // 6. Good news
+    if (currentMetrics.sharpe_ratio !== undefined && Number(currentMetrics.sharpe_ratio) > 1.2) {
+      alerts.push({ type:'good', icon:'✨', text:`Strong Sharpe ratio of ${f2(currentMetrics.sharpe_ratio)} — your portfolio is delivering excellent risk-adjusted returns.` });
+    }
+
+    renderSmartAlerts(alerts);
+  }
+
+  function renderSmartAlerts(alerts) {
+    const bar = document.getElementById('smartAlertsBar');
+    if (!bar) return;
+
+    if (!alerts.length) {
+      bar.style.display = 'none';
+      bar.innerHTML = '';
+      return;
+    }
+
+    const pal = { good:'#16a34a', warn:'#d97706', bad:'#dc2626', info:'#0284c7' };
+    const bg  = { good:'#f0fdf4', warn:'#fffbeb', bad:'#fef2f2', info:'#eff6ff' };
+
+    bar.style.display = 'block';
+    bar.innerHTML = alerts.map(a => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin-bottom:8px;
+        background:${bg[a.type]||'#f9f9f9'};border-radius:12px;
+        border-left:3px solid ${pal[a.type]||'#ccc'};">
+        <span style="font-size:16px;flex-shrink:0;">${a.icon}</span>
+        <span style="font-size:13px;font-family:'DM Sans',sans-serif;color:#2d1f1a;line-height:1.55;">${a.text}</span>
+        <button onclick="this.parentElement.remove()" style="margin-left:auto;flex-shrink:0;
+          background:none;border:none;font-size:16px;color:#aaa;cursor:pointer;padding:0;line-height:1;">✕</button>
+      </div>`).join('');
+  }
+
+  // intelligence stores current portfoloi state for the insights section
+  // these are module-level vars so the intel functions can access them
+  let _intel = { metrics: null, holdings: [], name: '', trades: [], portfolioId: null };
+  // TODO: clean this up, its
+  let _activeScenario = null;
+
+  function updateIntelligenceLayer(analyticsData, portfolioName, trades, portfolioId) {
+    if (!window.FlyingFundsInsights) return;
+    const INS = window.FlyingFundsInsights;
+
+    // Update state
+    _intel.metrics     = analyticsData;
+    _intel.holdings    = analyticsData.holdings || [];
+    _intel.name        = portfolioName || 'Your portfolio';
+    _intel.trades      = trades || [];
+    _intel.portfolioId = portfolioId;
+
+    // Show which portfolio is driving the intelli
+    const lbl = document.getElementById('intelPortfolioLabel');
+    if (lbl) lbl.textContent = portfolioName || '';
+
+    // 1. Health score
+    const health = INS.computeHealthScore(_intel.metrics, _intel.holdings);
+    INS.renderHealthScore('healthScoreContainer', health);
+
+    // 2. Plain-English summary
+    const summary = INS.PortfolioSummary(_intel.metrics, _intel.holdings, health, _intel.name);
+    const summaryEl = document.getElementById('portfolioSummaryText');
+    if (summaryEl) {
+      summaryEl.innerHTML = summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    // 3. Behavioural insights
+    const insights = INS.analyseBehaviour(_intel.trades, _intel.holdings, _intel.metrics);
+    INS.renderBehaviouralInsights('behaviouralInsightsContainer', insights);
+
+    // 4. Re-run last active scenario (keeps what-if panel consistent on switch)
+    if (_activeScenario) {
+      const btn = document.querySelector(`.intelScenarioBtn[data-active="${_activeScenario}"]`);
+      _runScenarioInternal(_activeScenario);
+    } else {
+      document.getElementById('whatIfResult').innerHTML =
+        '<span style="font-size:13px;color:#888;font-family:DM Sans,sans-serif;">Select a scenario above.</span>';
+    }
+
+    // 5. Smart alerts compare new metrics to previous state
+    checkSmartAlerts(_intel.metrics, _prevAlertState, _intel.holdings);
+    _prevAlertState = { ..._intel.metrics };
+
+    // 6. Attach explainable metric tooltips to elements that exist on this page
+    const tooltipMap = {
+      'kpiSharpe':    ['sharpe',            analyticsData.sharpe_ratio],
+      'kpiVar':       ['var',               analyticsData.var],
+      'kpiCvar':      ['cvar',              analyticsData.cvar],
+      'kpiDrawdown':  ['drawdown',          analyticsData.max_drawdown],
+      'kpiVol':       ['volatility',        analyticsData.annualised_volatility],
+      'kpiAnnReturn': ['annualised_return', analyticsData.annualised_return],
+    };
+    Object.entries(tooltipMap).forEach(([id, [key, val]]) => {
+      if (val !== undefined) INS.attachMetricTooltip(id, key, val);
+    });
+  }
+
+  function _runScenarioInternal(scenario) {
+    if (!window.FlyingFundsInsights || !_intel.metrics) return;
+    const result = window.FlyingFundsInsights.computeWhatIf(scenario, _intel.metrics, _intel.holdings);
+    window.FlyingFundsInsights.renderWhatIf('whatIfResult', result);
+  }
+
+  function runScenario(scenario, btnEl) {
+    // Update active button highlight
+    document.querySelectorAll('.intelScenarioBtn').forEach(b => {
+      b.classList.remove('active');
+      b.removeAttribute('data-active');
+    });
+    if (btnEl) {
+      btnEl.classList.add('active');
+      btnEl.setAttribute('data-active', scenario);
+    }
+    _activeScenario = scenario;
+
+    if (!_intel.metrics) {
+      document.getElementById('whatIfResult').innerHTML =
+        '<span style="font-size:13px;color:#888;font-family:DM Sans,sans-serif;">Select a portfolio first to run scenarios.</span>';
+      return;
+    }
+    _runScenarioInternal(scenario);
+  }
+
+  function askHaloPortfolio(question) {
+    const responseEl = document.getElementById('haloPortfolioResponse');
+    const textEl     = document.getElementById('haloPortfolioText');
+    if (!responseEl || !textEl) return;
+
+    responseEl.style.display = 'block';
+    textEl.innerHTML = '<span style="color:#888;">Halo is thinking…</span>';
+
+    setTimeout(() => {
+      if (typeof haloRespond !== 'function') {
+        textEl.textContent = 'Halo is not loaded yet — refresh the page.';
+        return;
+      }
+
+      // Inject live metrics so the local KB gives contextual answers
+      let ctx = question;
+      if (_intel.metrics) {
+        const m = _intel.metrics;
+        const parts = [];
+        if (m.sharpe_ratio          !== undefined) parts.push(`Sharpe ratio: ${Number(m.sharpe_ratio).toFixed(2)}`);
+        if (m.var                   !== undefined) parts.push(`VaR 95%: ${(Math.abs(Number(m.var))*100).toFixed(1)}%`);
+        if (m.cvar                  !== undefined) parts.push(`CVaR 95%: ${(Math.abs(Number(m.cvar))*100).toFixed(1)}%`);
+        if (m.max_drawdown          !== undefined) parts.push(`max drawdown: ${(Math.abs(Number(m.max_drawdown))*100).toFixed(1)}%`);
+        if (m.annualised_volatility !== undefined) parts.push(`annualised volatility: ${(Number(m.annualised_volatility)*100).toFixed(1)}%`);
+        if (m.annualised_return     !== undefined) parts.push(`annualised return: ${(Number(m.annualised_return)*100).toFixed(1)}%`);
+        if (_intel.holdings?.length) parts.push(`${_intel.holdings.length} holdings`);
+        if (parts.length) ctx += ` (My portfolio metrics: ${parts.join(', ')})`;
+      }
+
+      const reply = haloRespond(ctx, []);
+      textEl.innerHTML = reply
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    }, 400);
+  }
+
+
+  let _totalInvested   = null;
+  let _totalMktValue   = null;
+
+  function tryRenderIVChart() {
+    if (_totalInvested === null || _totalMktValue === null) return;
+    renderIVChart(_totalInvested, _totalMktValue);
+  }
+
+  function renderIVChart(invested, mktVal) {
+    const ivEl = document.getElementById('ivChart');
+    if (!ivEl) return;
+
+    // Update text labels
+    const fmtGBP = v => '£' + Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('ivInvestedVal').textContent = fmtGBP(invested);
+    document.getElementById('ivMktValVal').textContent   = fmtGBP(mktVal);
+
+    const pnl   = mktVal - invested;
+    const pnlEl = document.getElementById('ivPnlVal');
+    pnlEl.textContent = (pnl >= 0 ? '+' : '−') + fmtGBP(pnl);
+    pnlEl.style.color = pnl >= 0 ? '#7a9e8e' : '#c9837a';
+
+    const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+    const lineColor = isDark ? 'rgba(30,22,20,0.5)' : 'rgba(255,255,255,0.75)';
+
+    // attemmpt at designing apple fitness pie but for flyingfunds p&l
+    //Semi-circle 3rd ghost slice = sum of real slices → occupies the bottom 180° (transparent)
+    // rotation:-90 starts at 9 o'clock; clockwise fills the TOP half with the real data
+    Plotly.react('ivChart', [{
+      type:      'pie',
+      hole:      0.58,
+      values:    [invested, mktVal, invested + mktVal],
+      labels:    ['Invested', 'Market Value', ''],
+      rotation:  -90,
+      direction: 'clockwise',
+      sort:      false,
+      marker: {
+        colors: ['rgba(201,131,122,0.72)', 'rgba(122,158,142,0.72)', 'rgba(0,0,0,0)'],
+        line:   { width: 2, color: lineColor },
+      },
+      textinfo:   'none',
+      hoverinfo:  'label+value',
+      hoverlabel: { font: { family: "'DM Sans',sans-serif", size: 12 } },
+      showlegend: false,
+    }], {
+      margin:        { t: 0, b: 0, l: 10, r: 10 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor:  'rgba(0,0,0,0)',
+      showlegend:    false,
+      height:        310,
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  // Semi-transparent glassmorphic treemap type
+  const _PALETTE = [
+    'rgba(201,131,122,0.52)', 'rgba(139,94,82,0.52)',   'rgba(122,158,142,0.52)',
+    'rgba(123,175,196,0.52)', 'rgba(160,140,130,0.52)', 'rgba(212,169,106,0.52)',
+    'rgba(107,140,186,0.52)', 'rgba(176,126,168,0.52)', 'rgba(90,158,126,0.52)',
+    'rgba(45,31,26,0.52)',
+  ];
+
+
+  // asset class classifier
+  let _lastHoldings = [];
+  let _allocTab = 'holdings';
+
+  const _ETFS = new Set([
+    'SPY','QQQ','IWM','VTI','VOO','VEA','VWO','GLD','SLV','TLT','BND','AGG',
+    'ARKK','XLF','XLE','XLK','XLV','IEFA','EEM','IJH','IJR','SCHB','SCHX',
+    'SCHA','VXUS','VGT','VHT','VFH','VDE','VAW','VOX','VPU','VIG','VYM',
+    'BIL','SHY','IEF','DIA','MDY','IVV','SOXX','SMH','WCLD','BOTZ','ROBO',
+    'ICLN','ACWI','URTH','LQD','HYG','GOVT','BNDX','VCSH','VCIT','VCLT',
+    'BSV','BIV','BLV','TIPS','MUB','RSP','XLB','XLI','XLP','XLRE','XLU',
+    'ARKW','ARKG','ARKF','ARKQ','KWEB','FXI','MCHI','EWJ','EWZ','GDX','GDXJ',
+  ]);
+  const _CRYPTO = new Set([
+    'BTC','ETH','BNB','XRP','ADA','SOL','AVAX','DOGE','DOT','MATIC','LINK',
+    'LTC','UNI','ATOM','XLM','ALGO','VET','FIL','TRX','SHIB','SAND','MANA',
+    'CRO','NEAR','HBAR','EGLD','ICP','THETA','APE','APT','ARB','OP','SUI',
+  ]);
+  const _COMMODITIES = new Set([
+    'GLD','SLV','USO','UNG','DBO','PDBC','COMT','GSG','DJP','CPER',
+    'WEAT','CORN','SOYB','NIB','JO','SGG','PALL','PPLT',
+  ]);
+  const _BONDS = new Set([
+    'TLT','BND','AGG','LQD','HYG','GOVT','IEF','SHY','TIPS','MUB',
+    'VCSH','VCIT','VCLT','BSV','BIV','BLV','BNDX','BIL',
+  ]);
+
+  // classify a ticker symbol into an asset class
+  // works for the most common tickers
+  function classifySymbol(symbol) {
+    const s = symbol.toUpperCase().replace(/-USD[T]?$/, '').replace(/\..+$/, '');
+    if (symbol.includes('-USD') || symbol.includes('-USDT') || _CRYPTO.has(s)) return 'Crypto';
+    if (_COMMODITIES.has(s)) return 'Commodity';
+    if (_BONDS.has(s))       return 'Bond';
+    if (_ETFS.has(s))        return 'ETF';
+    return 'Equity';
+  }
+
+  function switchAllocTab(tab) {
+    _allocTab = tab;
+    document.getElementById('allocTabHoldings').classList.toggle('active', tab === 'holdings');
+    document.getElementById('allocTabClass').classList.toggle('active', tab === 'class');
+    if (tab === 'holdings') {
+      document.getElementById('allocDesc').textContent = 'By weight';
+      renderAllocationChart(_lastHoldings);
+    } else {
+      document.getElementById('allocDesc').textContent = 'Grouped by asset class';
+      renderAssetClassChart(_lastHoldings);
+    }
+  }
+
+  const _CLASS_PALETTE = {
+    'Equity':    'rgba(201,131,122,0.52)',
+    'ETF':       'rgba(122,158,142,0.52)',
+    'Crypto':    'rgba(123,175,196,0.52)',
+    'Bond':      'rgba(212,169,106,0.52)',
+    'Commodity': 'rgba(160,140,130,0.52)',
+  };
+
+  function renderAssetClassChart(holdings) {
+    const el = document.getElementById('allocationChart');
+    if (!el || !holdings || !holdings.length) return;
+
+    // Group holdings into asset classes
+    const buckets = {};
+    holdings.forEach(h => {
+      const cls = classifySymbol(h.symbol);
+      buckets[cls] = (buckets[cls] || 0) + Math.max(0, Number(h.weight || 0) * 100);
+    });
+
+    const labels = Object.keys(buckets);
+    const values = Object.values(buckets);
+    const colors = labels.map(l => _CLASS_PALETTE[l] || 'rgba(160,140,130,0.52)');
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const lineColor = isDark ? 'rgba(30,22,20,0.6)' : 'rgba(255,255,255,0.7)';
+
+    Plotly.react('allocationChart', [{
+      type:         'treemap',
+      labels,
+      parents:      labels.map(() => ''),
+      values,
+      texttemplate: '<b>%{label}</b><br>%{value:.1f}%',
+      textfont:     { family: "'DM Sans', sans-serif", size: 13, color: '#fff' },
+      hovertemplate: '<b>%{label}</b><br>%{value:.1f}% of portfolio<extra></extra>',
+      hoverlabel:   { font: { family: "'DM Sans',sans-serif", size: 12 } },
+      marker: {
+        colors,
+        line:    { width: 3, color: lineColor },
+        pad:     { t: 8, l: 8, r: 8, b: 8 },
+        opacity: 0.88,
+      },
+      tiling: { packing: 'squarify' },
+    }], {
+      margin:        { t: 0, l: 0, r: 0, b: 0 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor:  'rgba(0,0,0,0)',
+      showlegend:    false,
+      autosize:      true,
+    }, { displayModeBar: false, responsive: true });
+
+    // Legend pills
+    const legendEl = document.getElementById('allocationLegend');
+    if (legendEl) {
+      legendEl.innerHTML =
+        `<div style="display:flex;flex-wrap:wrap;gap:4px;">` +
+        labels.map((cls, i) => {
+          const c = colors[i];
+          // List symbols in this class
+          const syms = holdings.filter(h => classifySymbol(h.symbol) === cls).map(h => h.symbol).join(', ');
+          return `<span title="${syms}" style="display:inline-flex;align-items:center;gap:3px;
+            font-family:'DM Sans',sans-serif;font-size:11px;padding:2px 8px;
+            border-radius:999px;background:${c}22;color:${c};
+            border:1px solid ${c}44;font-weight:600;cursor:pointer;"
+            onclick="Plotly.restyle('allocationChart',{pull:[${labels.map((_,j)=>j===i?0.08:0).join(',')}]})"
+            >${cls} <span style="font-weight:400;opacity:0.7;">${values[i].toFixed(1)}%</span></span>`;
+        }).join('') +
+        `</div>`;
+    }
+  }
+  function renderAllocationChart(holdings) {
+    const el = document.getElementById('allocationChart');
+    if (!el || !holdings || !holdings.length) return;
+    _lastHoldings = holdings;
+
+    const labels = holdings.map(h => h.symbol);
+    const values = holdings.map(h => Math.max(0, Number(h.weight || 0) * 100));
+    if (!values.some(v => v > 0)) return;
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const paperBg = isDark ? 'transparent' : 'transparent';
+
+    // treemap each holding is a coloured square, sized by portfolio weight like trading 212 inspo
+    Plotly.react('allocationChart', [{
+      type:       'treemap',
+      labels,
+      parents:    labels.map(() => ''),   // all top-level, no nesting
+      values,
+      texttemplate: '<b>%{label}</b><br>%{value:.1f}%',
+      textfont:   { family: "'DM Sans', sans-serif", size: 13, color: '#fff' },
+      hovertemplate: '<b>%{label}</b><br>%{value:.1f}% of portfolio<extra></extra>',
+      hoverlabel: { font: { family: "'DM Sans',sans-serif", size: 12 } },
+      marker: {
+        colors:     _PALETTE.slice(0, labels.length),
+        line:       { width: 3, color: isDark ? 'rgba(30,22,20,0.6)' : 'rgba(255,255,255,0.7)' },
+        pad:        { t: 8, l: 8, r: 8, b: 8 },
+        opacity:    0.88,
+      },
+      tiling:     { packing: 'squarify' },
+    }], {
+      margin:       { t: 0, l: 0, r: 0, b: 0 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor:  'rgba(0,0,0,0)',
+      showlegend:   false,
+      autosize:     true,
+    }, { displayModeBar: false, responsive: true });
+
+    // hide the old legend 
+    const legendEl = document.getElementById('allocationLegend');
+    if (legendEl) legendEl.style.display = 'none';
+  }
+
+  // update the four risk kpi cards with colour badges
+  // adapts labels + hints based on window._userLevel (beginner / intermediate / advanced)
+  function updateRiskStrip(metrics) {
+    if (!metrics) return;
+
+    function badge(color, bg, text) {
+      return `<span class="riskBadge" style="background:${bg};color:${color};">${text}</span>`;
+    }
+    const n = (v) => (v !== undefined && v !== null) ? Number(v) : null;
+    const lvl = window._userLevel || 'advanced';
+
+    // sharpe ratio
+    const sharpe = n(metrics.sharpe_ratio);
+    if (sharpe !== null) {
+      const color = sharpe > 1 ? '#4a9470' : sharpe > 0 ? '#d97706' : '#b85050';
+      const bg    = sharpe > 1 ? '#d1fae5' : sharpe > 0 ? '#fef3c7' : '#fee2e2';
+      const label = sharpe > 1 ? 'Strong'  : sharpe > 0 ? 'Moderate' : 'Weak';
+      // beginner gets plain-english badge instead of the raw number
+      const beginnerLabel = sharpe > 1 ? '✅ Working hard' : sharpe > 0 ? '🟡 Could be better' : '🔴 Not great';
+      document.getElementById('riskCardSharpe').innerHTML = _riskCardHTML(
+        '📊',
+        'Sharpe Ratio',
+        'Is my money working hard?',
+        lvl === 'beginner'
+          ? `<div class="bigNum" id="kpiSharpe" style="font-size:18px;color:${color};">${beginnerLabel}</div>`
+          : `<div class="bigNum" id="kpiSharpe" style="font-size:24px;">${sharpe.toFixed(2)}</div>`,
+        badge(color, bg, label),
+        'return earned per unit of risk',
+        `${sharpe > 1 ? 'Great — your portfolio earns strong returns for its level of risk.' : sharpe > 0 ? 'Okay — but there\'s room to improve your reward vs risk.' : 'Your returns don\'t justify the risk you\'re taking. Consider diversifying.'} (Sharpe: ${sharpe.toFixed(2)})`
+      );
+    }
+
+    // Max drawdown
+    const dd = n(metrics.max_drawdown);
+    if (dd !== null) {
+      const abs   = Math.abs(dd) * 100;
+      const color = abs < 10 ? '#4a9470' : abs < 25 ? '#d97706' : '#b85050';
+      const bg    = abs < 10 ? '#d1fae5' : abs < 25 ? '#fef3c7' : '#fee2e2';
+      const label = abs < 10 ? 'Contained' : abs < 25 ? 'Moderate' : 'Severe';
+      // beginner: explain the recovery needed
+      const recovery = abs > 0 ? ((100 / (100 - abs) - 1) * 100).toFixed(0) : 0;
+      document.getElementById('riskCardDrawdown').innerHTML = _riskCardHTML(
+        '📉',
+        'Max Drawdown',
+        'Worst dip I\'ve ever had',
+        `<div class="bigNum" id="kpiDrawdown" style="font-size:24px;color:${color};">−${abs.toFixed(1)}%</div>`,
+        badge(color, bg, label),
+        'worst peak-to-trough decline',
+        `At its worst, your portfolio fell ${abs.toFixed(1)}%. To fully recover from that you'd need a +${recovery}% gain.`
+      );
+    }
+
+    // VaR 95%
+    const varVal = n(metrics.var);
+    if (varVal !== null) {
+      const abs   = Math.abs(varVal) * 100;
+      const color = abs < 2 ? '#4a9470' : abs < 5 ? '#d97706' : '#b85050';
+      const bg    = abs < 2 ? '#d1fae5' : abs < 5 ? '#fef3c7' : '#fee2e2';
+      const label = abs < 2 ? 'Low risk' : abs < 5 ? 'Moderate' : 'High risk';
+      document.getElementById('riskCardVar').innerHTML = _riskCardHTML(
+        '⚠️',
+        'VaR 95%',
+        'My typical daily risk',
+        `<div class="bigNum" id="kpiVar" style="font-size:24px;color:${color};">−${abs.toFixed(1)}%</div>`,
+        badge(color, bg, label),
+        'max daily loss on 95% of days',
+        `On 95 out of 100 days your portfolio shouldn't lose more than ${abs.toFixed(1)}% in a single day. On the other 5 days it could be worse.`
+      );
+    }
+
+    // Annualised return
+    const ret = n(metrics.annualised_return);
+    if (ret !== null) {
+      const pct   = ret * 100;
+      const color = pct > 10 ? '#4a9470' : pct > 0 ? '#d97706' : '#b85050';
+      const bg    = pct > 10 ? '#d1fae5' : pct > 0 ? '#fef3c7' : '#fee2e2';
+      const label = pct > 10 ? 'Excellent' : pct > 0 ? 'Positive' : 'Negative';
+      document.getElementById('riskCardReturn').innerHTML = _riskCardHTML(
+        '📈',
+        'Ann. Return',
+        'My yearly growth',
+        `<div class="bigNum" id="kpiAnnReturn" style="font-size:24px;color:${color};">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</div>`,
+        badge(color, bg, label),
+        'annualised performance',
+        `${pct > 10 ? 'Excellent! Your portfolio is growing well above the typical savings rate.' : pct > 0 ? 'Your portfolio is growing. The S&P 500 averages ~10%/yr for comparison.' : 'Your portfolio is losing value. It\'s worth reviewing your holdings.'}`
+      );
+    }
+
+    // Reattach tooltips now the elements exist
+    if (window.FlyingFundsInsights) {
+      const INS = window.FlyingFundsInsights;
+      if (sharpe  !== null) INS.attachMetricTooltip('kpiSharpe',    'sharpe',            sharpe);
+      if (dd      !== null) INS.attachMetricTooltip('kpiDrawdown',  'drawdown',          dd);
+      if (varVal  !== null) INS.attachMetricTooltip('kpiVar',       'var',               varVal);
+      if (ret     !== null) INS.attachMetricTooltip('kpiAnnReturn', 'annualised_return', ret);
+    }
+  }
+
+  // Fetches /analytics/portfolio/{id}/shadow and renders the "what if you'd held?"
+  // called whenever user switches portfolio (same as intel layer).
+
+  async function loadShadowPortfolio(portfolioId) {
+    const loader  = document.getElementById('shadowLoader');
+    const content = document.getElementById('shadowContent');
+    if (!content) return;
+    if (loader) loader.style.display = 'inline';
+
+    try {
+      const res = await fetch(`/analytics/portfolio/${portfolioId}/shadow`, {
+        headers: { Authorization: tok() }
+      });
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      renderShadowPortfolio(data);
+    } catch(e) {
+      if (content) content.innerHTML = `<p style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Could not load shadow portfolio data.</p>`;
+    } finally {
+      if (loader) loader.style.display = 'none';
+    }
+  }
+
+  function renderShadowPortfolio(data) {
+    const content = document.getElementById('shadowContent');
+    const desc    = document.getElementById('shadowDesc');
+    if (!content) return;
+
+    const positions = data.shadow_positions || [];
+    const missed    = data.total_missed    || 0;
+    const good      = data.total_good_calls || 0;
+    const net       = data.net_cost        || 0;
+    const lvl       = window._userLevel || 'advanced';
+    const isBeg     = lvl === 'beginner';
+    // fmtGBP (2 decimals) from utils.js
+    const fmt       = v => fmtGBP(v, 2);
+
+    // no sell trades yet
+    if (positions.length === 0) {
+      content.innerHTML = `
+        <div style="text-align:center;padding:28px 0;">
+          <div style="font-size:32px;margin-bottom:8px;">🕊️</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#888;line-height:1.6;">
+            ${isBeg
+              ? "You haven't sold anything yet — so there's nothing to regret! Once you make a sell trade, we'll track whether it was the right call."
+              : "No sell trades recorded. The shadow portfolio activates once you start selling positions."}
+          </div>
+        </div>`;
+      return;
+    }
+
+    // known positions (we have a current price)
+    const known = positions.filter(p => p.cost !== null);
+
+    // header summary strip
+    const netColor = net > 0 ? '#b85050' : '#4a9470';
+    const netBg    = net > 0 ? '#fee2e2' : '#d1fae5';
+    const netLabel = net > 0
+      ? (isBeg ? `Selling has cost you ${fmt(net)} in missed growth` : `Net selling cost: ${fmt(net)}`)
+      : (isBeg ? `Your sells have actually saved you ${fmt(Math.abs(net))} — good timing!` : `Net selling benefit: ${fmt(Math.abs(net))}`);
+
+    // update the desc line for beginners
+    if (desc && isBeg) {
+      desc.textContent = 'Every time you sell, we keep watching what that stock does next. This shows whether your sell decisions are making you richer — or costing you.';
+    }
+
+    let html = `
+      <!-- summary strip -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">
+        <div style="background:${netBg};border-radius:12px;padding:14px 16px;text-align:center;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:${netColor};font-family:'DM Sans',sans-serif;font-weight:700;margin-bottom:4px;">${isBeg ? 'Overall impact' : 'Net cost of selling'}</div>
+          <div style="font-size:20px;font-weight:700;color:${netColor};font-family:'DM Sans',sans-serif;">${net > 0 ? '−' : '+'}${fmt(Math.abs(net))}</div>
+          <div style="font-size:11px;color:${netColor};font-family:'DM Sans',sans-serif;margin-top:2px;opacity:0.8;">${net > 0 ? 'missed gain' : 'saved by selling'}</div>
+        </div>
+        <div style="background:#fef3c7;border-radius:12px;padding:14px 16px;text-align:center;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:#92400e;font-family:'DM Sans',sans-serif;font-weight:700;margin-bottom:4px;">${isBeg ? 'Sold too soon' : 'Missed gains'}</div>
+          <div style="font-size:20px;font-weight:700;color:#92400e;font-family:'DM Sans',sans-serif;">−${fmt(missed)}</div>
+          <div style="font-size:11px;color:#92400e;font-family:'DM Sans',sans-serif;margin-top:2px;opacity:0.8;">${isBeg ? 'would still be growing' : 'positions that rose after selling'}</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:12px;padding:14px 16px;text-align:center;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:#166534;font-family:'DM Sans',sans-serif;font-weight:700;margin-bottom:4px;">${isBeg ? 'Good calls' : 'Avoided losses'}</div>
+          <div style="font-size:20px;font-weight:700;color:#166534;font-family:'DM Sans',sans-serif;">+${fmt(good)}</div>
+          <div style="font-size:11px;color:#166534;font-family:'DM Sans',sans-serif;margin-top:2px;opacity:0.8;">${isBeg ? 'sold before they dropped' : 'positions that fell after selling'}</div>
+        </div>
+      </div>`;
+
+    // position rows
+    if (known.length > 0) {
+      html += `
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;font-family:'DM Sans',sans-serif;margin-bottom:8px;">
+          ${isBeg ? 'Your sell decisions, one by one' : 'Position breakdown'}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">`;
+
+      for (const p of known) {
+        const cost      = Number(p.cost);
+        const isRegret  = cost > 0;   // sold and it went up = you missed out
+        const cardColor = isRegret ? '#b85050' : '#4a9470';
+        const cardBg    = isRegret ? '#fff5f5' : '#f0fdf4';
+        const cardBorder= isRegret ? '#fecaca' : '#bbf7d0';
+
+        const costLabel = isRegret
+          ? (isBeg ? `You'd have ${fmt(cost)} more if you'd kept it` : `Missed gain: ${fmt(cost)}`)
+          : (isBeg ? `Smart sell — saved you ${fmt(Math.abs(cost))}` : `Avoided loss: ${fmt(Math.abs(cost))}`);
+
+        const verdict = isRegret
+          ? (isBeg ? '😬 Sold too soon' : '📉 Opportunity cost')
+          : (isBeg ? '✅ Good call' : '✅ Well-timed exit');
+
+        // build readable date string from the trades array
+        const tradeDates = (p.trades || [])
+          .map(t => t.ts ? new Date(t.ts) : null)
+          .filter(Boolean)
+          .sort((a, b) => a - b);
+        let dateLabel = '';
+        if (tradeDates.length === 1) {
+          dateLabel = 'Sold ' + tradeDates[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        } else if (tradeDates.length > 1) {
+          const first = tradeDates[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const last  = tradeDates[tradeDates.length - 1].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          dateLabel = `${tradeDates.length} sells · ${first} – ${last}`;
+        }
+
+        // beginner context sentence
+        const context = isBeg
+          ? (isRegret
+              ? `You sold ${p.quantity.toFixed(p.quantity % 1 === 0 ? 0 : 2)} shares at ${fmt(p.avg_sell_price)} each. They're now worth ${fmt(p.current_price)} — that's ${fmt(cost)} you left on the table.`
+              : `You sold ${p.quantity.toFixed(p.quantity % 1 === 0 ? 0 : 2)} shares at ${fmt(p.avg_sell_price)} each. They've since dropped to ${fmt(p.current_price)} — selling was the right move, saving you ${fmt(Math.abs(cost))}.`)
+          : `Sold ${p.quantity} @ avg ${fmt(p.avg_sell_price)} · Now ${fmt(p.current_price)} · Value if held: ${fmt(p.current_value)}`;
+
+        html += `
+          <div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:12px;padding:12px 15px;display:flex;align-items:flex-start;gap:12px;">
+            <div style="flex-shrink:0;width:44px;height:44px;border-radius:10px;background:${cardColor}18;
+              border:1.5px solid ${cardColor}44;display:flex;align-items:center;justify-content:center;">
+              <span style="font-weight:700;font-size:12px;color:${cardColor};font-family:'DM Sans',sans-serif;">${p.symbol}</span>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+                <span style="font-weight:700;font-size:13px;color:#2d1f1a;font-family:'DM Sans',sans-serif;">${p.symbol}</span>
+                <span style="font-size:11px;font-weight:600;color:${cardColor};background:${cardColor}18;padding:1px 8px;border-radius:20px;font-family:'DM Sans',sans-serif;">${verdict}</span>
+                ${dateLabel ? `<span style="font-size:11px;color:#aaa;font-family:'DM Sans',sans-serif;">· ${dateLabel}</span>` : ''}
+              </div>
+              <div style="font-size:12px;color:#555;font-family:'DM Sans',sans-serif;line-height:1.5;">${context}</div>
+              <div style="font-size:12px;font-weight:700;color:${cardColor};font-family:'DM Sans',sans-serif;margin-top:4px;">${costLabel}</div>
+            </div>
+          </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // positions where we couldn't get current price
+    const unknown = positions.filter(p => p.cost === null);
+    if (unknown.length > 0) {
+      html += `<div style="margin-top:12px;font-size:12px;color:#aaa;font-family:'DM Sans',sans-serif;">
+        ${unknown.map(p => p.symbol).join(', ')} — ${isBeg ? 'no live price available to compare' : 'current price unavailable'}
+      </div>`;
+    }
+
+    content.innerHTML = html;
+  }
+
+  // Called once after we get the user's level from /users/me.
+  // Beginners get plain-english labels; intermediates get labels + simple hints;
+  // advanced users see the full technical view (default, no changes needed).
+
+  function applyAdaptiveUI(level) {
+    // Show a little badge in the intelligence section header
+    const badge = document.getElementById('intelLevelBadge');
+    if (badge) {
+      const cfg = {
+        beginner:     { label: '🌱 Beginner mode',     bg: '#d1fae5', color: '#166534' },
+        intermediate: { label: '📚 Guided view',        bg: '#fef3c7', color: '#92400e' },
+        advanced:     { label: '⚡ Advanced view',       bg: '#ede9fe', color: '#5b21b6' },
+      }[level] || { label: '', bg: 'transparent', color: '#888' };
+
+      badge.textContent        = cfg.label;
+      badge.style.background   = cfg.bg;
+      badge.style.color        = cfg.color;
+      badge.style.border       = `1px solid ${cfg.color}33`;
+      badge.style.display      = cfg.label ? 'inline' : 'none';
+    }
+
+    // For beginners, swap the placeholder labels on the risk cards
+    // (updateRiskStrip will overwrite these with real data once loaded,
+    //  but the labels it uses are also level-aware — see updateRiskStrip below)
+    if (level === 'beginner') {
+      const swaps = {
+        riskCardSharpe:   { title: 'Is my money working hard?',   icon: '🌱', sub: 'reward vs risk' },
+        riskCardDrawdown: { title: 'Worst dip I\'ve ever had',     icon: '📉', sub: 'peak-to-trough drop' },
+        riskCardVar:      { title: 'My typical daily risk',        icon: '⚠️', sub: 'bad day estimate' },
+        riskCardReturn:   { title: 'My yearly growth',             icon: '📈', sub: 'annualised return' },
+      };
+      Object.entries(swaps).forEach(([id, cfg]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        // only update the label part, not the value (which may already be loaded)
+        const lbl = el.querySelector('.statLbl');
+        if (lbl) lbl.textContent = cfg.title;
+      });
+
+      // Rename "Health score" and "Portfolio summary" headings too
+      document.querySelectorAll('.statLbl').forEach(el => {
+        if (el.textContent.trim() === 'Health score')      el.textContent = '🩺 How healthy is my portfolio?';
+        if (el.textContent.trim() === 'Portfolio summary') el.textContent = '📝 Plain-English summary';
+        if (el.textContent.trim() === 'Behavioural insights') el.textContent = '🧠 My investing habits';
+        if (el.textContent.trim() === 'What-if engine')    el.textContent = '🔮 What would happen if...';
+      });
+
+      // Add a little intro note at the top of the intel section
+      const intelHeader = document.getElementById('intelSection');
+      if (intelHeader && !document.getElementById('beginnerWelcome')) {
+        const note = document.createElement('div');
+        note.id = 'beginnerWelcome';
+        note.style.cssText = 'background:#d1fae5;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-family:"DM Sans",sans-serif;font-size:13px;color:#166534;line-height:1.5;';
+        note.innerHTML = '👋 <strong>Welcome!</strong> We\'ve set everything to plain English because you selected <em>Beginner</em> when you signed up. Tap any number for a full explanation.';
+        // insert after the header row
+        const headerRow = intelHeader.querySelector('div');
+        if (headerRow && headerRow.nextSibling) {
+          intelHeader.insertBefore(note, headerRow.nextSibling);
+        }
+      }
+    }
+
+    if (level === 'intermediate') {
+      // Intermediate: keep technical labels but add a subtitle hint
+      const hints = {
+        riskCardSharpe:   'Higher = better reward for risk taken',
+        riskCardDrawdown: 'How much you\'ve lost from a peak',
+        riskCardVar:      'Max daily loss on 95% of days',
+        riskCardReturn:   'Your annualised growth rate',
+      };
+      Object.entries(hints).forEach(([id, hint]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const sub = el.querySelector('.cardSub');
+        if (sub) sub.textContent = hint;
+      });
+    }
+    // advanced: nothing to change, existing view is already technical
+  }
+
+  // Level-aware card renderer called by updateRiskStrip
+  // Returns the full innerHTML for one risk card depending on the user's level
+  function _riskCardHTML(icon, techTitle, beginnerTitle, valueHTML, badgeHTML, techSub, beginnerNote) {
+    const level = window._userLevel || 'advanced';
+    const title = level === 'beginner' ? beginnerTitle : techTitle;
+    const sub   = level === 'beginner'
+      ? `<div style="font-size:11px;color:#888;font-family:'DM Sans',sans-serif;margin-top:4px;">${beginnerNote}</div>`
+      : (level === 'intermediate'
+          ? `<div style="font-size:11px;color:#888;font-family:'DM Sans',sans-serif;margin-top:4px;">${techSub}</div>`
+          : '');
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="statLbl" style="margin:0;">${title}</div><span style="font-size:15px;">${icon}</span>
+      </div>
+      ${valueHTML}
+      ${badgeHTML}
+      ${sub}`;
+  }
+
+  // reads goals from localStorage key must match diary.html exactly (to user)
+  const _dashUid = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').id || 'anon'; } catch { return 'anon'; } })();
+  const GOAL_KEY_DASH = `ff-goals_${_dashUid}`;
+
+  function loadDashGoals() {
+    try { return JSON.parse(localStorage.getItem(GOAL_KEY_DASH) || '[]'); } catch { return []; }
+  }
+
+  async function renderDashGoals() {
+    const el = document.getElementById('dashGoalsList');
+    if (!el) return;
+    const goals = loadDashGoals();
+    if (!goals.length) {
+      el.innerHTML = `<div style="text-align:center;padding:14px 0;color:#aaa;font-family:'DM Sans',sans-serif;font-size:13px;">No goals set yet — <a href="/diary" style="color:#7a9e8e;">add one in the Diary</a></div>`;
+      return;
+    }
+
+    // skeleton rows immediately, then fill projections
+    el.innerHTML = goals.map(g => {
+      const pct  = g.target > 0 ? Math.min(100, (g.saved / g.target) * 100) : 0;
+      const done = pct >= 100;
+      const icon = g.category ? g.category.split(' ')[0] : '🎯';
+      const barCol = done ? 'linear-gradient(90deg,#4a9470,#7bafc4)' : '#c9837a';
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid rgba(45,31,26,0.07);" id="dg-${g.id}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+              <span style="font-size:18px;flex-shrink:0;">${icon}</span>
+              <span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#2d1f1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.name}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;" id="dg-status-${g.id}">
+              <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:${done ? '#4a9470' : '#c9837a'};">${pct.toFixed(0)}%</span>
+            </div>
+          </div>
+          <div style="background:#f0f0ee;border-radius:999px;height:6px;overflow:hidden;">
+            <div style="width:${pct.toFixed(1)}%;height:100%;background:${barCol};border-radius:999px;transition:width 0.4s;"></div>
+          </div>
+          <div id="dg-proj-${g.id}"></div>
+        </div>`;
+    }).join('') + `<div style="padding-top:2px;"></div>`;
+
+    // async: load projections for linked goals
+    goals.forEach(async g => {
+      if (!g.portfolioId || !g.deadline || !g.target) return;
+      try {
+        const params = new URLSearchParams({ target_amount: g.target, target_date: g.deadline });
+        const res = await fetch(`/analytics/portfolio/${g.portfolioId}/goal-projection?${params}`, {
+          headers: { Authorization: localStorage.getItem('token') || '' }
+        });
+        if (!res.ok) return;
+        const d = await res.json();
+        const col   = d.status === 'on_track' ? '#4a9470' : d.status === 'close' ? '#d4a96a' : '#b85050';
+        const lbl   = d.status === 'on_track' ? '✅ On track' : d.status === 'close' ? '⚠️ Close' : '🔴 Off track';
+        // fmtGBP from utils.js
+        const statusEl = document.getElementById(`dg-status-${g.id}`);
+        if (statusEl) statusEl.innerHTML += `<span style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${col}18;color:${col};">${lbl}</span>`;
+
+        const projEl = document.getElementById(`dg-proj-${g.id}`);
+        const cur = d.current_value != null ? fmtGBP(d.current_value) : '';
+        const proj = d.projected_value != null ? fmtGBP(d.projected_value) : '';
+        const tgt  = d.target_amount  != null ? fmtGBP(d.target_amount)  : '';
+        if (projEl && cur) projEl.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#888;margin-top:4px;">${cur} now → ${proj} projected of ${tgt} target</div>`;
+      } catch(_) {}
+    });
+  }
+
+  renderDashGoals();
+
+</script>
+
+{% endblock %}

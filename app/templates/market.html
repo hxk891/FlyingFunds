@@ -1,0 +1,959 @@
+{% extends "base.html" %}
+{% block title %}Market | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  .container { max-width:none !important; padding:0 !important; }
+
+  /* page shell — two column layout: sidebar on left, chart panel on right */
+  .mkt-page {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 72px);
+    margin-top: 72px;
+    margin-left: 76px;
+    overflow: hidden;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+  }
+
+  .mkt-sidebar {
+    display: flex;
+    flex-direction: column;
+    background: var(--warm);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .mkt-search-section {
+    padding: 18px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .mkt-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 0 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .mkt-search-bar:focus-within {
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px rgba(201,131,122,0.1);
+  }
+  .mkt-search-icon { color: var(--muted); font-size: 15px; flex-shrink: 0; }
+  .mkt-search-bar input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    padding: 11px 0;
+  }
+  .mkt-search-bar input::placeholder { color: var(--muted); }
+
+  #mktSearchDropdown {
+    display: none;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 24px rgba(45,31,26,0.1);
+    max-height: 220px;
+    overflow-y: auto;
+    position: relative;
+    z-index: 100;
+    margin-top: -2px;
+  }
+
+  #searchStatus {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    padding: 0 2px;
+    min-height: 14px;
+  }
+
+  .mkt-chips-section {
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chips-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .mkt-chips {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .mkt-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--dark);
+    transition: all 0.15s;
+  }
+  .mkt-chip:hover {
+    background: var(--blush);
+    border-color: var(--rose);
+    color: var(--rose);
+  }
+
+  .mkt-list-section {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+  .mkt-list-section::-webkit-scrollbar { width: 3px; }
+  .mkt-list-section::-webkit-scrollbar-thumb { background: rgba(45,31,26,0.12); border-radius: 2px; }
+
+  .mktListLabel {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 12px 16px 4px;
+  }
+
+  .mkt-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+  }
+  .mkt-item:hover { background: var(--blush); }
+  .mkt-item.active { background: rgba(201,131,122,0.1); }
+  .mkt-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 6px; bottom: 6px;
+    width: 3px;
+    background: var(--rose);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .mkt-item-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--brown);
+    flex-shrink: 0;
+    letter-spacing: -0.5px;
+  }
+  .mkt-item-body { flex: 1; min-width: 0; }
+  .mkt-item-sym  { font-size: 13px; font-weight: 700; color: var(--dark); }
+  .mkt-item-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mkt-item-right { text-align: right; flex-shrink: 0; }
+  .mkt-item-price { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .mkt-item-chg   { font-size: 11px; font-weight: 600; }
+  .up { color: var(--up); }
+  .dn { color: var(--dn); }
+
+  .market-main {
+    display: flex;
+    flex-direction: column;
+    background: var(--cream);
+    overflow: hidden;
+  }
+
+  .mkt-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    gap: 12px;
+    text-align: center;
+    padding: 48px;
+  }
+  .mkt-empty-icon {
+    font-size: 52px;
+    filter: grayscale(0.3);
+  }
+  .mkt-empty h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    color: var(--dark);
+    font-weight: 400;
+    margin: 0;
+  }
+  .mkt-empty p {
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.65;
+    max-width: 360px;
+  }
+
+  .chart-view {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .chart-view.visible { display: flex; }
+
+  .mkt-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 28px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .mkt-sym-block {}
+  .mkt-sym-ticker {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .mkt-sym-name {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .mkt-price-block { text-align: right; }
+  .mkt-price-big {
+    font-family: 'DM Serif Display', serif;
+    font-size: 34px;
+    font-weight: 400;
+    color: var(--dark);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .mkt-price-change {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .mkt-stats-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--warm);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow-x: auto;
+    align-items: center;
+  }
+  .mkt-stats-row::-webkit-scrollbar { display: none; }
+
+  .stat-pill { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; flex-shrink: 0; }
+  .mkt-stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .mktVal {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dark);
+  }
+
+  .mkt-live-badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--up);
+    background: rgba(74,148,112,0.08);
+    border: 1px solid rgba(74,148,112,0.2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    flex-shrink: 0;
+  }
+  .mkt-live-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--up);
+    animation: livePulse 2s infinite;
+  }
+  @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+  .mkt-chart-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 28px 20px;
+    overflow: hidden;
+    gap: 12px;
+  }
+
+  .mkt-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .ctrl-group { display: flex; gap: 4px; }
+
+  .range-btn, .mode-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 13px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .range-btn:hover, .mode-btn:hover {
+    border-color: var(--rose);
+    color: var(--dark);
+  }
+  .range-btn.active, .mode-btn.active {
+    background: var(--dark);
+    color: var(--cream);
+    border-color: var(--dark);
+  }
+
+  .ctrl-status {
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  #mktChart {
+    flex: 1;
+    min-height: 260px;
+    border-radius: 16px;
+    overflow: hidden;
+    /* background: #fff; */
+    background: var(--surface);
+    border: 1px solid var(--border);
+    position: relative;
+  }
+
+  .tv-lightweight-charts a[href*="tradingview.com"] { display:none !important; }
+
+  #chartTooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--dark);
+    color: var(--cream);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    box-shadow: 0 4px 16px rgba(45,31,26,0.2);
+    z-index: 50;
+    display: none;
+    white-space: nowrap;
+    transform: translate(-50%, -110%);
+  }
+
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  .skeleton {
+    background: linear-gradient(90deg, #f0ece6 25%, #e8e2da 50%, #f0ece6 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.6s infinite;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  [data-theme="dark"] .mkt-sidebar { background: #1a1410; border-color: rgba(255,200,180,0.08); }
+  [data-theme="dark"] .mkt-chips-section,
+  [data-theme="dark"] .mkt-search-section { border-color: rgba(255,200,180,0.08); }
+  [data-theme="dark"] .mkt-search-bar { background: #2a1e1a; border-color: rgba(255,200,180,0.12); }
+  [data-theme="dark"] .mkt-search-bar input { color: #ede4dc; }
+  [data-theme="dark"] #mktSearchDropdown { background: #1e1614; border-color: rgba(255,200,180,0.1); }
+  [data-theme="dark"] .mkt-chip { background: #2a1e1a; border-color: rgba(255,200,180,0.12); color: #c0a898; }
+  [data-theme="dark"] .mkt-chip:hover { background: #3a2820; border-color: var(--rose); color: var(--rose); }
+  [data-theme="dark"] .mkt-item:hover { background: rgba(201,131,122,0.08); }
+  [data-theme="dark"] .mkt-item.active { background: rgba(201,131,122,0.1); }
+  [data-theme="dark"] .mkt-item-logo { background: #2a1e1a; border-color: rgba(255,200,180,0.1); }
+  [data-theme="dark"] .mkt-item-sym { color: #ede4dc; }
+  [data-theme="dark"] .mkt-header { background: #1e1614; border-color: rgba(255,200,180,0.08); }
+  [data-theme="dark"] .mkt-sym-ticker, [data-theme="dark"] .mkt-price-big { color: #ede4dc; }
+  [data-theme="dark"] .mkt-stats-row { background: #1a1410; border-color: rgba(255,200,180,0.08); }
+  [data-theme="dark"] .stat-pill { background: #2a1e1a; border-color: rgba(255,200,180,0.1); }
+  [data-theme="dark"] .mktVal { color: #ede4dc; }
+  [data-theme="dark"] #mktChart { background: #1e1614; border-color: rgba(255,200,180,0.08); }
+  [data-theme="dark"] .range-btn, [data-theme="dark"] .mode-btn { background: #2a1e1a; border-color: rgba(255,200,180,0.12); color: #a09088; }
+  [data-theme="dark"] .range-btn:hover, [data-theme="dark"] .mode-btn:hover { border-color: var(--rose); color: #ede4dc; }
+  [data-theme="dark"] .range-btn.active, [data-theme="dark"] .mode-btn.active { background: #ede4dc; color: #1a1410; border-color: #ede4dc; }
+  [data-theme="dark"] .mkt-empty h3 { color: #ede4dc; }
+  [data-theme="dark"] .skeleton { background: linear-gradient(90deg, #2a1e1a 25%, #3a2820 50%, #2a1e1a 75%); background-size: 800px 100%; }
+
+  @media (max-width: 900px) {
+    .mkt-page { grid-template-columns: 1fr; height: auto; }
+    .mkt-sidebar { height: 260px; border-right: none; border-bottom: 1px solid var(--border); }
+    .market-main { height: calc(100vh - 390px); min-height: 400px; }
+  }
+</style>
+
+<div class="mkt-page">
+
+  <aside class="mkt-sidebar">
+
+      <div class="mkt-search-section">
+      <div class="mkt-search-bar">
+        <span class="mkt-search-icon">⌕</span>
+        <input id="symInput"
+               placeholder="Search by name or ticker…"
+               autocomplete="off"
+               oninput="onSearchInput(this.value)"
+               onkeydown="handleMktSearchKey(event)"
+               onblur="setTimeout(closeMktDropdown, 180)" />
+      </div>
+      <div id="mktSearchDropdown"></div>
+      <div id="searchStatus"></div>
+    </div>
+
+      <div class="mkt-chips-section">
+      <div class="chips-lbl">Popular</div>
+      <div class="mkt-chips">
+        <div class="mkt-chip" onclick="loadSymbol('AAPL')">AAPL</div>
+        <div class="mkt-chip" onclick="loadSymbol('MSFT')">MSFT</div>
+        <div class="mkt-chip" onclick="loadSymbol('TSLA')">TSLA</div>
+        <div class="mkt-chip" onclick="loadSymbol('NVDA')">NVDA</div>
+        <div class="mkt-chip" onclick="loadSymbol('AMZN')">AMZN</div>
+        <div class="mkt-chip" onclick="loadSymbol('GOOGL')">GOOGL</div>
+        <div class="mkt-chip" onclick="loadSymbol('META')">META</div>
+        <div class="mkt-chip" onclick="loadSymbol('JPM')">JPM</div>
+      </div>
+    </div>
+
+      <div class="mkt-list-section">
+      <div class="mktListLabel">Recent</div>
+      <div id="recentList"></div>
+      <div class="mktListLabel" style="margin-top:4px;">Watchlist</div>
+      <div id="watchlistList">
+        <div style="padding:10px 16px;font-size:12px;color:var(--muted);">Loading…</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="market-main">
+
+      <div class="mkt-empty" id="mktEmpty">
+      <div class="mkt-empty-icon">📈</div>
+      <h3>Pick a stock to explore</h3>
+      <p>Search for any ticker above, or choose from the popular list on the left to see live quotes and interactive charts.</p>
+    </div>
+
+      <div class="chart-view" id="mktChartView">
+
+          <div class="mkt-header">
+        <div class="mkt-sym-block">
+          <div class="mkt-sym-ticker" id="topSym">—</div>
+          <div class="mkt-sym-name"   id="topName">—</div>
+        </div>
+        <div class="mkt-price-block">
+          <div class="mkt-price-big"    id="topPrice">—</div>
+          <div class="mkt-price-change" id="topChg">—</div>
+        </div>
+      </div>
+
+          <div class="mkt-stats-row">
+        <div class="stat-pill"><div class="mkt-stat-label">Open</div>      <div class="mktVal" id="statOpen">—</div></div>
+        <div class="stat-pill"><div class="mkt-stat-label">High</div>      <div class="mktVal" id="statHigh">—</div></div>
+        <div class="stat-pill"><div class="mkt-stat-label">Low</div>       <div class="mktVal" id="statLow">—</div></div>
+        <div class="stat-pill"><div class="mkt-stat-label">Prev Close</div><div class="mktVal" id="statPrev">—</div></div>
+        <div class="stat-pill"><div class="mkt-stat-label">Day Chg</div>   <div class="mktVal" id="statChange">—</div></div>
+        <div class="mkt-live-badge">Live</div>
+      </div>
+
+          <div class="mkt-chart-area">
+        <div class="mkt-controls">
+          <div class="ctrl-group">
+            <button class="range-btn"        data-range="1D"  onclick="setRange('1D')">1D</button>
+            <button class="range-btn"        data-range="1W"  onclick="setRange('1W')">1W</button>
+            <button class="range-btn active" data-range="1M"  onclick="setRange('1M')">1M</button>
+            <button class="range-btn"        data-range="3M"  onclick="setRange('3M')">3M</button>
+            <button class="range-btn"        data-range="6M"  onclick="setRange('6M')">6M</button>
+            <button class="range-btn"        data-range="1Y"  onclick="setRange('1Y')">1Y</button>
+            <button class="range-btn"        data-range="ALL" onclick="setRange('ALL')">ALL</button>
+          </div>
+          <div class="ctrl-group">
+            <button class="mode-btn active" data-mode="line"   onclick="setMode('line')">Line</button>
+            <button class="mode-btn"        data-mode="area"   onclick="setMode('area')">Area</button>
+            <button class="mode-btn"        data-mode="candle" onclick="setMode('candle')">Candle</button>
+          </div>
+        </div>
+        <div id="mktChart">
+          <div id="chartTooltip"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+
+  const CHART_KEY   = 'ff_mkt_v4';
+  const CACHE_KEY   = 'ff_mkt_cache_v4';
+  let currentSymbol = '';
+  let currentRange  = '1M';
+  let currentMode   = 'line';
+  let pollTimer     = null;
+  let liveTicks     = [];   // [{time, value}] for 1D live polling
+  let recentSymbols = JSON.parse(localStorage.getItem('ff_recent_syms') || '[]');
+
+  let tvChart  = null;
+  let tvSeries = null;
+
+  let chartCache = {};
+  try { chartCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch(e) { chartCache = {}; }
+
+  // cache chart data so we're not hitting the API on every ticker switch
+  // TODO: this cache grows unboundedly, need to prune old symbols at some point
+  function saveChartCache(sym, range, timestamps, closes, ohlcv) {
+    if (!chartCache[sym]) chartCache[sym] = {};
+    chartCache[sym][range] = { timestamps, closes, ohlcv, savedAt: Date.now() };
+    // TTL = 24 hours in milliseconds, clean up old entries while we're here
+    const TTL = 24 * 60 * 60 * 1000;
+    Object.keys(chartCache).forEach(s => {
+      Object.keys(chartCache[s]).forEach(r => {
+        if (Date.now() - chartCache[s][r].savedAt > TTL) delete chartCache[s][r];
+      });
+      if (!Object.keys(chartCache[s]).length) delete chartCache[s];
+    });
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(chartCache)); } catch(e) {}
+  }
+
+  // get from cache if it exists and hasnt expired
+  // 1D range expires after 15 min, everything else after 24 hours
+  function getCachedChart(sym, range) {
+    const c = chartCache[sym]?.[range];
+    if (!c) return null;
+    const TTL = range === '1D' ? 15*60*1000 : 24*60*60*1000;
+    if (Date.now() - c.savedAt > TTL) return null;
+    return c;
+  }
+
+  const NAMES = {
+    AAPL:'Apple Inc.',MSFT:'Microsoft Corp.',TSLA:'Tesla Inc.',NVDA:'NVIDIA Corp.',
+    AMZN:'Amazon.com Inc.',GOOGL:'Alphabet Inc.',META:'Meta Platforms',JPM:'JPMorgan Chase',
+    V:'Visa Inc.',BRK:'Berkshire Hathaway',WMT:'Walmart Inc.',JNJ:'Johnson & Johnson',
+    NFLX:'Netflix Inc.',AMD:'Advanced Micro Devices',INTC:'Intel Corp.',
+    BAC:'Bank of America',GS:'Goldman Sachs',DIS:'Walt Disney Co.',
+    UBER:'Uber Technologies',PYPL:'PayPal Holdings',
+  };
+
+  async function loadSymbol(sym) {
+    if (!sym) return;
+    sym = sym.toUpperCase().trim();
+    currentSymbol = sym;
+
+    // Show chart view
+    document.getElementById('mktEmpty').style.display = 'none';
+    document.getElementById('mktChartView').classList.add('visible');
+
+    // Mark active in list
+    document.querySelectorAll('.mkt-item').forEach(el =>
+      el.classList.toggle('active', el.dataset.sym === sym));
+
+    // Update header skeleton
+    document.getElementById('topSym').textContent  = sym;
+    document.getElementById('topName').textContent = NAMES[sym] || sym;
+    document.getElementById('topPrice').innerHTML = '<span class="skeleton" style="width:80px;height:28px;"></span>';
+
+    // Update input
+    document.getElementById('symInput').value = sym;
+
+    // Save to recent
+    recentSymbols = [sym, ...recentSymbols.filter(s => s !== sym)].slice(0, 5);
+    localStorage.setItem('ff_recent_syms', JSON.stringify(recentSymbols));
+
+    // Fetch quote + chart in parallel
+    await Promise.all([fetchQuote(sym), fetchChart(sym, currentRange)]);
+
+    // Start live polling
+    startLivePoll(sym);
+    renderRecentList();
+  }
+
+  async function fetchQuote(sym) {
+    try {
+      const res = await fetch(`/market/public/quote/${sym}`);
+      if (!res.ok) return; // TODO: handle error better
+      const q = await res.json();
+      updateQuoteUI(q);
+    } catch(e) {}
+  }
+
+  function updateQuoteUI(q) {
+    const price   = Number(q.price);
+    const chg     = Number(q.change || 0);
+    const chgPct  = Number(q.change_pct || 0);
+    const isUp    = chg >= 0;
+
+    document.getElementById('topPrice').textContent = `£${price.toFixed(2)}`;
+    document.getElementById('topChg').innerHTML =
+      `<span class="${isUp?'up':'dn'}">${isUp?'▲':'▼'} ${Math.abs(chg).toFixed(2)} (${Math.abs(chgPct).toFixed(2)}%)</span>`;
+
+    document.getElementById('statOpen').textContent   = `£${Number(q.open||0).toFixed(2)}`;
+    document.getElementById('statHigh').textContent   = `£${Number(q.high||0).toFixed(2)}`;
+    document.getElementById('statLow').textContent    = `£${Number(q.low||0).toFixed(2)}`;
+    document.getElementById('statPrev').textContent   = `£${Number(q.prev_close||0).toFixed(2)}`;
+    document.getElementById('statChange').innerHTML   =
+      `<span class="${isUp?'up':'dn'}">${isUp?'+':''}${chg.toFixed(2)}</span>`;
+  }
+
+  // create/destroy the tradingview lightweight chart
+  function destroyTVChart() {
+    if (tvChart) { tvChart.remove(); tvChart = null; tvSeries = null; }
+  }
+
+  // render the chart — handles line, area, and candle modes
+  function renderTVChart(timestamps, closes, ohlcv) {
+    if (!timestamps || !timestamps.length) return;
+    const container = document.getElementById('mktChart');
+    const first = closes[0], last = closes[closes.length - 1];
+    const isUp   = last >= first;
+    const UP     = '#4a9470', DN = '#c9837a';
+
+    destroyTVChart();
+
+    tvChart = LightweightCharts.createChart(container, {
+      width:  container.clientWidth,
+      height: container.clientHeight || 340,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#a08c82',
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+      },
+      grid: {
+        vertLines: { visible: false },
+        horzLines: { color: 'rgba(45,31,26,0.06)' },
+      },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: currentRange === '1D',
+        secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      handleScroll: true,
+      handleScale: true,
+    });
+
+    if (currentMode === 'candle' && ohlcv && ohlcv.t) {
+      tvSeries = tvChart.addCandlestickSeries({
+        upColor: UP, downColor: DN,
+        borderUpColor: UP, borderDownColor: DN,
+        wickUpColor: UP, wickDownColor: DN,
+      });
+      tvSeries.setData(ohlcv.t.map((ts, i) => ({
+        time: ts, open: ohlcv.o[i], high: ohlcv.h[i],
+        low: ohlcv.l[i], close: ohlcv.c[i],
+      })));
+    } else if (currentMode === 'area') {
+      tvSeries = tvChart.addAreaSeries({
+        lineColor: isUp ? UP : DN,
+        topColor:    isUp ? 'rgba(74,148,112,0.18)' : 'rgba(201,131,122,0.18)',
+        bottomColor: 'rgba(0,0,0,0)',
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      tvSeries.setData(timestamps.map((ts, i) => ({ time: ts, value: closes[i] })));
+    } else {
+      tvSeries = tvChart.addLineSeries({
+        color: isUp ? UP : DN,
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      tvSeries.setData(timestamps.map((ts, i) => ({ time: ts, value: closes[i] })));
+    }
+
+    tvChart.timeScale().fitContent();
+
+    // Keep chart sized to container
+    new ResizeObserver(() => {
+      if (tvChart) tvChart.applyOptions({
+        width:  container.clientWidth,
+        height: container.clientHeight || 340,
+      });
+    }).observe(container);
+  }
+
+  // fetch candle data for the chart — uses localStorage cache to avoid refetching
+  async function fetchChart(sym, range) {
+    const cached = getCachedChart(sym, range);
+    if (cached) {
+      document.getElementById('searchStatus').innerHTML =
+        '<span style="color:var(--sage);">Cached ✓</span> · refreshing…';
+      renderTVChart(cached.timestamps, cached.closes, cached.ohlcv);
+    }
+    if (!cached) document.getElementById('searchStatus').textContent = 'Loading chart…';
+
+    try {
+      const res = await fetch(`/market/public/candles/${sym}?range=${range}`);
+      if (!res.ok) {
+        if (!cached) renderLiveChart(sym);
+        document.getElementById('searchStatus').textContent = cached ? 'Showing cached data' : '';
+        return;
+      }
+      const data = await res.json();
+      if (!data.t || !data.t.length) {
+        if (!cached) renderLiveChart(sym);
+        return;
+      }
+
+      const ohlcv = { t: data.t, o: data.o, h: data.h, l: data.l, c: data.c };
+      saveChartCache(sym, range, data.t, data.c, ohlcv);
+      renderTVChart(data.t, data.c, ohlcv);
+      document.getElementById('searchStatus').textContent = '';
+
+    } catch(e) {
+      if (!cached) renderLiveChart(sym);
+    }
+  }
+
+  // poll for live price updates every 15 seconds when on 1D range
+  // this is basically just refreshing the quote and appending a new data point to the chart
+  async function pollAndUpdateLive(sym) {
+    try {
+      const res = await fetch(`/market/public/quote/${sym}`);
+      if (!res.ok) return;
+      const q = await res.json();
+      updateQuoteUI(q);
+
+      if (!q.price) return;
+      const nowTs = Math.floor(Date.now() / 1000);
+      liveTicks.push({ time: nowTs, value: Number(q.price) });
+      if (liveTicks.length > 480) liveTicks.shift();
+
+      if (currentRange === '1D') {
+        const ts = liveTicks.map(p => p.time);
+        const cs = liveTicks.map(p => p.value);
+        saveChartCache(sym, '1D', ts, cs, null);
+        if (tvSeries) {
+          tvSeries.update({ time: nowTs, value: Number(q.price) });
+        } else {
+          renderTVChart(ts, cs, null);
+        }
+      }
+    } catch(e) {}
+  }
+
+  function renderLiveChart(sym) {
+    const cached = getCachedChart(sym, '1D');
+    if (cached && cached.timestamps && cached.timestamps.length) {
+      liveTicks = cached.timestamps.map((ts, i) => ({ time: ts, value: cached.closes[i] }));
+      renderTVChart(cached.timestamps, cached.closes, null);
+    } else {
+      liveTicks = [];
+    }
+    pollAndUpdateLive(sym);
+  }
+
+  // start a polling interval — clears old one first to avoid duplicates
+  function startLivePoll(sym) {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => pollAndUpdateLive(sym), 15000);
+  }
+
+  // range + mode buttons
+  function setRange(range) {
+    currentRange = range;
+    document.querySelectorAll('.range-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.range === range));
+    if (currentSymbol) fetchChart(currentSymbol, range);
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === mode));
+    if (currentSymbol) fetchChart(currentSymbol, currentRange);
+  }
+
+  // symbol search with debounce — fires after user stops typing for 260ms
+  // TODO: clean this up, the autocomplete logic is a bit tangled
+  let searchTimeout = null;
+  let mktAcResults = [];
+  let mktAcIdx = -1;
+
+  function onSearchInput(val) {
+    clearTimeout(searchTimeout);
+    const dd = document.getElementById('mktSearchDropdown');
+    if (!val.trim()) { dd.style.display = 'none'; document.getElementById('searchStatus').textContent = ''; return; }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/prices/search?q=${encodeURIComponent(val.trim())}`);
+        mktAcResults = res.ok ? await res.json() : [];
+      } catch(_) { mktAcResults = []; }
+      renderMktDropdown();
+    }, 260);
+  }
+
+  function renderMktDropdown() {
+    const dd = document.getElementById('mktSearchDropdown');
+    if (!mktAcResults.length) { dd.style.display = 'none'; return; }
+    mktAcIdx = -1;
+    dd.style.display = 'block';
+    dd.innerHTML = mktAcResults.map((r, i) => `
+      <div onmousedown="pickMktSymbol(${i})" style="
+        display:flex;align-items:center;justify-content:space-between;
+        padding:9px 14px;cursor:pointer;border-bottom:1px solid rgba(45,31,26,0.05);
+        transition:background 0.1s;" class="mkt-ac-item"
+        onmouseover="this.style.background='var(--warm)'"
+        onmouseout="this.style.background='transparent'">
+        <div>
+          <span style="font-weight:700;font-size:13px;color:var(--dark);">${r.symbol}</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:8px;">${r.name}</span>
+        </div>
+        <span style="font-size:10px;color:var(--muted);background:var(--warm);padding:2px 7px;border-radius:20px;">${r.exchange || r.type}</span>
+      </div>
+    `).join('');
+  }
+
+  function pickMktSymbol(i) {
+    const r = mktAcResults[i];
+    if (!r) return;
+    document.getElementById('symInput').value = r.symbol;
+    closeMktDropdown();
+    loadSymbol(r.symbol);
+  }
+
+  function closeMktDropdown() {
+    document.getElementById('mktSearchDropdown').style.display = 'none';
+  }
+
+  function handleMktSearchKey(e) {
+    const items = document.querySelectorAll('.mkt-ac-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      mktAcIdx = Math.min(mktAcIdx + 1, items.length - 1);
+      items.forEach((el, i) => el.style.background = i === mktAcIdx ? 'var(--warm)' : 'transparent');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      mktAcIdx = Math.max(mktAcIdx - 1, 0);
+      items.forEach((el, i) => el.style.background = i === mktAcIdx ? 'var(--warm)' : 'transparent');
+    } else if (e.key === 'Enter') {
+      if (mktAcIdx >= 0 && mktAcResults[mktAcIdx]) { e.preventDefault(); pickMktSymbol(mktAcIdx); }
+      else loadSymbol(document.getElementById('symInput').value.trim().toUpperCase());
+    } else if (e.key === 'Escape') {
+      closeMktDropdown();
+    }
+  }
+
+  // render sidebar lists
+  function renderRecentList() {
+    const el = document.getElementById('recentList');
+    if (!recentSymbols.length) { el.innerHTML = ''; return; }
+    el.innerHTML = recentSymbols.map(sym => buildListItem(sym, null, null)).join('');
+  }
+
+  async function loadWatchlistSidebar() {
+    const el = document.getElementById('watchlistList');
+    try {
+      const res = await fetch('/watchlist/', { headers: { Authorization: tok() } });
+      if (!res.ok || !tok()) {
+        el.innerHTML = '<div style="padding:8px 16px;font-size:12px;color:var(--muted);">Sign in to see your watchlist</div>';
+        return;
+      }
+      const items = await res.json();
+      if (!items.length) {
+        el.innerHTML = '<div style="padding:8px 16px;font-size:12px;color:var(--muted);">Your watchlist is empty</div>';
+        return;
+      }
+      el.innerHTML = items.map(i => buildListItem(i.symbol, null, null)).join('');
+
+      // Fetch live quotes for watchlist items
+      items.forEach(async i => {
+        try {
+          const qr = await fetch(`/market/public/quote/${i.symbol}`);
+          if (!qr.ok) return;
+          const q = await qr.json();
+          const row = document.querySelector(`[data-sym="${i.symbol}"]`);
+          if (!row) return;
+          row.querySelector('.mkt-item-price').textContent = `£${Number(q.price).toFixed(2)}`;
+          const chg = Number(q.change_pct);
+          const chgEl = row.querySelector('.mkt-item-chg');
+          chgEl.textContent  = `${chg>=0?'+':''}${chg.toFixed(2)}%`;
+          chgEl.className    = `mkt-item-chg ${chg>=0?'up':'dn'}`;
+        } catch(e) {}
+      });
+
+    } catch(e) {
+      el.innerHTML = '<div style="padding:8px 16px;font-size:12px;color:var(--muted);">Could not load watchlist</div>';
+    }
+  }
+
+  function buildListItem(sym, price, chgPct) {
+    const initials = sym.slice(0,3);
+    const name = NAMES[sym] || sym;
+    return `<div class="mkt-item" data-sym="${sym}" onclick="loadSymbol('${sym}')">
+      <div class="mkt-item-logo">${initials}</div>
+      <div class="mkt-item-body">
+        <div class="mkt-item-sym">${sym}</div>
+        <div class="mkt-item-name">${name}</div>
+      </div>
+      <div class="mkt-item-right">
+        <div class="mkt-item-price">${price ? '£'+Number(price).toFixed(2) : '—'}</div>
+        <div class="mkt-item-chg ${chgPct!=null?(chgPct>=0?'up':'dn'):''}">
+          ${chgPct!=null ? (chgPct>=0?'+':'')+Number(chgPct).toFixed(2)+'%' : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // restore last viewed symbol on load
+  window.addEventListener('load', () => {
+    renderRecentList();
+    loadWatchlistSidebar();
+
+    // Restore last viewed
+    const last = localStorage.getItem(`${CHART_KEY}:last`);
+    if (last) loadSymbol(last);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (currentSymbol) localStorage.setItem(`${CHART_KEY}:last`, currentSymbol);
+    if (pollTimer) clearInterval(pollTimer);
+  });
+</script>
+
+{% endblock %}

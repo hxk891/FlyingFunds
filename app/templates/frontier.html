@@ -1,0 +1,885 @@
+{% extends "base.html" %}
+{% block title %}Analytics Lab | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .container { max-width:none!important; padding-top:72px!important; padding-bottom:48px!important; }
+  .ef-page    { max-width:1120px; margin:0 auto; padding:0 24px; }
+
+  .hero-section { margin-bottom:22px; }
+  .hero-section h1 {
+    font-family:'Instrument Serif',serif; font-size:clamp(26px,4vw,40px);
+    font-weight:400; color:var(--dark,#2d1f1a); letter-spacing:-1px;
+    margin-bottom:5px; line-height:1.1;
+  }
+  .hero-section p { font-size:14px; color:#a08c82; font-family:'DM Sans',sans-serif; max-width:620px; line-height:1.7; margin:0; }
+
+  .ef-top-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .ef-sel {
+    font-family:'DM Sans',sans-serif; font-size:13px; padding:7px 12px;
+    border:1.5px solid rgba(45,31,26,0.15); border-radius:20px;
+    background:var(--surface); color:#2d1f1a; outline:none; cursor:pointer;
+  }
+  .ef-btn {
+    font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500;
+    padding:7px 16px; border-radius:20px; border:1.5px solid rgba(45,31,26,0.12);
+    background:var(--surface); color:#2d1f1a; cursor:pointer; transition:all 0.15s;
+  }
+  .ef-btn:hover  { border-color:#c9837a; background:rgba(201,131,122,0.06); }
+  .ef-btn.active { background:#2d1f1a; color:#fff; border-color:#2d1f1a; }
+  .ef-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; font-family:'DM Sans',sans-serif; }
+  .badge-sim  { background:#f5efe6; color:#8b5e52; }
+  .badge-real { background:#d4e6de; color:#0f6e56; }
+
+  .lab-tabs {
+    display:flex; gap:2px; margin-bottom:20px;
+    border-bottom:2px solid #f0ede9;
+  }
+  .lab-tab {
+    font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+    padding:9px 20px; border:none; background:transparent;
+    color:#a08c82; cursor:pointer; border-radius:8px 8px 0 0;
+    transition:all 0.15s; border-bottom:2px solid transparent; margin-bottom:-2px;
+    white-space:nowrap;
+  }
+  .lab-tab:hover  { color:#2d1f1a; background:rgba(45,31,26,0.03); }
+  .lab-tab.active { color:#2d1f1a; border-bottom-color:#2d1f1a; font-weight:700; }
+
+  .lab-card { background:var(--surface); border:1px solid #e5e5e5; border-radius:16px; padding:20px; }
+  .lab-title {
+    font-family:'DM Sans',sans-serif; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.08em; color:#a08c82; margin-bottom:12px;
+  }
+  .lab-stat-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 0; border-bottom:1px solid #f5f5f5; font-family:'DM Sans',sans-serif;
+  }
+  .lab-stat-row:last-child { border-bottom:none; }
+  .lab-stat-label { font-size:12px; color:#888; }
+  .lab-val   { font-size:13px; font-weight:600; color:#2d1f1a; }
+  .lab-insight {
+    background:linear-gradient(135deg,#f5efe6,#faf7f2);
+    border:1.5px solid rgba(201,131,122,0.15); border-radius:14px;
+    padding:14px 16px; font-family:'DM Sans',sans-serif;
+    font-size:13px; color:#2d1f1a; line-height:1.65;
+  }
+  .lab-insight strong { font-weight:600; }
+  .lab-loading {
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:12px;
+    font-family:'DM Sans',sans-serif; color:#a08c82; font-size:14px;
+  }
+  .spin { width:32px; height:32px; border:3px solid #f5efe6; border-top-color:#c9837a; border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .lab-note {
+    margin-top:20px; padding:16px 20px;
+    background:var(--surface); border:1px solid #e5e5e5; border-radius:14px;
+    font-family:'DM Sans',sans-serif; font-size:13px; color:#555; line-height:1.7;
+  }
+  .labNoteTitle {
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.08em; color:#a08c82; margin-bottom:8px;
+  }
+
+  .ef-layout { display:grid; grid-template-columns:1fr 330px; gap:20px; align-items:start; }
+  @media(max-width:900px){ .ef-layout { grid-template-columns:1fr; } }
+  .ef-sidebar { display:flex; flex-direction:column; gap:14px; }
+  #efChart { height:420px; }
+  .wt-row  { margin-bottom:8px; }
+  .wt-top  { display:flex; justify-content:space-between; margin-bottom:3px; font-family:'DM Sans',sans-serif; }
+  .wt-sym  { font-size:12px; font-weight:600; color:#2d1f1a; }
+  .wt-pct  { font-size:12px; color:#888; }
+  .wt-bar  { height:6px; border-radius:3px; background:#e5e5e5; overflow:hidden; }
+  .wt-fill { height:100%; border-radius:3px; transition:width 0.4s ease; }
+  .cmp-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+  .cmp-cell { background:#f9f9f9; border-radius:10px; padding:10px 12px; font-family:'DM Sans',sans-serif; text-align:center; }
+  .cmp-lbl  { font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
+  .cmp-val  { font-size:15px; font-weight:600; color:#2d1f1a; }
+  .cmp-sub  { font-size:10px; color:#aaa; margin-top:2px; }
+
+  .sc-layout { display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:start; }
+  @media(max-width:800px){ .sc-layout { grid-template-columns:1fr; } }
+  .sc-label {
+    font-family:'DM Sans',sans-serif; font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.06em; color:#a08c82;
+    margin-bottom:4px; margin-top:14px;
+  }
+  .sc-label:first-child { margin-top:0; }
+  .sc-input {
+    width:100%; font-family:'DM Sans',sans-serif; font-size:14px;
+    padding:8px 12px; border:1.5px solid #e5e5e5; border-radius:10px;
+    background:var(--surface); color:#2d1f1a; outline:none; box-sizing:border-box;
+  }
+  .sc-input:focus { border-color:#c9837a; }
+  .sc-run-btn {
+    width:100%; margin-top:18px; font-family:'DM Sans',sans-serif;
+    font-size:14px; font-weight:600; padding:11px 0; border-radius:12px;
+    border:none; background:#2d1f1a; color:#fff; cursor:pointer; transition:opacity 0.15s;
+  }
+  .sc-run-btn:hover { opacity:0.85; }
+  .sc-stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+  @media(max-width:640px){ .sc-stats-bar { grid-template-columns:repeat(2,1fr); } }
+  .sc-stat { background:var(--surface); border:1px solid #e5e5e5; border-radius:12px; padding:13px 14px; font-family:'DM Sans',sans-serif; }
+  .sc-lbl { font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px; }
+  .sc-val { font-size:19px; font-weight:600; color:#2d1f1a; letter-spacing:-0.5px; }
+  .sc-sub { font-size:11px; color:#aaa; margin-top:2px; }
+
+  .reg-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
+  @media(max-width:900px){ .reg-layout { grid-template-columns:1fr; } }
+  .reg-sidebar { display:flex; flex-direction:column; gap:14px; }
+  #regChart { height:400px; }
+  .reg-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .reg-cell { background:#f9f9f9; border-radius:12px; padding:14px 15px; font-family:'DM Sans',sans-serif; }
+  .reg-lbl  { font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+  .reg-val  { font-size:22px; font-weight:600; color:#2d1f1a; letter-spacing:-0.5px; }
+  .reg-desc { font-size:11px; color:#a08c82; margin-top:3px; line-height:1.4; }
+  .reg-bm-row    { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+  .reg-bm-btn {
+    font-family:'DM Sans',sans-serif; font-size:12px; padding:5px 14px;
+    border-radius:20px; border:1.5px solid #e5e5e5; background:var(--surface);
+    color:#888; cursor:pointer; transition:all 0.15s;
+  }
+  .reg-bm-btn.active { background:#2d1f1a; color:#fff; border-color:#2d1f1a; }
+
+  [data-theme="dark"] .lab-card,
+  [data-theme="dark"] .ef-stat-card,
+  [data-theme="dark"] .sc-stat,
+  [data-theme="dark"] .lab-note   { background:#1e1e1e; border-color:#333; }
+  [data-theme="dark"] .lab-stat-row { border-color:#2a2a2a; }
+  [data-theme="dark"] .lab-stat-label, [data-theme="dark"] .lab-title,
+  [data-theme="dark"] .sc-lbl, [data-theme="dark"] .reg-lbl,
+  [data-theme="dark"] .sc-label    { color:#777; }
+  [data-theme="dark"] .lab-val, [data-theme="dark"] .sc-val,
+  [data-theme="dark"] .reg-val, [data-theme="dark"] .wt-sym,
+  [data-theme="dark"] .cmp-val, [data-theme="dark"] .lab-note { color:#e8e0d8; }
+  [data-theme="dark"] .cmp-cell, [data-theme="dark"] .reg-cell { background:#2a2a2a; }
+  [data-theme="dark"] .ef-sel, [data-theme="dark"] .sc-input { background:#1e1e1e; color:#e8e0d8; border-color:#444; }
+  [data-theme="dark"] .ef-btn, [data-theme="dark"] .reg-bm-btn { background:#1e1e1e; color:#e8e0d8; border-color:#444; }
+  [data-theme="dark"] .ef-btn.active, [data-theme="dark"] .reg-bm-btn.active { background:#e8e0d8; color:#1e1e1e; }
+  [data-theme="dark"] .lab-tabs { border-color:#333; }
+  [data-theme="dark"] .lab-tab { color:#777; }
+  [data-theme="dark"] .lab-tab.active { color:#e8e0d8; border-bottom-color:#e8e0d8; }
+  [data-theme="dark"] .lab-insight { background:linear-gradient(135deg,#1e1a17,#1a1a1a); border-color:rgba(201,131,122,0.2); color:#e8e0d8; }
+  [data-theme="dark"] .wt-bar { background:#333; }
+</style>
+
+<div class="ef-page">
+
+  <div class="hero-section">
+    <h1>Analytics Lab</h1>
+    <p>Efficient frontier, scenario simulation, and CAPM regression — quantitative tools for your portfolio in one place.</p>
+  </div>
+
+  <div class="ef-top-row">
+    <select class="ef-sel" id="efPortfolioSel" onchange="onPortfolioChange()">
+      <option value="">Loading portfolios…</option>
+    </select>
+    <span id="efBadge" class="ef-badge badge-sim" style="display:none;"></span>
+    <span id="efStatus" style="font-size:12px;color:#a08c82;font-family:'DM Sans',sans-serif;"></span>
+  </div>
+
+  <div class="lab-tabs">
+    <button class="lab-tab active" id="tab-btn-frontier" onclick="switchLabTab('frontier',this)">📊 Efficient Frontier</button>
+    <button class="lab-tab"        id="tab-btn-sim"      onclick="switchLabTab('sim',this)">🔭 Scenario Simulator</button>
+    <button class="lab-tab"        id="tab-btn-reg"      onclick="switchLabTab('reg',this)">📈 CAPM Regression</button>
+  </div>
+
+  <div id="panel-frontier">
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <button class="ef-btn active" id="colourModeSharpe" onclick="setColourMode('sharpe',this)">Colour by Sharpe</button>
+      <button class="ef-btn"        id="colourModeVol"    onclick="setColourMode('vol',this)">Colour by Volatility</button>
+    </div>
+
+    <div class="ef-layout">
+          <div class="lab-card">
+        <div id="efChart">
+          <div class="lab-loading" style="height:420px;">
+            <div class="spin"></div>
+            Select a portfolio to generate the frontier
+          </div>
+        </div>
+      </div>
+
+          <div class="ef-sidebar">
+
+              <div class="lab-card">
+          <div class="lab-title">Your current portfolio</div>
+          <div id="currentStats">
+            <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;">Load a portfolio to see stats</div>
+          </div>
+        </div>
+
+              <div class="lab-card" id="irrCard" style="display:none;">
+          <div class="lab-title">Performance (XIRR)</div>
+          <div id="irrStats"></div>
+        </div>
+
+              <div class="lab-card">
+          <div class="lab-title">Current vs optimal</div>
+          <div id="comparisonGrid">
+            <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;">—</div>
+          </div>
+        </div>
+
+              <div class="lab-card">
+          <div class="lab-title" id="weightsTitle">Max Sharpe weights</div>
+          <div id="optimalWeights">
+            <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;">—</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:12px;">
+            <button class="ef-btn active" id="wtBtnSharpe" onclick="showWeights('sharpe',this)" style="font-size:11px;padding:5px 12px;">Max Sharpe</button>
+            <button class="ef-btn"        id="wtBtnMinVol" onclick="showWeights('minvol',this)"  style="font-size:11px;padding:5px 12px;">Min Volatility</button>
+          </div>
+        </div>
+
+              <div class="lab-insight" id="efInsight" style="display:none;"></div>
+
+      </div>
+    </div>
+
+    <div class="lab-note">
+      <div class="labNoteTitle">How this works</div>
+      Each dot represents a randomly generated portfolio using your holdings, with weights that sum to 100%.
+      The <strong style="color:#c9837a;">frontier</strong> is the upper-left edge — portfolios that maximise return for their level of risk.
+      <strong style="color:#7a9e8e;">Max Sharpe ★</strong> maximises return per unit of risk.
+      <strong style="color:#7bafc4;">Min Volatility ◆</strong> minimises total risk.
+      <em style="color:#a08c82;">If showing simulated data, upload a historical price CSV in Settings for real correlations.</em>
+    </div>
+  </div>
+
+  <div id="panel-sim" style="display:none;">
+    <div class="sc-layout">
+
+          <div class="lab-card">
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:#2d1f1a;margin-bottom:3px;letter-spacing:-0.3px;">Assumptions</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#aaa;margin-bottom:16px;line-height:1.5;">Adjust the inputs, then click Run to see possible outcomes.</div>
+
+        <div class="sc-label">Initial Investment (£)</div>
+        <input class="sc-input" type="number" id="simInitial" value="10000" min="100" step="500">
+
+        <div class="sc-label">Monthly Contribution (£)</div>
+        <input class="sc-input" type="number" id="simMonthly" value="200" min="0" step="50">
+
+        <div class="sc-label">Time Horizon (years)</div>
+        <input class="sc-input" type="number" id="simYears" value="10" min="1" max="40" step="1">
+
+        <div class="sc-label">Expected Annual Return (%)</div>
+        <input class="sc-input" type="number" id="simReturn" value="8" min="-20" max="60" step="0.5">
+
+        <div class="sc-label">Annual Volatility / Risk (%)</div>
+        <input class="sc-input" type="number" id="simVol" value="15" min="1" max="100" step="0.5">
+
+        <div class="sc-label">Monte Carlo paths</div>
+        <select class="sc-input" id="simPaths" style="appearance:auto;">
+          <option value="200">200 paths (fast)</option>
+          <option value="500" selected>500 paths</option>
+          <option value="1000">1,000 paths (slow)</option>
+        </select>
+
+        <button class="sc-run-btn" onclick="runScenario()">▶ Run simulation</button>
+
+        <div id="simAutoFill" style="display:none;margin-top:10px;font-family:'DM Sans',sans-serif;font-size:11px;color:#4a9470;text-align:center;">
+          ↑ Return &amp; volatility pre-filled from portfolio data
+        </div>
+      </div>
+
+          <div>
+        <div class="lab-card" style="margin-bottom:14px;">
+          <div id="simChart" style="height:340px;">
+            <div class="lab-loading" style="height:340px;">
+              <span style="font-size:32px;">🔭</span>
+              Set your assumptions and click Run
+            </div>
+          </div>
+        </div>
+        <div id="simStats" class="sc-stats-bar" style="display:none;"></div>
+      </div>
+
+    </div>
+
+    <div class="lab-note">
+      <div class="labNoteTitle">About this model</div>
+      Uses <strong>Geometric Brownian Motion (GBM)</strong>, the model underlying Black-Scholes option pricing.
+      Each path follows <em>S(t+dt) = S(t) · exp[(μ − σ²/2)dt + σ√dt · ε]</em>, where ε ~ N(0,1).
+      Shaded bands show the 5th–95th percentile of outcomes across all paths. Monthly contributions are added every 21 business days.
+      <strong>This is not financial advice.</strong> Real markets exhibit fat tails and regime changes not captured by GBM.
+    </div>
+  </div>
+
+  <div id="panel-reg" style="display:none;">
+
+    <div class="reg-bm-row">
+      <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a08c82;">Benchmark:</span>
+      <button class="reg-bm-btn active" onclick="setRegBenchmark('SPY',this)">SPY (S&amp;P 500)</button>
+      <button class="reg-bm-btn"        onclick="setRegBenchmark('QQQ',this)">QQQ (NASDAQ 100)</button>
+      <button class="reg-bm-btn"        onclick="setRegBenchmark('IWM',this)">IWM (Russell 2000)</button>
+    </div>
+
+    <div class="reg-layout">
+
+          <div class="lab-card">
+        <div id="regChart" style="height:400px;">
+          <div class="lab-loading" style="height:400px;">
+            <span style="font-size:32px;">📈</span>
+            Load a portfolio to run the regression
+          </div>
+        </div>
+      </div>
+
+          <div class="reg-sidebar">
+        <div class="lab-card">
+          <div class="lab-title">CAPM Statistics</div>
+          <div id="regStatCards" class="reg-stats-grid">
+            <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;grid-column:1/-1;">—</div>
+          </div>
+        </div>
+        <div class="lab-insight" id="regInsight" style="display:none;"></div>
+      </div>
+
+    </div>
+
+    <div class="lab-note">
+      <div class="labNoteTitle">CAPM explained</div>
+      The <strong>Capital Asset Pricing Model</strong> regresses your portfolio's daily returns against a market benchmark.
+      <strong>β (Beta)</strong> measures market sensitivity. β=1 tracks the market, β&gt;1 amplifies moves, β&lt;1 is defensive.
+      <strong>α (Alpha)</strong> is excess return after removing market exposure. Positive alpha signals risk-adjusted outperformance.
+      <strong>R²</strong> shows what fraction of your portfolio's variance is explained by the benchmark.
+      A high R² with low alpha suggests index-like behaviour; low R² indicates stock-specific (idiosyncratic) risk dominates.
+    </div>
+  </div>
+
+</div><!-- ef-page -->
+
+<script>
+  function tok() { return localStorage.getItem('token') || ''; }
+
+  let _efData       = null;
+  let _colourMode   = 'sharpe';
+  let _weightsMode  = 'sharpe';
+  let _regBenchmark = 'SPY';
+  let _activeTab    = 'frontier';
+
+  function switchLabTab(tab, btn) {
+    _activeTab = tab;
+    document.querySelectorAll('.lab-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['frontier','sim','reg'].forEach(t =>
+      document.getElementById('panel-' + t).style.display = (t === tab) ? '' : 'none'
+    );
+    if (tab === 'reg') loadRegression();
+  }
+
+  function onPortfolioChange() {
+    loadFrontier();
+    if (_activeTab === 'reg') loadRegression();
+  }
+
+  async function initSelector() {
+    try {
+      const r = await fetch('/portfolios/', { headers:{ Authorization: tok() } });
+      if (!r.ok) { window.location.href = '/login'; return; }
+      const ps = await r.json();
+      const sel = document.getElementById('efPortfolioSel');
+      if (!ps.length) { sel.innerHTML = '<option>No portfolios found</option>'; return; }
+      sel.innerHTML = ps.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      loadFrontier();
+    } catch(e) { console.error(e); }
+  }
+
+  
+  async function loadFrontier() {
+    const id = document.getElementById('efPortfolioSel').value;
+    if (!id) return;
+
+    document.getElementById('efChart').innerHTML =
+      `<div class="lab-loading" style="height:420px;"><div class="spin"></div>Running Monte Carlo simulation…</div>`;
+    document.getElementById('efBadge').style.display = 'none';
+    document.getElementById('efStatus').textContent = '';
+
+    try {
+      const r = await fetch(`/analytics/portfolio/${id}/frontier?n_portfolios=3000`, {
+        headers:{ Authorization: tok() }
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        document.getElementById('efChart').innerHTML =
+          `<div class="lab-loading" style="height:420px;color:#c9837a;"><span style="font-size:28px;">📊</span>${err.detail||'Could not generate frontier'}</div>`;
+        return;
+      }
+      _efData = await r.json();
+      renderFrontier(_efData);
+      loadIRR(id);
+      prefillSimulator(_efData);
+    } catch(e) {
+      console.error(e);
+      document.getElementById('efChart').innerHTML =
+        `<div class="lab-loading" style="height:420px;color:#c9837a;">Error loading data</div>`;
+    }
+  }
+
+  // render the effiecient frontier scatter — each point is a random portfoloi from monte carlo
+  // colour by sharpe ratio or volatility depending on the toggle
+  function renderFrontier(data) {
+    const sims = data.simulations, cur = data.current, opt = data.optimal;
+    const colVals = sims.map(p => _colourMode === 'sharpe' ? p.sharpe : p.vol);
+    const minC = Math.min(...colVals), maxC = Math.max(...colVals);
+
+    const hoverTexts = sims.map(p => {
+      const w = Object.entries(p.weights).sort((a,b) => b[1]-a[1]).slice(0,3)
+        .map(([s,v]) => `${s}: ${(v*100).toFixed(1)}%`).join(', ');
+      return `Return: ${(p.return*100).toFixed(1)}%<br>Vol: ${(p.vol*100).toFixed(1)}%<br>Sharpe: ${p.sharpe.toFixed(2)}<br>${w}`;
+    });
+
+    const traceCloud = {
+      type:'scatter', mode:'markers', name:'Simulated portfolios',
+      x: sims.map(p => p.vol*100), y: sims.map(p => p.return*100),
+      text: hoverTexts, hovertemplate:'%{text}<extra></extra>',
+      marker:{
+        size:4, color:colVals, opacity:0.7, showscale:true,
+        colorscale: _colourMode==='sharpe'
+          ? [[0,'#7bafc4'],[0.5,'#7a9e8e'],[1,'#4a9470']]
+          : [[0,'#7a9e8e'],[0.5,'#d97706'],[1,'#c9837a']],
+        colorbar:{ title:{text:_colourMode==='sharpe'?'Sharpe':'Volatility', font:{family:'DM Sans',size:11,color:'#a08c82'}}, thickness:12, len:0.6, tickfont:{family:'DM Sans',size:10,color:'#a08c82'} },
+      },
+    };
+
+    const ms = opt.max_sharpe;
+    const traceMaxSharpe = {
+      type:'scatter', mode:'markers+text', name:'Max Sharpe ★',
+      x:[ms.vol*100], y:[ms.return*100], text:['★'], textposition:'top center',
+      textfont:{size:16,color:'#4a9470',family:'DM Sans'},
+      hovertemplate:`<b>Max Sharpe</b><br>Return: ${(ms.return*100).toFixed(1)}%<br>Vol: ${(ms.vol*100).toFixed(1)}%<br>Sharpe: ${ms.sharpe.toFixed(2)}<extra></extra>`,
+      marker:{size:14,color:'#4a9470',symbol:'star',line:{color:'#fff',width:1.5}},
+    };
+
+    const mv = opt.min_vol;
+    const traceMinVol = {
+      type:'scatter', mode:'markers+text', name:'Min Volatility ◆',
+      x:[mv.vol*100], y:[mv.return*100], text:['◆'], textposition:'top center',
+      textfont:{size:14,color:'#7bafc4',family:'DM Sans'},
+      hovertemplate:`<b>Min Volatility</b><br>Return: ${(mv.return*100).toFixed(1)}%<br>Vol: ${(mv.vol*100).toFixed(1)}%<br>Sharpe: ${mv.sharpe.toFixed(2)}<extra></extra>`,
+      marker:{size:14,color:'#7bafc4',symbol:'diamond',line:{color:'#fff',width:1.5}},
+    };
+
+    const traceCurrent = {
+      type:'scatter', mode:'markers+text', name:'Your portfolio ●',
+      x:[cur.vol*100], y:[cur.return*100], text:['●'], textposition:'top center',
+      textfont:{size:16,color:'#c9837a',family:'DM Sans'},
+      hovertemplate:`<b>Your portfolio</b><br>Return: ${(cur.return*100).toFixed(1)}%<br>Vol: ${(cur.vol*100).toFixed(1)}%<br>Sharpe: ${cur.sharpe.toFixed(2)}<extra></extra>`,
+      marker:{size:16,color:'#c9837a',symbol:'circle',line:{color:'#fff',width:2}},
+    };
+
+    const layout = {
+      margin:{t:20,l:55,r:80,b:50}, paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+      xaxis:{ title:{text:'Annualised volatility (%)',font:{family:'DM Sans',size:12,color:'#a08c82'}}, showgrid:true, gridcolor:'rgba(45,31,26,0.05)', tickfont:{family:'DM Sans',size:11,color:'#a08c82'}, ticksuffix:'%', zeroline:false },
+      yaxis:{ title:{text:'Annualised return (%)',font:{family:'DM Sans',size:12,color:'#a08c82'}}, showgrid:true, gridcolor:'rgba(45,31,26,0.05)', tickfont:{family:'DM Sans',size:11,color:'#a08c82'}, ticksuffix:'%', zeroline:true, zerolinecolor:'rgba(45,31,26,0.1)' },
+      legend:{ font:{family:'DM Sans',size:11,color:'#2d1f1a'}, bgcolor:'rgba(255,255,255,0.85)', bordercolor:'rgba(45,31,26,0.08)', borderwidth:1 },
+      hovermode:'closest',
+    };
+
+    document.getElementById('efChart').innerHTML = '<div id="efPlot" style="height:420px;"></div>';
+    Plotly.newPlot('efPlot', [traceCloud,traceMaxSharpe,traceMinVol,traceCurrent], layout, {displayModeBar:false,responsive:true});
+
+    const badge = document.getElementById('efBadge');
+    badge.style.display = 'inline-block';
+    badge.className = data.synthetic ? 'ef-badge badge-sim' : 'ef-badge badge-real';
+    badge.textContent = data.synthetic ? '⚠ Simulated data' : '✓ Real price data';
+
+    updateFrontierSidebar(data);
+  }
+
+  function updateFrontierSidebar(data) {
+    const cp = data.current, ms = data.optimal.max_sharpe, mv = data.optimal.min_vol;
+    document.getElementById('currentStats').innerHTML = `
+      <div class="lab-stat-row"><span class="lab-stat-label">Annualised return</span><span class="lab-val" style="color:${cp.return>=0?'#4a9470':'#c9837a'};">${(cp.return*100).toFixed(1)}%</span></div>
+      <div class="lab-stat-row"><span class="lab-stat-label">Annualised volatility</span><span class="lab-val">${(cp.vol*100).toFixed(1)}%</span></div>
+      <div class="lab-stat-row"><span class="lab-stat-label">Sharpe ratio</span><span class="lab-val">${cp.sharpe.toFixed(2)}</span></div>
+      <div class="lab-stat-row"><span class="lab-stat-label">Holdings</span><span class="lab-val">${data.symbols.length}</span></div>`;
+
+    const sharpeGap = ms.sharpe - cp.sharpe;
+    const volGap    = cp.vol    - mv.vol;
+    document.getElementById('comparisonGrid').innerHTML = `
+      <div class="cmp-grid">
+        <div class="cmp-cell"><div class="cmp-lbl">Your Sharpe</div><div class="cmp-val">${cp.sharpe.toFixed(2)}</div><div class="cmp-sub">current</div></div>
+        <div class="cmp-cell" style="background:#f0fdf4;"><div class="cmp-lbl">Max Sharpe</div><div class="cmp-val" style="color:#4a9470;">${ms.sharpe.toFixed(2)}</div><div class="cmp-sub" style="color:#4a9470;">+${sharpeGap.toFixed(2)}</div></div>
+        <div class="cmp-cell" style="background:#eff6ff;"><div class="cmp-lbl">Min Vol</div><div class="cmp-val" style="color:#7bafc4;">${(mv.vol*100).toFixed(1)}%</div><div class="cmp-sub" style="color:#7bafc4;">−${(volGap*100).toFixed(1)}pp</div></div>
+      </div>`;
+
+    showWeights(_weightsMode);
+    generateInsight(data);
+  }
+
+  function showWeights(mode, btn) {
+    _weightsMode = mode;
+    document.querySelectorAll('[id^=wtBtn]').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    if (!_efData) return;
+    const target  = mode === 'sharpe' ? _efData.optimal.max_sharpe : _efData.optimal.min_vol;
+    const weights = Object.entries(target.weights).sort((a,b) => b[1]-a[1]);
+    document.getElementById('weightsTitle').textContent = mode === 'sharpe' ? 'Max Sharpe weights' : 'Min Volatility weights';
+    const colors = ['#c9837a','#7a9e8e','#7bafc4','#8b5e52','#a08c82','#65a30d','#d97706'];
+    document.getElementById('optimalWeights').innerHTML = weights.map(([sym,w],i) => `
+      <div class="wt-row">
+        <div class="wt-top"><span class="wt-sym">${sym}</span><span class="wt-pct">${(w*100).toFixed(1)}%</span></div>
+        <div class="wt-bar"><div class="wt-fill" style="width:${(w*100).toFixed(1)}%;background:${colors[i%colors.length]};"></div></div>
+      </div>`).join('');
+  }
+
+  function generateInsight(data) {
+    const cp = data.current, ms = data.optimal.max_sharpe, mv = data.optimal.min_vol;
+    const el = document.getElementById('efInsight');
+    const sharpeGap = ms.sharpe - cp.sharpe;
+    const volGap    = (cp.vol - mv.vol) * 100;
+    const topMS   = Object.entries(ms.weights).sort((a,b) => b[1]-a[1])[0];
+    const topCurr = Object.entries(cp.weights).sort((a,b) => b[1]-a[1])[0];
+    let text = '';
+    if (cp.sharpe >= ms.sharpe * 0.95) {
+      text = `<strong>Excellent positioning.</strong> Very close to the theoretical maximum Sharpe ratio.`;
+    } else if (sharpeGap > 0.5) {
+      text = `<strong>Significant gap.</strong> Max Sharpe is ${ms.sharpe.toFixed(2)} vs your ${cp.sharpe.toFixed(2)} (+${sharpeGap.toFixed(2)}). Key difference: ${topMS[0]} should be ${(topMS[1]*100).toFixed(0)}% vs your current ${((cp.weights[topMS[0]]||0)*100).toFixed(0)}%.`;
+    } else {
+      text = `<strong>Reasonable positioning.</strong> Sharpe gap: ${sharpeGap.toFixed(2)}. ${volGap > 5 ? `Could cut volatility by ${volGap.toFixed(1)}pp via the min-vol portfolio.` : 'Volatility close to minimum achievable.'}`;
+    }
+    if (data.synthetic) text += ` <em style="color:#a08c82;">Based on simulated returns.</em>`;
+    el.style.display = 'block';
+    el.innerHTML = '💡 ' + text;
+  }
+
+  function setColourMode(mode, btn) {
+    _colourMode = mode;
+    document.querySelectorAll('.ef-btn[id^=colourMode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (_efData) renderFrontier(_efData);
+  }
+
+  // newton-raphson to find IRR — took a while to get the convergence tolerance right
+  async function loadIRR(portfolioId) {
+    try {
+      const r = await fetch(`/analytics/portfolio/${portfolioId}/irr`, { headers:{ Authorization: tok() } });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.current_value == null) return;
+
+      const plCol    = (d.total_pl  || 0) >= 0 ? '#4a9470' : '#c9837a';
+      const xirrCol  = (d.xirr     || 0) >= 0 ? '#4a9470' : '#c9837a';
+      // fmtGBP + fmtPct come from /static/js/utils.js
+      document.getElementById('irrStats').innerHTML = `
+        <div class="lab-stat-row"><span class="lab-stat-label">XIRR (annualised)</span><span class="lab-val" style="color:${xirrCol};">${fmtPct(d.xirr != null ? d.xirr*100 : null)}</span></div>
+        <div class="lab-stat-row"><span class="lab-stat-label">Current value</span><span class="lab-val">${fmtGBP(d.current_value)}</span></div>
+        <div class="lab-stat-row"><span class="lab-stat-label">Cost basis</span><span class="lab-val">${fmtGBP(d.cost_basis)}</span></div>
+        <div class="lab-stat-row"><span class="lab-stat-label">Total P&amp;L</span><span class="lab-val" style="color:${plCol};">${fmtGBP(d.total_pl)} (${fmtPct(d.total_pl_pct)})</span></div>
+        <div class="lab-stat-row"><span class="lab-stat-label">Trades logged</span><span class="lab-val">${d.trade_count}</span></div>`;
+      document.getElementById('irrCard').style.display = '';
+    } catch(e) { console.error('IRR error:', e); }
+  }
+
+  // need normally distributed random numbers for GBM
+  // box-muller transform — takes two uniform U(0,1) values and converts them
+  // into one standard normal. kind of magical that this works tbh
+  // the while loops avoid exactly 0 which would give log(0) = -Infinity
+  function randn_bm() {
+    let u = 0, v = 0;
+    while (!u) u = Math.random();
+    while (!v) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  function prefillSimulator(efData) {
+    if (!efData?.current) return;
+    document.getElementById('simReturn').value = (efData.current.return * 100).toFixed(1);
+    document.getElementById('simVol').value    = (efData.current.vol   * 100).toFixed(1);
+    document.getElementById('simAutoFill').style.display = '';
+  }
+
+  function runScenario() {
+    const S0      = parseFloat(document.getElementById('simInitial').value) || 10000;
+    const monthly = parseFloat(document.getElementById('simMonthly').value) || 0;
+    const years   = parseFloat(document.getElementById('simYears').value)   || 10;
+    const mu      = parseFloat(document.getElementById('simReturn').value)  / 100;
+    const sigma   = parseFloat(document.getElementById('simVol').value)     / 100;
+    const nPaths  = parseInt(document.getElementById('simPaths').value)     || 500;
+
+    // one trading day as a fraction of a year — markets are open ~252 days/year
+    const dt    = 1 / 252;
+    const steps = Math.round(years * 252);
+
+    // GBM drift term: (mu - 0.5*sigma²) * dt
+    // the 0.5*sigma² is the Ito correction — without it you'd be modelling
+    // the arithmetic mean, not the geometric mean that prices actually follow
+    const drift = (mu - 0.5 * sigma * sigma) * dt;
+    const diff  = sigma * Math.sqrt(dt);   // volatility scaled to one day
+
+    // only store one point per ~month (21 trading days) rather than every day
+    // otherwise the chart gets 2500+ points per path and plotly falls over
+    const every  = 21;
+    const nSamps = Math.floor(steps / every) + 1;
+    const xAxis  = Array.from({length: nSamps}, (_, i) => +(i * every / 252).toFixed(3));
+
+    // matrix[timeSlice][pathIndex] — using Float64Array per slice is noticeably
+    // faster than a plain nested array when nPaths=1000
+    const matrix = Array.from({length: nSamps}, () => new Float64Array(nPaths));
+    const finals = new Float64Array(nPaths);
+
+    for (let p = 0; p < nPaths; p++) {
+      let S = S0, si = 0;
+      matrix[0][p] = S;
+      for (let i = 1; i <= steps; i++) {
+        // core GBM step: S(t+dt) = S(t) * exp(drift + vol*ε) where ε ~ N(0,1)
+        S *= Math.exp(drift + diff * randn_bm());
+        // add monthly contribution at the start of each ~month
+        if (i % 21 === 0) S += monthly;
+        if (i % every === 0 && si + 1 < nSamps) matrix[++si][p] = S;
+      }
+      finals[p] = S;
+    }
+
+    // linear interpolation for fractional percentile indices
+    // e.g. p=5 on 500 paths gives index 24.95 → interpolate between [24] and [25]
+    function pct(col, p) {
+      const s = Array.from(col).sort((a,b) => a - b);
+      const i = (p / 100) * (s.length - 1);
+      const lo = Math.floor(i), hi = Math.ceil(i);
+      return s[lo] + (i - lo) * (s[hi] - s[lo]);
+    }
+
+    const p5  = xAxis.map((_,i) => Math.round(pct(matrix[i], 5)));
+    const p25 = xAxis.map((_,i) => Math.round(pct(matrix[i], 25)));
+    const p50 = xAxis.map((_,i) => Math.round(pct(matrix[i], 50)));
+    const p75 = xAxis.map((_,i) => Math.round(pct(matrix[i], 75)));
+    const p95 = xAxis.map((_,i) => Math.round(pct(matrix[i], 95)));
+
+    const rev = arr => [...arr].reverse();
+
+    // Traces
+    const trOuter = {
+      type:'scatter', name:'5th–95th pct',
+      x:[...xAxis, ...rev(xAxis)], y:[...p95, ...rev(p5)],
+      fill:'toself', fillcolor:'rgba(123,175,196,0.10)',
+      line:{color:'transparent'}, hoverinfo:'skip', showlegend:true,
+    };
+    const trInner = {
+      type:'scatter', name:'25th–75th pct',
+      x:[...xAxis, ...rev(xAxis)], y:[...p75, ...rev(p25)],
+      fill:'toself', fillcolor:'rgba(123,175,196,0.22)',
+      line:{color:'transparent'}, hoverinfo:'skip', showlegend:true,
+    };
+    const trMedian = {
+      type:'scatter', mode:'lines', name:'Median',
+      x:xAxis, y:p50,
+      line:{color:'#7bafc4', width:3},
+      hovertemplate:'Year %{x:.1f}<br>Median: £%{y:,.0f}<extra></extra>',
+    };
+    const trP5 = {
+      type:'scatter', mode:'lines', name:'5th pct',
+      x:xAxis, y:p5,
+      line:{color:'#c9837a', width:1.5, dash:'dot'},
+      hovertemplate:'Year %{x:.1f}<br>Worst 5%%: £%{y:,.0f}<extra></extra>',
+    };
+    const trP95 = {
+      type:'scatter', mode:'lines', name:'95th pct',
+      x:xAxis, y:p95,
+      line:{color:'#4a9470', width:1.5, dash:'dot'},
+      hovertemplate:'Year %{x:.1f}<br>Best 5%%: £%{y:,.0f}<extra></extra>',
+    };
+    const trStart = {
+      type:'scatter', mode:'markers', showlegend:false,
+      x:[0], y:[S0],
+      marker:{size:9,color:'#2d1f1a',symbol:'circle'},
+      hovertemplate:`Start: £${S0.toLocaleString('en-GB')}<extra></extra>`,
+    };
+
+    const layout = {
+      margin:{t:12,l:66,r:16,b:46},
+      paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+      xaxis:{ title:{text:'Years',font:{family:'DM Sans',size:11,color:'#a08c82'}}, tickfont:{family:'DM Sans',size:11,color:'#a08c82'}, showgrid:true, gridcolor:'rgba(45,31,26,0.05)', zeroline:false },
+      yaxis:{ title:{text:'Portfolio value',font:{family:'DM Sans',size:11,color:'#a08c82'}}, tickfont:{family:'DM Sans',size:11,color:'#a08c82'}, showgrid:true, gridcolor:'rgba(45,31,26,0.05)', tickprefix:'£', zeroline:false },
+      legend:{ orientation:'h', x:0, y:1.08, font:{family:'DM Sans',size:11} },
+      hovermode:'x unified',
+    };
+
+    document.getElementById('simChart').innerHTML = '<div id="simPlot" style="height:340px;"></div>';
+    Plotly.newPlot('simPlot', [trOuter,trInner,trP5,trP95,trMedian,trStart], layout, {displayModeBar:false,responsive:true});
+
+    // Stats strip
+    const medFinal   = pct(finals, 50);
+    const worstFinal = pct(finals, 5);
+    const bestFinal  = pct(finals, 95);
+    const totalIn    = S0 + monthly * years * 12;
+    const pProfit    = Array.from(finals).filter(v => v > totalIn).length / nPaths * 100;
+    const fmtK = v => v >= 1e6 ? '£' + (v/1e6).toFixed(2) + 'M' : '£' + (v/1000).toFixed(0) + 'k';
+
+    document.getElementById('simStats').style.display = 'grid';
+    document.getElementById('simStats').innerHTML = [
+      { lbl:'Median outcome',    val:fmtK(medFinal),   sub:`from £${fmtK(totalIn).replace('£','')} invested` },
+      { lbl:'Best case (95th)',  val:fmtK(bestFinal),  sub:'top 5% of simulations',    col:'#4a9470' },
+      { lbl:'Worst case (5th)',  val:fmtK(worstFinal), sub:'bottom 5% of simulations', col:'#c9837a' },
+      { lbl:'P(profit)',         val:pProfit.toFixed(0)+'%', sub:'probability of positive return', col:pProfit>=50?'#4a9470':'#c9837a' },
+    ].map(s => `
+      <div class="sc-stat">
+        <div class="sc-lbl">${s.lbl}</div>
+        <div class="sc-val" ${s.col?`style="color:${s.col}"`:''}>${s.val}</div>
+        <div class="sc-sub">${s.sub}</div>
+      </div>`).join('');
+  }
+
+  function setRegBenchmark(sym, btn) {
+    _regBenchmark = sym;
+    document.querySelectorAll('.reg-bm-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (_activeTab === 'reg') loadRegression();
+  }
+
+  async function loadRegression() {
+    const id = document.getElementById('efPortfolioSel').value;
+    if (!id) return;
+
+    document.getElementById('regChart').innerHTML =
+      `<div class="lab-loading" style="height:400px;"><div class="spin"></div>Fetching return data…</div>`;
+    document.getElementById('regInsight').style.display = 'none';
+    document.getElementById('regStatCards').innerHTML =
+      `<div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;grid-column:1/-1;">—</div>`;
+
+    try {
+      const [portRes, bmRes] = await Promise.all([
+        fetch(`/analytics/portfolio/${id}/timeseries`, { headers:{ Authorization: tok() } }),
+        fetch(`/analytics/benchmark/timeseries?symbol=${_regBenchmark}`, { headers:{ Authorization: tok() } }),
+      ]);
+      if (!portRes.ok || !bmRes.ok) throw new Error('Fetch failed');
+
+      const portData = await portRes.json();
+      const bmData   = await bmRes.json();
+
+      if ((portData.daily_returns||[]).length < 10 || (bmData.series||[]).length < 10) {
+        document.getElementById('regChart').innerHTML =
+          `<div class="lab-loading" style="height:400px;color:#c9837a;"><span style="font-size:28px;">📊</span>Not enough data — log trades or upload price history.</div>`;
+        return;
+      }
+
+      // Build benchmark daily returns map from raw prices
+      const bmMap = new Map();
+      const bmSeries = bmData.series;
+      for (let i = 1; i < bmSeries.length; i++) {
+        if (bmSeries[i-1].value && bmSeries[i].value) {
+          bmMap.set(bmSeries[i].date, (bmSeries[i].value - bmSeries[i-1].value) / bmSeries[i-1].value);
+        }
+      }
+
+      // Align portfolio returns with benchmark returns
+      const paired = (portData.daily_returns || [])
+        .filter(pr => bmMap.has(pr.date) && pr.return != null)
+        .map(pr => ({ date: pr.date, port: pr.return, bm: bmMap.get(pr.date) }));
+
+      if (paired.length < 10) {
+        document.getElementById('regChart').innerHTML =
+          `<div class="lab-loading" style="height:400px;color:#c9837a;"><span>⚠</span>Not enough overlapping dates with ${_regBenchmark}.</div>`;
+        return;
+      }
+
+      const xArr = paired.map(p => p.bm);
+      const yArr = paired.map(p => p.port);
+      const n    = xArr.length;
+
+      // OLS regression to find beta and alpha vs benchmark
+      // beta = cov(portfolio, benchmark) / var(benchmark) — how much we move with the market
+      // alpha = meanY - beta * meanX (the excess return above what beta predicts)
+      // this took forever to figure out — the formula is simple but the alignment step is fiddly
+      const meanX = xArr.reduce((a,b)=>a+b,0)/n;
+      const meanY = yArr.reduce((a,b)=>a+b,0)/n;
+      const Sxy   = xArr.reduce((s,xi,i)=>s+(xi-meanX)*(yArr[i]-meanY),0);
+      const Sxx   = xArr.reduce((s,xi)=>s+(xi-meanX)**2,0);
+      const Syy   = yArr.reduce((s,yi)=>s+(yi-meanY)**2,0);
+      const beta  = Sxy/Sxx;
+      const alpha = meanY - beta*meanX;
+      // r2 = Sxy^2 / (Sxx * Syy) — coefficient of determination
+      const r2    = (Sxy**2)/(Sxx*Syy);
+      const r     = Math.sign(Sxy)*Math.sqrt(r2);
+
+      // annualised alpha = daily alpha * 252 trading days
+      const alphaAnn = alpha * 252;
+
+      // tracking error = annualised std dev of excess returns (portfolio - benchmark)
+      // info ratio = annualised alpha / tracking error
+      const excess = paired.map(p => p.port - p.bm);
+      const exMean = excess.reduce((a,b)=>a+b,0)/n;
+      const exVar  = excess.reduce((s,e)=>s+(e-exMean)**2,0)/(n-1);
+      const trackingError = Math.sqrt(exVar * 252);
+      const infoRatio = trackingError > 0 ? alphaAnn / trackingError : null;
+
+      // Regression line
+      const xMin = Math.min(...xArr), xMax = Math.max(...xArr);
+      const regX = [xMin, xMax];
+      const regY = regX.map(x => alpha + beta*x);
+
+      // Plot
+      const trScatter = {
+        type:'scatter', mode:'markers', name:'Daily returns',
+        x: xArr.map(v=>(v*100).toFixed(3)), y: yArr.map(v=>(v*100).toFixed(3)),
+        text: paired.map(p=>p.date),
+        hovertemplate:`%{text}<br>${_regBenchmark}: %{x:.2f}%<br>Portfolio: %{y:.2f}%<extra></extra>`,
+        marker:{ size:5, color:'rgba(123,175,196,0.55)', line:{color:'#7bafc4',width:0.5} },
+      };
+      const trLine = {
+        type:'scatter', mode:'lines', name:`Regression (β=${beta.toFixed(2)})`,
+        x: regX.map(v=>(v*100).toFixed(3)), y: regY.map(v=>(v*100).toFixed(3)),
+        line:{color:'#c9837a', width:2.5}, hoverinfo:'skip',
+      };
+      const yRange = [Math.min(...yArr)*100, Math.max(...yArr)*100];
+      const trZeroX = { type:'scatter', mode:'lines', x:[xMin*100,xMax*100], y:[0,0], line:{color:'rgba(45,31,26,0.12)',width:1,dash:'dot'}, showlegend:false, hoverinfo:'skip' };
+      const trZeroY = { type:'scatter', mode:'lines', x:[0,0], y:yRange, line:{color:'rgba(45,31,26,0.12)',width:1,dash:'dot'}, showlegend:false, hoverinfo:'skip' };
+
+      const layout = {
+        margin:{t:16,l:58,r:20,b:54},
+        paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+        xaxis:{ title:{text:`${_regBenchmark} daily return (%)`,font:{family:'DM Sans',size:12,color:'#a08c82'}}, tickfont:{family:'DM Sans',size:11,color:'#a08c82'}, showgrid:true, gridcolor:'rgba(45,31,26,0.05)', ticksuffix:'%', zeroline:false },
+        yaxis:{ title:{text:'Portfolio daily return (%)',font:{family:'DM Sans',size:12,color:'#a08c82'}}, tickfont:{family:'DM Sans',size:11,color:'#a08c82'}, showgrid:true, gridcolor:'rgba(45,31,26,0.05)', ticksuffix:'%', zeroline:false },
+        legend:{ font:{family:'DM Sans',size:11}, bgcolor:'rgba(255,255,255,0.8)' },
+        hovermode:'closest',
+      };
+
+      document.getElementById('regChart').innerHTML = '<div id="regPlot" style="height:400px;"></div>';
+      Plotly.newPlot('regPlot', [trZeroX,trZeroY,trScatter,trLine], layout, {displayModeBar:false,responsive:true});
+
+      // Stats
+      const alphaCol = alphaAnn >= 0 ? '#4a9470' : '#c9837a';
+      const betaCol  = beta > 1.2 ? '#d97706' : beta < 0 ? '#c9837a' : '#2d1f1a';
+      const irCol    = infoRatio != null ? (infoRatio > 0 ? '#4a9470' : '#c9837a') : '#888';
+
+      document.getElementById('regStatCards').innerHTML = [
+        { lbl:'α Alpha',        val:(alphaAnn*100>=0?'+':'')+(alphaAnn*100).toFixed(2)+'%',   desc:'Annualised excess return vs market', col:alphaCol },
+        { lbl:'β Beta',         val:beta.toFixed(3), desc:beta>1.2?'Aggressive — amplifies market':beta<0.8?'Defensive — muted market exposure':'Tracks market closely', col:betaCol },
+        { lbl:'R²',             val:r2.toFixed(3),   desc:r2>0.8?'Benchmark explains most variance':r2>0.5?'Moderate market dependence':'High idiosyncratic risk' },
+        { lbl:'Correlation',    val:r.toFixed(3),    desc:'Pearson r with '+_regBenchmark },
+        { lbl:'Tracking Error', val:(trackingError*100).toFixed(2)+'%', desc:'Ann. std dev of excess returns' },
+        { lbl:'Info Ratio',     val:infoRatio!=null?infoRatio.toFixed(2):'—', desc:'Alpha ÷ tracking error', col:irCol },
+      ].map(s=>`
+        <div class="reg-cell">
+          <div class="reg-lbl">${s.lbl}</div>
+          <div class="reg-val" ${s.col?`style="color:${s.col}"`:''}>${s.val}</div>
+          <div class="reg-desc">${s.desc}</div>
+        </div>`).join('');
+
+      // Insight
+      let ins = '';
+      if (beta > 1.3)       ins += `<strong>High β (${beta.toFixed(2)}):</strong> Portfolio amplifies market swings — expect larger drawdowns and gains. `;
+      else if (beta < 0.7)  ins += `<strong>Low β (${beta.toFixed(2)}):</strong> Defensive positioning, less exposed to broad market moves. `;
+      else                  ins += `<strong>β ${beta.toFixed(2)}:</strong> Portfolio broadly tracks the ${_regBenchmark}. `;
+      if (alphaAnn >  0.01) ins += `<strong>Positive α (${(alphaAnn*100).toFixed(2)}%/yr):</strong> Outperforming on a risk-adjusted basis. `;
+      if (alphaAnn < -0.01) ins += `<strong>Negative α (${(alphaAnn*100).toFixed(2)}%/yr):</strong> Underperforming relative to market exposure. `;
+      if (r2 > 0.85)        ins += `R² of ${r2.toFixed(2)} — portfolio is largely index-like; consider whether stock selection justifies the effort. `;
+      else if (r2 < 0.4)    ins += `Low R² (${r2.toFixed(2)}) — return drivers are predominantly stock-specific rather than macro. `;
+      if (portData.synthetic) ins += `<em style="color:#a08c82;">Based on simulated return data.</em>`;
+
+      const regEl = document.getElementById('regInsight');
+      regEl.style.display = 'block';
+      regEl.innerHTML = '💡 ' + ins;
+
+    } catch(e) {
+      console.error(e);
+      document.getElementById('regChart').innerHTML =
+        `<div class="lab-loading" style="height:400px;color:#c9837a;">Error loading regression data</div>`;
+    }
+  }
+
+  window.addEventListener('load', initSelector);
+</script>
+{% endblock %}

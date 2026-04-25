@@ -1,0 +1,1610 @@
+{% extends "base.html" %}
+{% block title %}Learn | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .container { max-width:none!important; padding:0!important; }
+
+  :root {
+    --cream:#faf7f2; --warm:#f5efe6; --blush:#f2e4d8;
+    --rose:#c9837a; --brown:#8b5e52; --dark:#2d1f1a;
+    --sage:#7a9e8e; --sky:#7bafc4; --muted:#a08c82;
+    --c-found: #c9837a;
+    --c-risk:  #7a9e8e;
+    --c-mkt:   #7bafc4;
+    --c-beh:   #8b5e52;
+    --c-ai:    #c9837a;
+  }
+
+  /* page shell */
+  .learn-page { font-family:'DM Sans',sans-serif; background:var(--cream); }
+
+  /* ══ HERO — LIGHT ══ */
+  .learn-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 88px 48px 64px;
+    text-align: center;
+    background: var(--cream);
+  }
+
+  /* Soft decorative blobs — warm colours, NOT dark */
+  .lh-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(60px);
+  }
+  .lh-blob-1 {
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(201,131,122,0.18), transparent 70%);
+    top: -160px; right: -80px;
+    animation: blobDrift 14s ease-in-out infinite;
+  }
+  .lh-blob-2 {
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(232,196,180,0.22), transparent 70%);
+    bottom: -100px; left: -60px;
+    animation: blobDrift 18s ease-in-out infinite reverse;
+  }
+  .lh-blob-3 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(122,158,142,0.12), transparent 70%);
+    top: 40%; left: 20%;
+    animation: blobDrift 12s ease-in-out infinite 3s;
+  }
+  @keyframes blobDrift {
+    0%,100% { transform:translate(0,0) scale(1); }
+    50%      { transform:translate(20px,-25px) scale(1.06); }
+  }
+
+  .learn-hero-inner { position:relative; z-index:1; max-width:660px; margin:0 auto; }
+
+  .learn-eyebrow {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--rose); margin-bottom: 20px;
+    background: rgba(201,131,122,0.1);
+    border: 1px solid rgba(201,131,122,0.22);
+    padding: 6px 16px; border-radius: 30px;
+  }
+
+  .learn-hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(38px, 5.5vw, 62px);
+    font-weight: 400; line-height: 1.08; letter-spacing: -1.5px;
+    color: var(--dark); margin-bottom: 18px;
+  }
+  .learn-hero-title em { font-style: italic; color: var(--rose); }
+
+  .learn-hero-desc {
+    font-size: 16px; color: var(--muted); line-height: 1.72;
+    max-width: 480px; margin: 0 auto 36px;
+  }
+
+  /* Search bar */
+  .learn-search-wrap {
+    max-width: 460px; margin: 0 auto 32px;
+    display: flex; align-items: center; gap: 0;
+    background: var(--surface);
+    border: 1.5px solid rgba(45,31,26,0.12);
+    border-radius: 50px;
+    padding: 6px 6px 6px 22px;
+    box-shadow: 0 4px 20px rgba(45,31,26,0.07);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .learn-search-wrap:focus-within {
+    border-color: var(--rose);
+    box-shadow: 0 4px 24px rgba(201,131,122,0.15), 0 0 0 3px rgba(201,131,122,0.08);
+  }
+  .learn-search-wrap input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    width: auto;
+  }
+  .learn-search-wrap input::placeholder { color: var(--muted); }
+  .learn-search-btn {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, var(--rose), var(--brown));
+    border: none; border-radius: 40px; color: #fff;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 3px 10px rgba(201,131,122,0.3);
+  }
+  .learn-search-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  /* Stats row */
+  .learn-stats {
+    display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+  }
+  .learn-stat {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .learn-stat-val {
+    font-family: 'DM Serif Display', serif; font-size: 26px;
+    color: var(--dark); letter-spacing: -0.5px; line-height: 1;
+  }
+  .learn-stat-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .learn-stat-divider {
+    width: 1px; background: rgba(45,31,26,0.12); align-self: stretch;
+  }
+
+  /* ══ TOPIC BROWSER ══ */
+  .learn-browser {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 88px 80px;
+    animation: pageIn 0.35s ease both;
+  }
+  @keyframes pageIn {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* Category filter tabs */
+  .learn-filters {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px;
+  }
+  .lf-tab {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 8px 18px; border-radius: 30px; cursor: pointer;
+    border: 1.5px solid rgba(45,31,26,0.1); background: var(--surface);
+    color: var(--muted); transition: all 0.15s;
+  }
+  .lf-tab:hover { border-color: var(--rose); color: var(--dark); }
+  .lf-tab.active {
+    background: var(--dark); color: #fff; border-color: var(--dark);
+    box-shadow: 0 3px 10px rgba(45,31,26,0.2);
+  }
+  .lf-tab .lf-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); font-size: 10px; margin-left: 5px;
+    font-weight: 700;
+  }
+  .lf-tab:not(.active) .lf-count {
+    background: rgba(45,31,26,0.07); color: var(--muted);
+  }
+
+  /* Card grid */
+  .learn-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  @media(max-width:960px) { .learn-card-grid { grid-template-columns:1fr 1fr; } }
+  @media(max-width:600px) { .learn-card-grid { grid-template-columns:1fr; } .learn-browser { padding:32px 20px 60px; } }
+
+  /* Topic card */
+  .topic-card {
+    background: var(--surface);
+    border: 1.5px solid rgba(45,31,26,0.08);
+    border-radius: 20px;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s, border-color 0.15s;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .topic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(45,31,26,0.12), 0 4px 12px rgba(45,31,26,0.06);
+    border-color: transparent;
+  }
+  .topic-card.hidden { display: none; }
+
+  /* Colour accent stripe at top */
+  .tcStripe {
+    height: 5px; width: 100%;
+    flex-shrink: 0;
+  }
+  .stripe-found { background: linear-gradient(90deg, var(--rose), #d49a92); }
+  .stripe-risk  { background: linear-gradient(90deg, var(--sage), #8cbfb0); }
+  .stripe-mkt   { background: linear-gradient(90deg, var(--sky), #8cbfd4); }
+  .stripe-beh   { background: linear-gradient(90deg, var(--brown), #a07060); }
+  .stripe-ai    { background: linear-gradient(90deg, var(--rose), var(--sage)); }
+
+  .tc-body { padding: 22px 22px 18px; flex: 1; display: flex; flex-direction: column; }
+
+  .tc-icon { font-size: 28px; margin-bottom: 14px; line-height: 1; }
+
+  .tc-meta {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .tc-tag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 3px 9px; border-radius: 20px;
+  }
+  .tc-tag-found { background: rgba(201,131,122,0.12); color: var(--rose); }
+  .tc-tag-risk  { background: rgba(122,158,142,0.12); color: var(--sage); }
+  .tc-tag-mkt   { background: rgba(123,175,196,0.14); color: var(--sky); }
+  .tc-tag-beh   { background: rgba(139,94,82,0.1);    color: var(--brown); }
+  .tc-tag-ai    { background: rgba(201,131,122,0.12); color: var(--rose); }
+
+  .tc-time { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  .tc-title {
+    font-family: 'DM Serif Display', serif; font-size: 19px; font-weight: 400;
+    color: var(--dark); letter-spacing: -0.3px; margin-bottom: 8px; line-height: 1.2;
+  }
+
+  .tc-desc {
+    font-size: 13px; color: var(--muted); line-height: 1.6; flex: 1;
+    margin-bottom: 18px;
+  }
+
+  .tc-footer {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .tc-read-btn {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--dark); opacity: 0; transform: translateX(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .topic-card:hover .tc-read-btn { opacity: 1; transform: translateX(0); }
+
+  .tc-done-UNUSED {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(74,148,112,0.12); border: 1.5px solid rgba(74,148,112,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #4a9470;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .tc-done.visible { opacity: 1; }
+
+  /* ══ TOPIC CONTENT VIEW ══ */
+  .learn-content {
+    display: none;
+    animation: pageIn 0.3s ease both;
+  }
+  .learn-content.visible { display: block; }
+
+  /* Content header bar */
+  .lc-topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,247,242,0.9); backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(45,31,26,0.08);
+    padding: 14px 88px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  @media(max-width:960px) { .lc-topbar { padding:14px 24px; } }
+
+  .lc-back-btn {
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); background: none; border: none; cursor: pointer;
+    padding: 7px 14px; border-radius: 30px;
+    transition: all 0.15s;
+  }
+  .lc-back-btn:hover { background: var(--warm); color: var(--dark); }
+
+  .lc-breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted);
+  }
+  .lc-breadcrumb span { color: var(--dark); font-weight: 600; }
+
+  .lc-progress-pill-UNUSED {
+    margin-left: auto;
+    font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 20px;
+    background: rgba(74,148,112,0.1); color: #4a9470;
+    border: 1px solid rgba(74,148,112,0.2);
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .lc-progress-pill:hover { background: rgba(74,148,112,0.18); }
+  .lc-progress-pill.marked {
+    background: rgba(74,148,112,0.15); color: #4a9470;
+  }
+
+  /* Main reading area */
+  .lc-main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 52px 88px 80px;
+  }
+  @media(max-width:1100px) { .lc-main { padding:40px 48px 60px; } }
+  @media(max-width:760px)  { .lc-main { padding:28px 20px 48px; } }
+
+  /* Topic panels */
+  .topic-panel { display: none; }
+  .topic-panel.active { display: block; animation: pageIn 0.3s ease both; }
+
+  /* Topic header */
+  .topic-header { margin-bottom: 40px; }
+
+  .topic-meta {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .topic-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 30px;
+  }
+  .tag-theory { background: rgba(201,131,122,0.12); color: var(--rose); }
+  .tag-risk   { background: rgba(122,158,142,0.12); color: var(--sage); }
+  .tag-market { background: rgba(123,175,196,0.14); color: var(--sky); }
+  .tag-behav  { background: rgba(139,94,82,0.1);    color: var(--brown); }
+  .tag-ai     { background: rgba(201,131,122,0.12); color: var(--rose); }
+
+  .topic-readtime { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+  .topic-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(30px, 4vw, 46px); font-weight: 400;
+    color: var(--dark); letter-spacing: -1px; margin-bottom: 16px; line-height: 1.08;
+  }
+
+  .topic-intro {
+    font-size: 17px; color: var(--muted); line-height: 1.78;
+    padding-left: 20px; border-left: 3px solid rgba(201,131,122,0.35);
+    margin: 0;
+  }
+
+  /* Content blocks */
+  .learn-section { margin-bottom: 40px; }
+  .learn-section h3 {
+    font-family: 'DM Serif Display', serif; font-size: 23px; font-weight: 400;
+    color: var(--dark); margin-bottom: 12px; letter-spacing: -0.3px;
+  }
+  .learn-section p  { font-size: 15.5px; color: var(--dark); line-height: 1.82; margin-bottom: 14px; opacity: 0.88; }
+  .learn-section ul { margin: 10px 0 14px 20px; }
+  .learn-section li { font-size: 15.5px; color: var(--dark); line-height: 1.78; margin-bottom: 9px; opacity: 0.88; }
+
+  /* Formula box */
+  .formula-box {
+    background: #2d1f1a; color: #fff;
+    border-radius: 16px; padding: 22px 26px; margin: 22px 0;
+    font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.9;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 28px rgba(45,31,26,0.16);
+  }
+  .formula-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--rose), var(--brown));
+  }
+  .formula-label {
+    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+
+  /* Key concept */
+  .key-concept {
+    background: var(--warm); border-radius: 16px;
+    padding: 20px 24px; margin: 22px 0;
+    border: 1.5px solid rgba(201,131,122,0.15);
+    position: relative; overflow: hidden;
+  }
+  .key-concept::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, var(--rose), var(--brown));
+    border-radius: 2px 0 0 2px;
+  }
+  .key-concept-label {
+    font-size: 10px; font-weight: 700; color: var(--rose);
+    text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px;
+  }
+  .key-concept p { font-size: 14.5px; color: var(--dark); line-height: 1.74; margin: 0; }
+
+  /* Example box */
+  .example-box {
+    background: var(--surface); border: 1.5px solid rgba(45,31,26,0.08);
+    border-radius: 16px; padding: 20px 24px; margin: 22px 0;
+    box-shadow: 0 2px 10px rgba(45,31,26,0.05);
+  }
+  .example-label {
+    font-size: 10px; font-weight: 700; color: var(--brown);
+    text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px;
+  }
+  .example-box p { font-size: 14.5px; color: var(--dark); line-height: 1.74; margin: 0; }
+
+  /* Stat pills */
+  .stat-pills { display: flex; gap: 12px; flex-wrap: wrap; margin: 22px 0; }
+  .stat-pill {
+    background: var(--surface); border: 1.5px solid rgba(45,31,26,0.08);
+    border-radius: 14px; padding: 14px 18px; flex: 1; min-width: 120px;
+    box-shadow: 0 2px 8px rgba(45,31,26,0.04);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .stat-pill-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--dark); letter-spacing: -0.5px;
+  }
+  .stat-pill-label { font-size: 12px; color: var(--muted); font-weight: 500; line-height: 1.4; }
+
+  /* Halo chat section */
+  .learn-ai-section {
+    margin-top: 52px; padding-top: 36px;
+    border-top: 1.5px solid rgba(45,31,26,0.08);
+  }
+  .learn-ai-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+  }
+  .learn-ai-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--rose), var(--brown));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .learn-ai-title {
+    font-family: 'DM Serif Display', serif; font-size: 21px;
+    font-weight: 400; color: var(--dark); margin: 0;
+  }
+  .learn-ai-desc { font-size: 14px; color: var(--muted); margin: 0 0 16px 50px; line-height: 1.6; }
+
+  /* Chips */
+  .learn-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .learn-chip {
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 7px 14px; background: var(--surface);
+    border: 1.5px solid rgba(45,31,26,0.1); border-radius: 30px;
+    cursor: pointer; color: var(--dark); transition: all 0.15s;
+    box-shadow: 0 1px 4px rgba(45,31,26,0.04);
+  }
+  .learn-chip:hover {
+    background: var(--blush); border-color: var(--rose); color: var(--brown);
+    transform: translateY(-1px); box-shadow: 0 3px 8px rgba(201,131,122,0.15);
+  }
+
+  /* Chat widget */
+  .learn-chat-wrap {
+    background: var(--surface); border: 1.5px solid rgba(45,31,26,0.08);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(45,31,26,0.07);
+  }
+  .learn-chat-header {
+    padding: 12px 18px;
+    background: linear-gradient(135deg, rgba(201,131,122,0.07), rgba(139,94,82,0.03));
+    border-bottom: 1px solid rgba(45,31,26,0.07);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .learn-chat-dot { width: 7px; height: 7px; border-radius: 50%; background: #4aefa0; box-shadow: 0 0 6px rgba(74,239,160,0.5); }
+  .learn-chat-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+  .learn-chat-msgs {
+    height: 280px; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .learn-chat-msgs::-webkit-scrollbar { width: 3px; }
+  .learn-chat-msgs::-webkit-scrollbar-thumb { background: rgba(45,31,26,0.1); border-radius: 2px; }
+
+  .lc-msg { display: flex; gap: 8px; align-items: flex-start; animation: msgIn 0.25s ease; }
+  .lc-msg.user { flex-direction: row-reverse; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+  .lc-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    background: linear-gradient(135deg, var(--rose), var(--brown)); color: #fff;
+  }
+  .lc-msg.user .lc-avatar { background: var(--dark); }
+
+  .lc-text {
+    max-width: 80%; padding: 10px 14px; border-radius: 16px 16px 16px 4px;
+    background: var(--warm); font-size: 13px; color: var(--dark);
+    line-height: 1.65; border: 1px solid rgba(45,31,26,0.07);
+  }
+  .lc-msg.user .lc-text {
+    background: var(--dark); color: #fff;
+    border-radius: 16px 16px 4px 16px; border: none;
+  }
+  .lc-typing .lc-text { padding: 12px 16px; }
+
+  .learn-chat-input-bar {
+    padding: 10px 14px; border-top: 1px solid rgba(45,31,26,0.07);
+    display: flex; gap: 8px; align-items: center; background: #fafaf8;
+  }
+  .learn-chat-input-bar input {
+    flex: 1; font-size: 13px; border: 1.5px solid rgba(45,31,26,0.1);
+    border-radius: 12px; padding: 9px 13px; outline: none;
+    color: var(--dark); background: var(--surface); transition: border-color 0.15s; width: auto;
+  }
+  .learn-chat-input-bar input:focus { border-color: var(--rose); }
+  .learn-chat-input-bar button {
+    padding: 9px 18px; background: var(--dark); color: #fff;
+    font-size: 13px; font-weight: 700; border: none; border-radius: 12px;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .learn-chat-input-bar button:hover { background: var(--brown); transform: translateY(-1px); }
+
+  /* Topic prev/next nav */
+  .topic-nav { display: flex; gap: 12px; margin-top: 52px; padding-top: 28px; border-top: 1px solid rgba(45,31,26,0.08); }
+  .topic-nav-btn {
+    flex: 1; padding: 14px 18px; border-radius: 16px;
+    border: 1.5px solid rgba(45,31,26,0.1); background: var(--surface);
+    cursor: pointer; font-size: 13px; color: var(--dark);
+    transition: all 0.15s; text-align: left;
+    box-shadow: 0 2px 8px rgba(45,31,26,0.04);
+  }
+  .topic-nav-btn:hover { border-color: var(--rose); background: var(--warm); transform: translateY(-1px); }
+  .topic-nav-btn.primary {
+    background: linear-gradient(135deg, var(--dark), #4a2e26);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 4px 14px rgba(45,31,26,0.22);
+  }
+  .topic-nav-btn.primary:hover { opacity: 0.92; }
+  .tnb-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .primary .tnb-label { color: rgba(255,255,255,0.4); }
+  .tnb-title { font-weight: 700; font-size: 14px; }
+
+  /* dark mode overrides — the lc-main content area and topic panels need explicit bg
+     otherwise the page bg shows through and text becomes unreadable */
+  [data-theme="dark"] .lc-main { background: #160f0d !important; }
+  [data-theme="dark"] .topic-title { color: var(--text) !important; }
+  [data-theme="dark"] .topic-intro { color: var(--muted) !important; border-color: rgba(201,131,122,0.25) !important; }
+  [data-theme="dark"] .key-concept { background: #231918 !important; border-color: rgba(201,131,122,0.12) !important; }
+  [data-theme="dark"] .example-box { background: #1e1614 !important; border-color: rgba(255,200,180,0.08) !important; }
+  [data-theme="dark"] .stat-pill   { background: #1e1614 !important; border-color: rgba(255,200,180,0.08) !important; }
+  [data-theme="dark"] .topic-nav-btn:not(.primary) { background: #1e1614 !important; border-color: rgba(255,200,180,0.1) !important; }
+  [data-theme="dark"] .learn-chat-input-bar { background: #1a1210 !important; border-color: rgba(255,200,180,0.07) !important; }
+  [data-theme="dark"] .learn-chat-input-bar input { background: #231918 !important; color: #ede4dc !important; border-color: rgba(255,200,180,0.12) !important; }
+</style>
+
+<div class="learn-page">
+
+  <!-- ══ LIGHT HERO ══════════════════════════════════════════════════════ -->
+  <div class="learn-hero">
+    <div class="lh-blob lh-blob-1"></div>
+    <div class="lh-blob lh-blob-2"></div>
+    <div class="lh-blob lh-blob-3"></div>
+    <div class="learn-hero-inner">
+      <div class="learn-eyebrow">✦ FlyingFunds Academy</div>
+      <h1 class="learn-hero-title">Understand <em>every</em><br>investment you make</h1>
+      <p class="learn-hero-desc">16 topics covering portfolio theory, risk metrics, charts, ETFs, equities and crypto, with Halo available to go deeper at any moment.</p>
+
+      <div class="learn-search-wrap">
+        <input id="learnSearchInput" placeholder="Search topics… Sharpe ratio, VaR, momentum…" onkeydown="if(event.key==='Enter') learnSearch()" />
+        <button class="learn-search-btn" onclick="learnSearch()">Search</button>
+      </div>
+
+      <div class="learn-stats">
+        <div class="learn-stat">
+          <div class="learn-stat-val">16</div>
+          <div class="learn-stat-label">Topics</div>
+        </div>
+        <div class="learn-stat-divider"></div>
+        <div class="learn-stat">
+          <div class="learn-stat-val">4</div>
+          <div class="learn-stat-label">Categories</div>
+        </div>
+        <div class="learn-stat-divider"></div>
+        <div class="learn-stat">
+          <div class="learn-stat-val">Halo</div>
+          <div class="learn-stat-label">AI tutor included</div>
+        </div>
+        <div class="learn-stat-divider"></div>
+        <div class="learn-stat">
+          <div class="learn-stat-val">Free</div>
+          <div class="learn-stat-label">Always</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TOPIC BROWSER ════════════════════════════════════════════════════ -->
+  <div class="learn-browser" id="learnBrowser">
+
+
+    <!-- Filters -->
+    <div class="learn-filters">
+      <button class="lf-tab active" data-filter="all"         onclick="filterCards('all')">All <span class="lf-count">16</span></button>
+      <button class="lf-tab"        data-filter="foundations" onclick="filterCards('foundations')">Foundations <span class="lf-count">4</span></button>
+      <button class="lf-tab"        data-filter="risk"        onclick="filterCards('risk')">Risk Metrics <span class="lf-count">4</span></button>
+      <button class="lf-tab"        data-filter="markets"     onclick="filterCards('markets')">Markets <span class="lf-count">6</span></button>
+      <button class="lf-tab"        data-filter="behaviour"   onclick="filterCards('behaviour')">Behaviour <span class="lf-count">2</span></button>
+    </div>
+
+    <!-- Card grid — rendered by JS -->
+    <div class="learn-card-grid" id="learnCardGrid"></div>
+  </div>
+
+  <!-- ══ TOPIC CONTENT ════════════════════════════════════════════════════ -->
+  <div class="learn-content" id="learnContent">
+
+    <!-- Sticky top bar -->
+    <div class="lc-topbar">
+      <button class="lc-back-btn" onclick="showBrowser()">← All topics</button>
+      <div class="lc-breadcrumb" id="lcBreadcrumb"></div>
+    </div>
+
+    <!-- Reading area -->
+    <div class="lc-main">
+
+      <!-- ══ MPT ══ -->
+      <div class="topic-panel" id="topic-mpt">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-theory">Portfolio Theory</span><span class="topic-readtime">⏱ 5 min read</span></div>
+          <h1 class="topic-title">Modern Portfolio Theory</h1>
+          <p class="topic-intro">Harry Markowitz's 1952 paper changed investing forever. The core insight: what matters is not the risk of individual securities, but how they behave <em>together</em> as a portfolio.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Key Insight</h3>
+          <p>Before Markowitz, investors evaluated stocks one at a time... is this stock risky? Markowitz showed that was fundamentally the wrong approach, and the wrong question. What matters is how each security contributes to the <strong>portfolio's</strong> overall risk and return.</p>
+          <p>Two stocks can each be volatile individually, however if they tend to move in opposite directions, combining them produces a portfolio that is less volatile than either alone, hence leading to the mathematical foundation of diversification.</p>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">The Free Lunch</div>
+          <p>You can reduce portfolio risk without reducing expected return, this can be done by combining assets whose returns are not perfectly correlated. This is the only "free lunch" in finance.. risk reduction at no cost.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Efficient Frontier</h3>
+          <p>Markowitz proved there is a set of "efficient" portfolios, those that offer maximum expected return for a given level of risk. Plotting all efficient portfolios produces a curve called the <strong>efficient frontier</strong>.</p>
+          <p>Any portfolio below the frontier is suboptimal: you're taking more risk than necessary for the return you're getting. In FlyingFunds, the <strong>Analytics Lab</strong> plots your portfolio against the efficient frontier so you can see exactly how optimal your allocation is.</p>
+        </div>
+        <div class="formula-box">
+          <div class="formula-label">Portfolio Variance Formula</div>
+          σ²_p = Σᵢ Σⱼ wᵢ wⱼ σᵢⱼ<br><br>
+          Where:<br>
+          &nbsp;• wᵢ, wⱼ = weights of assets i and j<br>
+          &nbsp;• σᵢⱼ = covariance between assets i and j
+        </div>
+        <div class="example-box">
+          <div class="example-label">Worked Example</div>
+          <p>AAPL (40%, 25% vol) and JPM (60%, 20% vol) with correlation 0.3 → portfolio volatility ≈ <strong>18.4%</strong>, lower than either stock alone. At zero correlation: ~15%. At perfect correlation: 22%.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Portfolio Theory</h3></div>
+          <p class="learn-ai-desc">Ask Halo to explain any concept further, give examples, or connect it to your portfolio.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('How does the efficient frontier apply to my portfolio?')">My efficient frontier</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is covariance and why does it matter for diversification?')">Covariance explained</span>
+            <span class="learn-chip" onclick="learnChatAsk('What did Markowitz actually prove mathematically?')">The maths behind it</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgs"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInput" placeholder="Ask about portfolio theory…" onkeydown="if(event.key==='Enter') learnChatSend()" />
+              <button id="learnChatSend" onclick="learnChatSend()">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><div style="flex:1"></div><button class="topic-nav-btn primary" onclick="showTopic('capm')"><div class="tnb-label">Next →</div><div class="tnb-title">CAPM & Beta</div></button></div>
+      </div>
+
+      <!-- ══ CAPM ══ -->
+      <div class="topic-panel" id="topic-capm">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-theory">Portfolio Theory</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">CAPM & Beta</h1>
+          <p class="topic-intro">The Capital Asset Pricing Model links expected return to systematic risk, and explains why diversification lets investors eliminate some risks for free.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What CAPM Says</h3>
+          <p>Built on Markowitz's work, CAPM (Sharpe 1964) shows that if investors hold well-diversified portfolios, the only risk that deserves compensation is <strong>systematic risk</strong>, meaning market-wide risk that cannot be diversified away, measured by beta (β).</p>
+          <p>Idiosyncratic risk, company-specific events like a CEO scandal, can be eliminated for free through diversification. The market should not pay you extra return for bearing it.</p>
+        </div>
+        <div class="formula-box">
+          <div class="formula-label">The CAPM Formula</div>
+          E(Rᵢ) = Rf + βᵢ × (E(Rm) − Rf)<br><br>
+          &nbsp;• Rf = risk-free rate (e.g. gilt yield)<br>
+          &nbsp;• βᵢ = beta of the asset vs the market<br>
+          &nbsp;• E(Rm) − Rf = market risk premium (~5–6%)
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">What Beta Means</div>
+          <p>β = 1.0 → moves with the market. β = 1.5 → amplifies market moves 50%. β = 0.5 → half as sensitive. β &lt; 0 → moves against the market (useful for hedging). Most tech stocks: β &gt; 1.2. Utilities: β ≈ 0.4–0.7.</p>
+        </div>
+        <div class="example-box">
+          <div class="example-label">Example</div>
+          <p>Rf = 4.5%, market premium = 5.5%, β = 1.2 → CAPM predicts <strong>11.1%</strong> return. If the stock returns 15%, it generates "alpha", excess return above what its risk level should deliver.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Limitations</h3>
+          <p>CAPM assumes stable beta and normal return distributions, though neither holds perfectly. The <strong>Fama-French three-factor model</strong> (adding size and value) and <strong>Carhart four-factor model</strong> (adding momentum) better explain observed returns.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about CAPM</h3></div>
+          <p class="learn-ai-desc">Explore beta, alpha, and the CAPM framework.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What is the beta of a typical tech portfolio?')">Tech portfolio beta</span>
+            <span class="learn-chip" onclick="learnChatAsk('What are the main criticisms of CAPM?')">CAPM criticisms</span>
+            <span class="learn-chip" onclick="learnChatAsk('How does Jensen\'s alpha relate to CAPM?')">Jensen's alpha</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgs2"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInput2" placeholder="Ask about CAPM…" onkeydown="if(event.key==='Enter') learnChatSendN(2)" />
+              <button onclick="learnChatSendN(2)">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('mpt')"><div class="tnb-label">← Prev</div><div class="tnb-title">Portfolio Theory</div></button><button class="topic-nav-btn primary" onclick="showTopic('diversification')"><div class="tnb-label">Next →</div><div class="tnb-title">Diversification</div></button></div>
+      </div>
+
+      <!-- ══ DIVERSIFICATION ══ -->
+      <div class="topic-panel" id="topic-diversification">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-theory">Portfolio Theory</span><span class="topic-readtime">⏱ 3 min read</span></div>
+          <h1 class="topic-title">Diversification</h1>
+          <p class="topic-intro">The only free lunch in finance: the ability to reduce risk without sacrificing expected return, simply by combining assets wisely.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Mathematics</h3>
+          <p>When you combine two assets, portfolio variance depends on how their returns are correlated. If correlation is less than 1 (almost always), portfolio variance is <em>lower</em> than the weighted average of individual variances. Lower correlation → greater risk reduction.</p>
+          <p>Holding a mix of stocks, bonds, and geographies that don't all crash simultaneously cushions the overall impact when any one position falls.</p>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">Systematic vs Unsystematic Risk</div>
+          <p><strong>Unsystematic risk</strong> (company-specific: earnings miss, CEO scandal) can be diversified away. <strong>Systematic risk</strong> (recessions, rate shocks) affects all assets and cannot. You can only eliminate unsystematic risk through diversification.</p>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill"><span class="stat-pill-val">~20</span><span class="stat-pill-label">Stocks needed for 90% diversification</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">0.3</span><span class="stat-pill-label">Avg correlation between S&P 500 stocks</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">0.0</span><span class="stat-pill-label">Ideal correlation for max risk reduction</span></div>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Diversification</h3></div>
+          <p class="learn-ai-desc">Get tailored explanations and examples.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('Explain diversification and why it works mathematically?')">Full explanation</span>
+            <span class="learn-chip" onclick="learnChatAsk('How many stocks do I need to be properly diversified?')">How many stocks?</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the difference between systematic and unsystematic risk?')">Types of risk</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsd"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputd" placeholder="Ask about diversification…" onkeydown="if(event.key==='Enter') learnChatSendN('d')" />
+              <button onclick="learnChatSendN('d')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('capm')"><div class="tnb-label">← Prev</div><div class="tnb-title">CAPM & Beta</div></button><button class="topic-nav-btn primary" onclick="showTopic('sharpe')"><div class="tnb-label">Next →</div><div class="tnb-title">Sharpe Ratio</div></button></div>
+      </div>
+
+      <!-- ══ SHARPE ══ -->
+      <div class="topic-panel" id="topic-sharpe">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-risk">Risk Metrics</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">The Sharpe Ratio</h1>
+          <p class="topic-intro">The most widely used measure of risk-adjusted performance. How much return are you getting per unit of risk?</p>
+        </div>
+        <div class="formula-box">
+          <div class="formula-label">Sharpe Ratio Formula</div>
+          S = (Rp − Rf) / σp<br><br>
+          &nbsp;• Rp = portfolio return (annualised)<br>
+          &nbsp;• Rf = risk-free rate<br>
+          &nbsp;• σp = portfolio standard deviation (annualised vol)
+        </div>
+        <div class="learn-section">
+          <h3>How to Interpret Your Score</h3>
+          <ul>
+            <li><strong>Below 0:</strong> Underperforming the risk-free rate. Risk isn't being rewarded at all.</li>
+            <li><strong>0 – 0.5:</strong> Poor. A passive index fund may serve you better.</li>
+            <li><strong>0.5 – 1.0:</strong> Acceptable. You're being compensated for risk, though not exceptionally.</li>
+            <li><strong>1.0 – 2.0:</strong> Good. Most professional fund managers operate here.</li>
+            <li><strong>Above 2.0:</strong> Excellent, or suspicious. Look for look-back bias.</li>
+          </ul>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill"><span class="stat-pill-val">~0.5</span><span class="stat-pill-label">S&P 500 long-run average</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">1.0+</span><span class="stat-pill-label">Professional target</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">2.0+</span><span class="stat-pill-label">Exceptional / rare</span></div>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">Important Limitation</div>
+          <p>The Sharpe ratio treats upside and downside volatility equally. A stock that occasionally surges looks "risky." The <strong>Sortino ratio</strong> uses only downside standard deviation, making it better for asymmetric return distributions.</p>
+        </div>
+        <div class="example-box">
+          <div class="example-label">FlyingFunds Context</div>
+          <p>A Sharpe of 0.8 means: for every 1% of annualised volatility you bear, you earn 0.8% of excess return. Improving diversification reduces σp, raising your Sharpe without necessarily increasing returns.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Sharpe</h3></div>
+          <p class="learn-ai-desc">Dig deeper into risk-adjusted returns.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('My Sharpe ratio is low, what are practical ways to improve it?')">Improve my Sharpe</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the difference between Sharpe and Sortino ratio?')">Sharpe vs Sortino</span>
+            <span class="learn-chip" onclick="learnChatAsk('How does the S&P 500 Sharpe ratio compare to typical portfolios?')">Market comparison</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgs3"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInput3" placeholder="Ask about Sharpe ratio…" onkeydown="if(event.key==='Enter') learnChatSendN(3)" />
+              <button onclick="learnChatSendN(3)">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('diversification')"><div class="tnb-label">← Prev</div><div class="tnb-title">Diversification</div></button><button class="topic-nav-btn primary" onclick="showTopic('var')"><div class="tnb-label">Next →</div><div class="tnb-title">VaR & CVaR</div></button></div>
+      </div>
+
+      <!-- ══ VaR ══ -->
+      <div class="topic-panel" id="topic-var">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-risk">Risk Metrics</span><span class="topic-readtime">⏱ 5 min read</span></div>
+          <h1 class="topic-title">Value at Risk & CVaR</h1>
+          <p class="topic-intro">VaR answers the question every investor needs to ask: how bad could my losses get? CVaR tells you what to expect when things go really wrong.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What VaR Tells You</h3>
+          <p>VaR at 95% confidence over one day means: "On 95 out of 100 days, my losses won't exceed this number." On 5 out of 100 days, losses will be worse. FlyingFunds computes <strong>Historical VaR</strong>, specifically the 5th percentile of your actual daily return distribution.</p>
+        </div>
+        <div class="formula-box">
+          <div class="formula-label">Historical VaR & CVaR (95%)</div>
+          VaR₀.₉₅ = −Q₀.₀₅(R)<br>
+          CVaR₀.₉₅ = −E[R | R ≤ Q₀.₀₅(R)]<br><br>
+          CVaR = average loss on the worst 5% of days
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">CVaR: The Better Risk Measure</div>
+          <p>VaR says nothing about <em>how bad</em> losses get once you breach the threshold. In 2008, banks' VaR models were technically correct, but losses on bad days were catastrophic. CVaR (Expected Shortfall) directly measures the average severity of tail events.</p>
+        </div>
+        <div class="example-box">
+          <div class="example-label">Reading Your Metrics</div>
+          <p>VaR (95%) = −1.8%, CVaR (95%) = −2.6% means: on a typical bad day (worst 5%) you'd expect to lose 1.8%. On truly extreme days the average loss is 2.6%. For a £10,000 portfolio that's £180 and £260, in a <em>single day</em>.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about VaR</h3></div>
+          <p class="learn-ai-desc">Explore tail risk and portfolio protection.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('Why did VaR fail in the 2008 financial crisis?')">2008 failure</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the difference between parametric and historical VaR?')">Parametric vs historical</span>
+            <span class="learn-chip" onclick="learnChatAsk('How can I reduce my VaR without reducing expected returns?')">Reduce my VaR</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgs4"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInput4" placeholder="Ask about VaR or CVaR…" onkeydown="if(event.key==='Enter') learnChatSendN(4)" />
+              <button onclick="learnChatSendN(4)">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('sharpe')"><div class="tnb-label">← Prev</div><div class="tnb-title">Sharpe Ratio</div></button><button class="topic-nav-btn primary" onclick="showTopic('drawdown')"><div class="tnb-label">Next →</div><div class="tnb-title">Max Drawdown</div></button></div>
+      </div>
+
+      <!-- ══ DRAWDOWN ══ -->
+      <div class="topic-panel" id="topic-drawdown">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-risk">Risk Metrics</span><span class="topic-readtime">⏱ 3 min read</span></div>
+          <h1 class="topic-title">Max Drawdown</h1>
+          <p class="topic-intro">The worst peak-to-trough decline in your portfolio's history. This is the number that tests whether you would actually hold through a crash.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What It Measures</h3>
+          <p>Max drawdown = (Peak value − Trough value) / Peak value. A drawdown of −30% means your portfolio fell 30% from its high before recovering. The S&P 500's max drawdown in 2008 was −57%; in the 2020 COVID crash it was −34%, but recovered in just five months.</p>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">Why It Matters</div>
+          <p>Many investors tolerate volatility on paper but panic-sell during a large drawdown, locking in permanent losses. If your strategy has a 40% max drawdown, ask honestly: could you hold through that without selling? This calibration is more important than any return figure.</p>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill"><span class="stat-pill-val">−57%</span><span class="stat-pill-label">S&P 500 max drawdown, 2008</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">−34%</span><span class="stat-pill-label">S&P 500 max drawdown, 2020</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">5 mo</span><span class="stat-pill-label">2020 recovery time</span></div>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Drawdown</h3></div>
+          <p class="learn-ai-desc">Learn to interpret your portfolio's drawdown metrics.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('How is max drawdown calculated and what is a good value?')">Calculation & benchmarks</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the Calmar ratio and how does it use drawdown?')">Calmar ratio</span>
+            <span class="learn-chip" onclick="learnChatAsk('How long does it typically take to recover from a large drawdown?')">Recovery time</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsdd"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputdd" placeholder="Ask about drawdown…" onkeydown="if(event.key==='Enter') learnChatSendN('dd')" />
+              <button onclick="learnChatSendN('dd')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('var')"><div class="tnb-label">← Prev</div><div class="tnb-title">VaR & CVaR</div></button><button class="topic-nav-btn primary" onclick="showTopic('volatility')"><div class="tnb-label">Next →</div><div class="tnb-title">Volatility</div></button></div>
+      </div>
+
+      <!-- ══ VOLATILITY ══ -->
+      <div class="topic-panel" id="topic-volatility">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-risk">Risk Metrics</span><span class="topic-readtime">⏱ 3 min read</span></div>
+          <h1 class="topic-title">Volatility</h1>
+          <p class="topic-intro">The standard deviation of returns, measuring how much your portfolio bounces around day to day. High volatility amplifies both gains and losses.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Annualised Volatility</h3>
+          <p>Daily returns are small, so volatility is annualised by multiplying daily standard deviation by √252 (trading days per year). A portfolio with 1% daily standard deviation has annualised volatility of ~15.9%.</p>
+          <p>The VIX measures implied 30-day volatility of S&P 500 options, the "fear gauge." VIX &gt; 30 signals market stress; &lt; 15 signals calm. FlyingFunds uses historical (realised) volatility of your actual returns.</p>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">Is High Volatility Bad?</div>
+          <p>Not necessarily. Higher volatility often comes with higher expected return. For long-term investors with time to ride out dips, it can be appropriate. For those near retirement, lower volatility matters more. Match your portfolio volatility to your time horizon and psychological tolerance.</p>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill"><span class="stat-pill-val">~15%</span><span class="stat-pill-label">S&P 500 historical annualised vol</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">40–80%</span><span class="stat-pill-label">Typical individual stock volatility</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">3–5%</span><span class="stat-pill-label">Government bond volatility</span></div>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Volatility</h3></div>
+          <p class="learn-ai-desc">Understand how volatility affects your strategy.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('Explain annualised volatility and how it is calculated from daily returns?')">Annualisation</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the VIX and what does it measure?')">The VIX</span>
+            <span class="learn-chip" onclick="learnChatAsk('Is high volatility always bad for a portfolio?')">Is volatility bad?</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsvol"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputvol" placeholder="Ask about volatility…" onkeydown="if(event.key==='Enter') learnChatSendN('vol')" />
+              <button onclick="learnChatSendN('vol')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('drawdown')"><div class="tnb-label">← Prev</div><div class="tnb-title">Max Drawdown</div></button><button class="topic-nav-btn primary" onclick="showTopic('emh')"><div class="tnb-label">Next →</div><div class="tnb-title">Market Efficiency</div></button></div>
+      </div>
+
+      <!-- ══ EMH ══ -->
+      <div class="topic-panel" id="topic-emh">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-market">Markets</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">Efficient Markets Hypothesis</h1>
+          <p class="topic-intro">Can you consistently beat the market? The EMH says no, and the evidence largely agrees.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Three Forms</h3>
+          <ul>
+            <li><strong>Weak form:</strong> Prices reflect all historical price/volume data. Technical analysis cannot generate consistent alpha.</li>
+            <li><strong>Semi-strong:</strong> Prices reflect all public information. Fundamental analysis can't consistently beat the market.</li>
+            <li><strong>Strong form:</strong> Prices reflect all information including insider knowledge. Generally rejected. Insider trading is illegal precisely because it works.</li>
+          </ul>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">What the Evidence Says</div>
+          <p>Evidence broadly supports weak and semi-strong efficiency for large-cap developed markets. ~80% of active fund managers underperform their benchmark net of fees over 10 years. Yet momentum, value, and size anomalies persist. Either markets aren't fully efficient, or these represent unrecognised risk premiums.</p>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill"><span class="stat-pill-val">~80%</span><span class="stat-pill-label">Active funds underperform index over 10yr</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">0.07%</span><span class="stat-pill-label">Typical passive ETF annual fee</span></div>
+          <div class="stat-pill"><span class="stat-pill-val">0.8%+</span><span class="stat-pill-label">Typical active fund annual fee</span></div>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Market Efficiency</h3></div>
+          <p class="learn-ai-desc">Explore the evidence for and against efficient markets.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('If markets are efficient, why does momentum investing work?')">Momentum paradox</span>
+            <span class="learn-chip" onclick="learnChatAsk('Should I invest actively or passively given the EMH evidence?')">Active vs passive</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the joint hypothesis problem in testing market efficiency?')">Joint hypothesis</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgs6"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInput6" placeholder="Ask about market efficiency…" onkeydown="if(event.key==='Enter') learnChatSendN(6)" />
+              <button onclick="learnChatSendN(6)">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('volatility')"><div class="tnb-label">← Prev</div><div class="tnb-title">Volatility</div></button><button class="topic-nav-btn primary" onclick="showTopic('active-passive')"><div class="tnb-label">Next →</div><div class="tnb-title">Active vs Passive</div></button></div>
+      </div>
+
+      <!-- ══ ACTIVE vs PASSIVE ══ -->
+      <div class="topic-panel" id="topic-active-passive">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-market">Markets</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">Active vs Passive Investing</h1>
+          <p class="topic-intro">One of the most important decisions any investor faces. The evidence may surprise you.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Case for Passive</h3>
+          <p>Passive investing means holding a diversified index fund and accepting the market return. Fees are minimal (0.05–0.20% p.a.) and infrequent trading reduces tax drag. Around 80% of active managers underperform their benchmark over 10 years net of fees.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Case for Active</h3>
+          <p>Active can outperform in specific circumstances: small-cap markets with less analyst coverage, emerging markets with less price efficiency, or strategies exploiting documented anomalies. Factor ETFs ("smart beta") allow semi-active exposure to momentum, value, and size effects at low cost.</p>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">The Fee Drag Problem</div>
+          <p>If a fund charges 1% p.a. and the market returns 7%, the manager needs 8% just to keep pace. Over 30 years, this compounding fee drag cuts your final wealth by ~26% versus a passive index fund. This maths is the core argument for passive investing.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo</h3></div>
+          <p class="learn-ai-desc">Get a personalised take on active vs passive for your situation.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What does the evidence say about active vs passive fund performance?')">The evidence</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is a factor ETF and how does it bridge active and passive?')">Factor ETFs</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the Sharpe ratio of a global equity index fund?')">Index Sharpe</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsap"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputap" placeholder="Ask about active vs passive…" onkeydown="if(event.key==='Enter') learnChatSendN('ap')" />
+              <button onclick="learnChatSendN('ap')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('emh')"><div class="tnb-label">← Prev</div><div class="tnb-title">Market Efficiency</div></button><button class="topic-nav-btn primary" onclick="showTopic('anomalies')"><div class="tnb-label">Next →</div><div class="tnb-title">Market Anomalies</div></button></div>
+      </div>
+
+      <!-- ══ ANOMALIES ══ -->
+      <div class="topic-panel" id="topic-anomalies">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-market">Markets</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">Market Anomalies</h1>
+          <p class="topic-intro">If markets are efficient, why do momentum, value, and size effects persist? These documented anomalies have been exploited by quants for decades.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Big Three Factors</h3>
+          <ul>
+            <li><strong>Momentum:</strong> Stocks that outperformed over 3–12 months tend to continue outperforming. Jegadeesh & Titman (1993). Contradicts weak-form EMH.</li>
+            <li><strong>Value (HML):</strong> High book-to-market stocks (cheap by accounting measures) historically outperform glamour stocks. Fama & French three-factor model (1993).</li>
+            <li><strong>Size (SMB):</strong> Small-caps historically outperform large-caps on a risk-adjusted basis. Effect has weakened since discovery but persists in less-efficient markets.</li>
+          </ul>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">Why Do They Persist?</div>
+          <p>Two competing explanations: (1) These are risk factors that standard models miss. Momentum crashes badly in market reversals. Investors are compensated for real risk. (2) Genuine inefficiencies caused by investor irrationality, but limits to arbitrage prevent full correction.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Anomalies</h3></div>
+          <p class="learn-ai-desc">Go deeper on quant factors and market inefficiencies.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What is momentum investing and why does it work?')">Momentum</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the Fama-French three-factor model?')">Fama-French</span>
+            <span class="learn-chip" onclick="learnChatAsk('What are calendar anomalies like the January effect?')">Calendar effects</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsan"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputan" placeholder="Ask about anomalies…" onkeydown="if(event.key==='Enter') learnChatSendN('an')" />
+              <button onclick="learnChatSendN('an')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('active-passive')"><div class="tnb-label">← Prev</div><div class="tnb-title">Active vs Passive</div></button><button class="topic-nav-btn primary" onclick="showTopic('behavioural')"><div class="tnb-label">Next →</div><div class="tnb-title">Behavioural Finance</div></button></div>
+      </div>
+
+      <!-- ══ BEHAVIOURAL ══ -->
+      <div class="topic-panel" id="topic-behavioural">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-behav">Behavioural Finance</span><span class="topic-readtime">⏱ 5 min read</span></div>
+          <h1 class="topic-title">Behavioural Finance</h1>
+          <p class="topic-intro">Classical finance assumes rational investors. Behavioural finance proves they are not, and documents the systematic ways psychology drives markets away from efficiency.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Prospect Theory (Kahneman & Tversky, 1979)</h3>
+          <p>People evaluate outcomes relative to a reference point, and they are <strong>loss-averse</strong>: losses hurt roughly twice as much as equivalent gains feel good. This explains holding losers too long, selling winners too early, and feeling worse about a 10% loss than happy about a 10% gain.</p>
+        </div>
+        <div class="key-concept">
+          <div class="key-concept-label">The Disposition Effect</div>
+          <p>Investors systematically sell winners early and hold losers, the opposite of "cut losses, let winners run." Realising a loss feels painful, so we hold the position hoping it recovers. The Investment Diary in FlyingFunds was designed to help you track this pattern in your own behaviour.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Why This Creates Anomalies</h3>
+          <p>If investors make the same mistakes systematically, prices deviate from fundamental value in predictable ways. Limits to arbitrage (the costs and risks of correcting mispricings) allow these deviations to persist. This is why momentum and value effects survive even after becoming widely known.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Behavioural Finance</h3></div>
+          <p class="learn-ai-desc">Understand your own psychology as an investor.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What cognitive biases most commonly affect retail investors?')">Common biases</span>
+            <span class="learn-chip" onclick="learnChatAsk('How can I use my Investment Diary to identify my own biases?')">Using my diary</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is overconfidence bias and how does it affect trading decisions?')">Overconfidence</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgs5"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInput5" placeholder="Ask about behavioural finance…" onkeydown="if(event.key==='Enter') learnChatSendN(5)" />
+              <button onclick="learnChatSendN(5)">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('anomalies')"><div class="tnb-label">← Prev</div><div class="tnb-title">Market Anomalies</div></button><button class="topic-nav-btn primary" onclick="showTopic('biases')"><div class="tnb-label">Next →</div><div class="tnb-title">Investor Biases</div></button></div>
+      </div>
+
+      <!-- ══ BIASES ══ -->
+      <div class="topic-panel" id="topic-biases">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-behav">Behavioural Finance</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">Investor Biases</h1>
+          <p class="topic-intro">Loss aversion, overconfidence, anchoring and herding are the psychological traps that quietly derail well-intentioned portfolios.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Five Most Costly Biases</h3>
+          <ul>
+            <li><strong>Loss aversion:</strong> Losses feel ~2× as intense as equivalent gains. Causes the disposition effect, holding losers and selling winners.</li>
+            <li><strong>Overconfidence:</strong> Most investors believe they are above-average. This leads to overtrading and underperformance via transaction costs and poor timing.</li>
+            <li><strong>Anchoring:</strong> We fixate on an arbitrary reference (e.g. purchase price) and make decisions relative to it, not current fundamentals.</li>
+            <li><strong>Herding:</strong> Following the crowd feels safe but leads to buying at peaks and selling at troughs, the opposite of optimal.</li>
+            <li><strong>Recency bias:</strong> We overweight recent events, expecting bull markets to continue and fearing after crashes what has already happened.</li>
+          </ul>
+        </div>
+        <div class="example-box">
+          <div class="example-label">Anchoring in Practice</div>
+          <p>An investor buys at £50. It falls to £30. Instead of assessing whether £30 is good value, they think "I need it to get back to £50." That £50 anchor distorts rational decision-making. The stock doesn't know what you paid for it.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Biases</h3></div>
+          <p class="learn-ai-desc">Identify and address the biases affecting your decisions.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('Explain loss aversion and how it affects investment decisions')">Loss aversion</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is anchoring bias and how can I avoid it when investing?')">Anchoring</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is herding in financial markets and when is it dangerous?')">Herding</span>
+            <span class="learn-chip" onclick="learnChatAsk('How does overconfidence bias affect retail investors specifically?')">Overconfidence</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsbias"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputbias" placeholder="Ask about investor biases…" onkeydown="if(event.key==='Enter') learnChatSendN('bias')" />
+              <button onclick="learnChatSendN('bias')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('behavioural')"><div class="tnb-label">← Prev</div><div class="tnb-title">Behavioural Finance</div></button><button class="topic-nav-btn primary" onclick="showTopic('equities')"><div class="tnb-label">Next →</div><div class="tnb-title">Equities &amp; How Stocks Work</div></button></div>
+      </div>
+
+      <!-- ══ EQUITIES ══ -->
+      <div class="topic-panel" id="topic-equities">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-theory">Portfolio Theory</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">Equities &amp; How Stocks Work</h1>
+          <p class="topic-intro">Buying a share means buying a fractional ownership stake in a real company. Understanding what drives prices and how to read key metrics is the foundation of equity investing.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What You Actually Own</h3>
+          <p>A share of stock gives you a proportional claim on a company's assets and future earnings. As a shareholder you may receive dividends when profits are distributed, and you can vote on major corporate decisions. If the company grows and generates more profit, the share price typically rises to reflect that increased value.</p>
+          <p>Equities sit at the top of the risk spectrum among mainstream asset classes. Shareholders are paid last if a company fails, after creditors and bondholders. That residual risk is why equities historically return more over long periods than bonds or cash.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What Drives the Share Price</h3>
+          <ul>
+            <li><strong>Earnings:</strong> The most fundamental driver. When a company earns more than expected, the price usually rises.</li>
+            <li><strong>Expectations:</strong> Markets are forward-looking. A stock can fall on good news if the news is not as good as the market anticipated.</li>
+            <li><strong>Interest rates:</strong> Higher rates reduce the present value of future earnings and make bonds relatively more attractive, pushing equity prices down.</li>
+            <li><strong>Sentiment and flows:</strong> Institutional buying, index rebalancing, and retail sentiment create short-term price movements that are disconnected from fundamentals.</li>
+          </ul>
+        </div>
+        <div class="learn-section">
+          <h3>Key Metrics</h3>
+          <ul>
+            <li><strong>Earnings Per Share (EPS):</strong> Net profit divided by shares outstanding. Shows how profitable the company is per share owned.</li>
+            <li><strong>Price-to-Earnings (P/E) ratio:</strong> Share price divided by EPS. A P/E of 20 means investors pay £20 for every £1 of annual earnings. High P/E suggests high growth expectations.</li>
+            <li><strong>Market capitalisation:</strong> Share price multiplied by shares outstanding. The total market value of the company.</li>
+            <li><strong>Dividend yield:</strong> Annual dividend per share divided by share price. A 3% yield means £3 income per year per £100 invested.</li>
+          </ul>
+        </div>
+        <div class="example-box">
+          <div class="example-label">Reading the Numbers</div>
+          <p>A company with a share price of £50, EPS of £2.50, and annual dividend of £1.50 has: P/E of 20, and dividend yield of 3%. If the market expects earnings to grow at 15% per year, a P/E of 20 might be cheap. If growth is 2%, it might be expensive. Context always matters.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Where Stocks Trade</h3>
+          <p>UK shares trade on the London Stock Exchange (LSE). US shares trade on the NYSE and NASDAQ. Many investors access global equities cheaply through index funds and ETFs, which removes the need to pick individual stocks entirely.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Equities</h3></div>
+          <p class="learn-ai-desc">Understand what drives stock prices and how to read the numbers.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What is a P/E ratio and is a high one good or bad?')">P/E ratio</span>
+            <span class="learn-chip" onclick="learnChatAsk('How do interest rates affect stock prices?')">Interest rates &amp; stocks</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is market capitalisation and why does it matter?')">Market cap</span>
+            <span class="learn-chip" onclick="learnChatAsk('Should I invest in individual stocks or index funds?')">Stocks vs index funds</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgseq"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputeq" placeholder="Ask about equities and stocks…" onkeydown="if(event.key==='Enter') learnChatSendN('eq')" />
+              <button onclick="learnChatSendN('eq')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('biases')"><div class="tnb-label">← Prev</div><div class="tnb-title">Investor Biases</div></button><button class="topic-nav-btn primary" onclick="showTopic('charts')"><div class="tnb-label">Next →</div><div class="tnb-title">Reading Charts &amp; Candlesticks</div></button></div>
+      </div>
+
+      <!-- ══ CHARTS ══ -->
+      <div class="topic-panel" id="topic-charts">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-market">Markets</span><span class="topic-readtime">⏱ 5 min read</span></div>
+          <h1 class="topic-title">Reading Charts &amp; Candlesticks</h1>
+          <p class="topic-intro">Candlestick charts are the most widely used way to visualise price action. Learning to read them reveals what buyers and sellers are doing, though the evidence on whether they predict the future is more mixed than most traders admit.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Anatomy of a Candlestick</h3>
+          <p>Each candle represents one time period, showing four prices: Open, High, Low and Close (OHLC). The body is the rectangle between open and close. The thin lines extending above and below are called wicks or shadows, and they show the full range traded during the period.</p>
+          <ul>
+            <li><strong>Green (bullish) candle:</strong> Close is higher than open. Buyers were in control.</li>
+            <li><strong>Red (bearish) candle:</strong> Close is lower than open. Sellers were in control.</li>
+            <li><strong>Long body:</strong> Strong conviction in one direction.</li>
+            <li><strong>Long wicks:</strong> Price moved sharply but was rejected, suggesting uncertainty or a potential reversal.</li>
+          </ul>
+        </div>
+        <div class="example-box">
+          <div class="example-label">OHLC in Practice</div>
+          <p>A daily candle that opens at £100, reaches a high of £108, falls to a low of £97, and closes at £105 tells a clear story: buyers pushed the price up strongly, the bears managed to drag it back briefly, but buyers regained control by close. The long lower wick is often read as bullish.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Common Patterns</h3>
+          <ul>
+            <li><strong>Doji:</strong> Open and close are nearly equal, creating a cross shape. Signals indecision. Context determines whether this is a reversal warning or just a pause.</li>
+            <li><strong>Hammer:</strong> Small body at the top, long lower wick. Appears after a downtrend. Suggests sellers pushed prices lower but buyers rejected the move.</li>
+            <li><strong>Shooting star:</strong> Small body at the bottom, long upper wick. Appears after an uptrend. Suggests buyers pushed prices higher but sellers rejected the move.</li>
+            <li><strong>Bullish engulfing:</strong> A large green candle that fully covers the previous red candle. Often read as a reversal signal after a downtrend.</li>
+            <li><strong>Bearish engulfing:</strong> A large red candle that fully covers the previous green candle. Often read as a reversal signal after an uptrend.</li>
+          </ul>
+        </div>
+        <div class="learn-section">
+          <h3>Support, Resistance and Trend Lines</h3>
+          <p>Support is a price level where buying has historically emerged and prevented further declines. Resistance is a level where selling pressure has historically capped advances. Trend lines connect a series of highs or lows to show the direction of price movement.</p>
+          <p>These concepts are widely used but subjective. Two analysts looking at the same chart will often draw different lines. That subjectivity is worth keeping in mind before making trading decisions based on them.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Does Technical Analysis Actually Work?</h3>
+          <p>The academic evidence is genuinely mixed. Some patterns, such as momentum, have robust empirical support. Others, such as specific candlestick formations, show much weaker predictive power once transaction costs are accounted for. The Efficient Market Hypothesis suggests most chartable patterns should be arbitraged away once known. In practice, technical analysis is most useful as a risk management framework, helping investors define clear entry and exit points rather than as a reliable crystal ball.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Charts</h3></div>
+          <p class="learn-ai-desc">Decode what price charts are telling you.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What does a hammer candlestick pattern mean?')">Hammer pattern</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is support and resistance in trading?')">Support &amp; resistance</span>
+            <span class="learn-chip" onclick="learnChatAsk('Does technical analysis actually work or is it just pattern matching?')">Does TA work?</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is a doji candlestick and what does it signal?')">Doji signal</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgscharts"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputcharts" placeholder="Ask about charts and candlesticks…" onkeydown="if(event.key==='Enter') learnChatSendN('charts')" />
+              <button onclick="learnChatSendN('charts')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('equities')"><div class="tnb-label">← Prev</div><div class="tnb-title">Equities &amp; How Stocks Work</div></button><button class="topic-nav-btn primary" onclick="showTopic('etfs')"><div class="tnb-label">Next →</div><div class="tnb-title">ETFs Explained</div></button></div>
+      </div>
+
+      <!-- ══ ETFs ══ -->
+      <div class="topic-panel" id="topic-etfs">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-market">Markets</span><span class="topic-readtime">⏱ 4 min read</span></div>
+          <h1 class="topic-title">ETFs Explained</h1>
+          <p class="topic-intro">Exchange-traded funds give you instant diversification at very low cost. They have become the default choice for long-term investors for good reason, but not all ETFs are created equal.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What an ETF Is</h3>
+          <p>An ETF is a basket of securities that trades on a stock exchange just like a single share. When you buy one unit of an S&amp;P 500 ETF, you effectively own a tiny slice of all 500 companies in that index, weighted by market capitalisation. You can buy or sell throughout the trading day at market prices, unlike a traditional mutual fund, which is priced once daily.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Types of ETF</h3>
+          <ul>
+            <li><strong>Index ETFs:</strong> Track a broad market index such as the FTSE 100, S&amp;P 500 or MSCI World. These are the workhorses of passive investing.</li>
+            <li><strong>Sector ETFs:</strong> Focus on a specific industry, such as technology, healthcare or clean energy. More concentrated, more volatile.</li>
+            <li><strong>Factor ETFs (smart beta):</strong> Tilt toward proven risk factors such as value, momentum, quality or low volatility. Somewhere between pure passive and active management.</li>
+            <li><strong>Bond ETFs:</strong> Hold a portfolio of government or corporate bonds. Useful for managing duration and credit exposure.</li>
+            <li><strong>Commodity ETFs:</strong> Provide exposure to gold, oil or agricultural commodities, often through futures contracts rather than physical holdings.</li>
+          </ul>
+        </div>
+        <div class="learn-section">
+          <h3>Why Costs Matter More Than Almost Anything</h3>
+          <p>The Total Expense Ratio (TER) is the annual fee deducted from fund assets. A passive global equity ETF typically charges 0.07–0.20% per year. An actively managed fund might charge 0.75–1.50%. Over 30 years, that 1% annual difference compounds into tens of thousands of pounds on a modest investment. The evidence consistently shows that most active funds fail to outperform their benchmark after fees over the long run, which is why costs are one of the few truly controllable variables in investing.</p>
+        </div>
+        <div class="example-box">
+          <div class="example-label">The Cost Compounding Effect</div>
+          <p>£10,000 invested for 30 years at 7% gross return: with a 0.15% TER, it grows to approximately £72,000. With a 1.15% TER, it grows to approximately £57,000. That 1% annual fee difference costs you around £15,000, purely from compounding friction.</p>
+        </div>
+        <div class="learn-section">
+          <h3>Physical vs Synthetic ETFs</h3>
+          <p>A physical ETF actually buys the underlying securities. A synthetic ETF uses derivatives (typically a swap with a bank) to replicate index returns without holding the shares directly. Synthetic ETFs can track illiquid or hard-to-access markets more efficiently, but they introduce counterparty risk. For core holdings, physical replication is generally preferred by most retail investors.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about ETFs</h3></div>
+          <p class="learn-ai-desc">Find out which type of ETF suits your portfolio.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What is an expense ratio and how much should I pay for an ETF?')">Expense ratios</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is the difference between a physical and synthetic ETF?')">Physical vs synthetic</span>
+            <span class="learn-chip" onclick="learnChatAsk('What are smart beta ETFs and are they worth it?')">Smart beta</span>
+            <span class="learn-chip" onclick="learnChatAsk('Which ETF should I use to invest in global equities?')">Global equity ETFs</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgsetfs"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputetfs" placeholder="Ask about ETFs…" onkeydown="if(event.key==='Enter') learnChatSendN('etfs')" />
+              <button onclick="learnChatSendN('etfs')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('charts')"><div class="tnb-label">← Prev</div><div class="tnb-title">Reading Charts &amp; Candlesticks</div></button><button class="topic-nav-btn primary" onclick="showTopic('crypto')"><div class="tnb-label">Next →</div><div class="tnb-title">Crypto &amp; Digital Assets</div></button></div>
+      </div>
+
+      <!-- ══ CRYPTO ══ -->
+      <div class="topic-panel" id="topic-crypto">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-market">Markets</span><span class="topic-readtime">⏱ 5 min read</span></div>
+          <h1 class="topic-title">Crypto &amp; Digital Assets</h1>
+          <p class="topic-intro">Crypto is genuinely novel and genuinely risky. Understanding what you are actually buying, why the volatility is so extreme, and what role it might play in a broader portfolio matters before you allocate anything.</p>
+        </div>
+        <div class="learn-section">
+          <h3>What You Are Buying</h3>
+          <p>Unlike shares, crypto gives you no ownership stake in a company, no claim on earnings, and no legal protections if things go wrong. What you own is a unit of a protocol or network. The value derives from belief in the utility of that network, scarcity, and the demand of other investors who want to own it.</p>
+          <ul>
+            <li><strong>Bitcoin (BTC):</strong> Designed as digital money with a fixed supply cap of 21 million coins. The scarcity is enforced by code, not a central bank. It is the most liquid and most widely held cryptocurrency.</li>
+            <li><strong>Ethereum (ETH):</strong> A programmable blockchain that hosts decentralised applications, smart contracts and most of the DeFi and NFT ecosystem. Value is tied to demand for computation on its network.</li>
+            <li><strong>Altcoins:</strong> Thousands of other cryptocurrencies exist, most with far less liquidity, weaker track records, and much higher risk of going to zero.</li>
+          </ul>
+        </div>
+        <div class="learn-section">
+          <h3>The Volatility Problem</h3>
+          <p>Bitcoin has historically had annualised volatility of 60–100%, compared to roughly 15–20% for the S&amp;P 500. A 50% decline in a year is a routine occurrence in crypto, not a tail event. That level of volatility has real consequences for portfolio construction. Even a 5% allocation to crypto can meaningfully shift the risk profile of an otherwise conservative portfolio.</p>
+        </div>
+        <div class="example-box">
+          <div class="example-label">Volatility in Practice</div>
+          <p>Bitcoin fell 80% from its November 2021 peak to its November 2022 low. An investor who held £10,000 worth at the peak was holding £2,000 twelve months later. It subsequently recovered and reached new highs, but not every investor had the stomach or the time horizon to hold through that decline.</p>
+        </div>
+        <div class="learn-section">
+          <h3>The Unique Risks</h3>
+          <ul>
+            <li><strong>Custody risk:</strong> If you hold crypto on an exchange and it fails or is hacked, you have no FSCS protection. Self-custody via a hardware wallet is safer but adds its own complexity and risk of loss.</li>
+            <li><strong>Regulatory risk:</strong> Governments can restrict access, impose taxes, or change the legal status of crypto holdings. Regulatory landscape varies significantly across jurisdictions.</li>
+            <li><strong>Altcoin and smart contract risk:</strong> Smaller tokens can lose all value overnight. Smart contract bugs have led to hundreds of millions of pounds being lost or stolen.</li>
+            <li><strong>Liquidity risk:</strong> In a market panic, bid-ask spreads widen dramatically and exchanges can pause withdrawals, making exit at a reasonable price difficult.</li>
+          </ul>
+        </div>
+        <div class="learn-section">
+          <h3>Portfolio Role</h3>
+          <p>Crypto has historically shown low correlation to equities over long periods, which is the theoretical case for including it. In practice, during stress events such as March 2020 and 2022, correlations with risk assets spiked toward 1, offering little diversification benefit exactly when you needed it most. Most institutional frameworks treat crypto as a speculative position, if included at all, capped at 1–5% of a portfolio and sized to be a position you could afford to lose entirely without it derailing your financial plan.</p>
+        </div>
+        <div class="learn-ai-section">
+          <div class="learn-ai-header"><div class="learn-ai-icon">🤖</div><h3 class="learn-ai-title">Ask Halo about Crypto</h3></div>
+          <p class="learn-ai-desc">Think clearly about digital assets before you invest.</p>
+          <div class="learn-chips">
+            <span class="learn-chip" onclick="learnChatAsk('What is Bitcoin and why does it have value?')">What is Bitcoin?</span>
+            <span class="learn-chip" onclick="learnChatAsk('How risky is crypto compared to stocks?')">Crypto vs stocks risk</span>
+            <span class="learn-chip" onclick="learnChatAsk('What percentage of my portfolio should be in crypto?')">Allocation size</span>
+            <span class="learn-chip" onclick="learnChatAsk('What is custody risk in crypto and how do I protect myself?')">Custody risk</span>
+          </div>
+          <div class="learn-chat-wrap">
+            <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor</span></div>
+            <div class="learn-chat-msgs" id="learnChatMsgscrypto"></div>
+            <div class="learn-chat-input-bar">
+              <input id="learnChatInputcrypto" placeholder="Ask about crypto and digital assets…" onkeydown="if(event.key==='Enter') learnChatSendN('crypto')" />
+              <button onclick="learnChatSendN('crypto')">Ask →</button>
+            </div>
+          </div>
+        </div>
+        <div class="topic-nav"><button class="topic-nav-btn" onclick="showTopic('etfs')"><div class="tnb-label">← Prev</div><div class="tnb-title">ETFs Explained</div></button><button class="topic-nav-btn primary" onclick="showTopic('chat')"><div class="tnb-label">Go deeper →</div><div class="tnb-title">Chat with Halo</div></button></div>
+      </div>
+
+      <!-- ══ FULL CHAT ══ -->
+      <div class="topic-panel" id="topic-chat">
+        <div class="topic-header">
+          <div class="topic-meta"><span class="topic-tag tag-ai">AI Tutor</span></div>
+          <h1 class="topic-title">Chat with Halo</h1>
+          <p class="topic-intro">Ask anything about finance, investing, or your portfolio. Plain English or deep theory. Halo has you covered.</p>
+        </div>
+        <div class="learn-chips" style="margin-bottom:20px;">
+          <span class="learn-chip" onclick="learnChatAsk('Give me a complete beginner\'s guide to portfolio management')">Beginner guide</span>
+          <span class="learn-chip" onclick="learnChatAsk('Explain all the risk metrics FlyingFunds computes and what each means')">All my metrics</span>
+          <span class="learn-chip" onclick="learnChatAsk('What should I learn about next given I am a beginner investor?')">What to learn next</span>
+          <span class="learn-chip" onclick="learnChatAsk('What is the most important thing to understand before picking stocks?')">Before picking stocks</span>
+          <span class="learn-chip" onclick="learnChatAsk('Explain the relationship between risk and return in simple terms')">Risk vs return</span>
+          <span class="learn-chip" onclick="learnChatAsk('What is dollar cost averaging and does it actually work?')">Dollar cost averaging</span>
+        </div>
+        <div class="learn-chat-wrap">
+          <div class="learn-chat-header"><div class="learn-chat-dot"></div><span class="learn-chat-label">Halo · Finance Tutor · Always on</span></div>
+          <div class="learn-chat-msgs" id="learnChatMsgsFull" style="height:360px;"></div>
+          <div class="learn-chat-input-bar">
+            <input id="learnChatInputFull" placeholder="Ask Halo anything about investing and finance…" onkeydown="if(event.key==='Enter') learnChatSendN('Full')" />
+            <button id="learnChatSendFull" onclick="learnChatSendN('Full')">Ask Halo →</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /lc-main -->
+  </div><!-- /learn-content -->
+</div><!-- /learn-page -->
+
+<script>
+  // all the topics in the learn section — used for both the card grid and filter tabs
+  // TODO: clean this up, maybe move to a seperate JSON file at some point
+  const TOPICS = [
+    { id:'mpt',           icon:'📐', title:'Modern Portfolio Theory', desc:'How Markowitz proved that combining assets reduces risk without sacrificing return.', cat:'foundations', tag:'Portfolio Theory', tagClass:'tc-tag-found', stripe:'stripe-found', time:5 },
+    { id:'capm',          icon:'📊', title:'CAPM & Beta',            desc:'The model linking expected return to systematic risk, and why beta matters for every stock you hold.',          cat:'foundations', tag:'Portfolio Theory', tagClass:'tc-tag-found', stripe:'stripe-found', time:4 },
+    { id:'diversification',icon:'🥧',title:'Diversification',        desc:'The only free lunch in finance: reducing risk by combining uncorrelated assets without sacrificing return.', cat:'foundations', tag:'Portfolio Theory', tagClass:'tc-tag-found', stripe:'stripe-found', time:3 },
+    { id:'equities',      icon:'🏦', title:'Equities & How Stocks Work', desc:'What a share actually represents, what drives prices, and the key metrics every investor needs to understand.', cat:'foundations', tag:'Portfolio Theory', tagClass:'tc-tag-found', stripe:'stripe-found', time:4 },
+    { id:'sharpe',        icon:'⚡', title:'Sharpe Ratio',           desc:'How much return per unit of risk? The most widely used performance metric.',                          cat:'risk',         tag:'Risk Metrics',    tagClass:'tc-tag-risk',  stripe:'stripe-risk',  time:4 },
+    { id:'var',           icon:'🛡', title:'VaR & CVaR',             desc:'How bad could your losses get? Tail risk explained clearly.',                                         cat:'risk',         tag:'Risk Metrics',    tagClass:'tc-tag-risk',  stripe:'stripe-risk',  time:5 },
+    { id:'drawdown',      icon:'📉', title:'Max Drawdown',           desc:'The worst peak-to-trough decline and why it tests your nerve more than any other metric.',             cat:'risk',         tag:'Risk Metrics',    tagClass:'tc-tag-risk',  stripe:'stripe-risk',  time:3 },
+    { id:'volatility',    icon:'📡', title:'Volatility',             desc:'Standard deviation of returns, the foundational measure of how much your portfolio bounces around.',   cat:'risk',         tag:'Risk Metrics',    tagClass:'tc-tag-risk',  stripe:'stripe-risk',  time:3 },
+    { id:'emh',           icon:'🌐', title:'Market Efficiency',      desc:'Can you consistently beat the market? The EMH and what the evidence actually shows.',                  cat:'markets',      tag:'Markets',         tagClass:'tc-tag-mkt',   stripe:'stripe-mkt',   time:4 },
+    { id:'active-passive',icon:'⚖️', title:'Active vs Passive',      desc:"80% of active managers underperform index funds. Here is why, and the exceptions that prove the rule.", cat:'markets',     tag:'Markets',         tagClass:'tc-tag-mkt',   stripe:'stripe-mkt',   time:4 },
+    { id:'anomalies',     icon:'🔍', title:'Market Anomalies',       desc:'Momentum, value and size: why these factors persist even in theoretically efficient markets.',          cat:'markets',      tag:'Markets',         tagClass:'tc-tag-mkt',   stripe:'stripe-mkt',   time:4 },
+    { id:'charts',        icon:'🕯️', title:'Reading Charts & Candlesticks', desc:'Understand OHLC candles, key patterns, support and resistance, and whether technical analysis holds up.', cat:'markets', tag:'Markets',         tagClass:'tc-tag-mkt',   stripe:'stripe-mkt',   time:5 },
+    { id:'etfs',          icon:'🧺', title:'ETFs Explained',         desc:'How exchange-traded funds work, the types available, and why costs matter more than almost anything else.', cat:'markets',  tag:'Markets',         tagClass:'tc-tag-mkt',   stripe:'stripe-mkt',   time:4 },
+    { id:'crypto',        icon:'₿',  title:'Crypto & Digital Assets', desc:'What you are actually buying, the real risks, and how to think about digital assets in a broader portfolio.', cat:'markets', tag:'Markets',        tagClass:'tc-tag-mkt',   stripe:'stripe-mkt',   time:5 },
+    { id:'behavioural',   icon:'🧠', title:'Behavioural Finance',    desc:'Prospect theory, loss aversion, and why investors systematically make the same mistakes.',                cat:'behaviour', tag:'Behavioural',     tagClass:'tc-tag-beh',   stripe:'stripe-beh',   time:5 },
+    { id:'biases',        icon:'⚠️', title:'Investor Biases',        desc:'Anchoring, overconfidence, herding and the psychological traps that quietly derail well-intentioned portfolios.', cat:'behaviour', tag:'Behavioural', tagClass:'tc-tag-beh', stripe:'stripe-beh',   time:4 },
+  ];
+
+  let currentTopic = null;
+
+  // build the card grid — called on init and when switching back from a topic view
+  function renderCards(filter) {
+    const grid = document.getElementById('learnCardGrid');
+    grid.innerHTML = '';
+    TOPICS.forEach(t => {
+      const hidden = filter !== 'all' && t.cat !== filter;
+      const card = document.createElement('div');
+      card.className = 'topic-card' + (hidden ? ' hidden' : '');
+      card.setAttribute('data-cat', t.cat);
+      card.innerHTML = `
+        <div class="tcStripe ${t.stripe}"></div>
+        <div class="tc-body">
+          <div class="tc-icon">${t.icon}</div>
+          <div class="tc-meta">
+            <span class="tc-tag ${t.tagClass}">${t.tag}</span>
+            <span class="tc-time">⏱ ${t.time} min</span>
+          </div>
+          <div class="tc-title">${t.title}</div>
+          <div class="tc-desc">${t.desc}</div>
+          <div class="tc-footer">
+            <span class="tc-read-btn">Start reading <span style="font-size:16px">→</span></span>
+          </div>
+        </div>
+      `;
+      card.onclick = () => showTopic(t.id);
+      grid.appendChild(card);
+    });
+  }
+
+  function filterCards(cat) {
+    document.querySelectorAll('.lf-tab').forEach(t => t.classList.toggle('active', t.dataset.filter === cat));
+    document.querySelectorAll('.topic-card').forEach(c => {
+      c.classList.toggle('hidden', cat !== 'all' && c.dataset.cat !== cat);
+    });
+  }
+
+  // nav between browser and content view
+  function showBrowser() {
+    document.getElementById('learnBrowser').style.display  = '';
+    document.getElementById('learnContent').classList.remove('visible');
+    currentTopic = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderCards('all');
+  }
+
+  function showTopic(id) {
+    // Hide browser
+    document.getElementById('learnBrowser').style.display = 'none';
+    document.getElementById('learnContent').classList.add('visible');
+
+    // Activate panel
+    document.querySelectorAll('.topic-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById('topic-' + id);
+    if (panel) panel.classList.add('active');
+
+    currentTopic = id;
+    const meta = TOPICS.find(t => t.id === id);
+
+    // Breadcrumb
+    if (meta) {
+      document.getElementById('lcBreadcrumb').innerHTML =
+        `<span style="color:var(--muted)">${meta.tag}</span><span style="color:var(--muted);margin:0 4px">›</span><span>${meta.title}</span>`;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function learnSearch() {
+    const q = document.getElementById('learnSearchInput').value.trim();
+    if (!q) return;
+    showTopic('chat');
+    setTimeout(() => learnChatAsk(q), 300);
+  }
+
+  // per-topic chat histories so each topic has its own conversation
+  // the suffix thing was the best way i could think of to keep them seperate
+  // TODO: clean this up, the suffix system is a bit confusing
+  const learnHistories  = {};
+  const learnLoadingMap = {};
+
+  function learnChatSend() { learnChatSendN(''); }
+
+  function learnChatSendN(suffix) {
+    const input = document.getElementById(`learnChatInput${suffix}`);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    learnChatProcess(suffix, text, `learnChatMsgs${suffix}`);
+  }
+
+  function learnChatAsk(question) {
+    const suffixMap = {
+      mpt:'', capm:'2', diversification:'d', sharpe:'3', var:'4',
+      drawdown:'dd', volatility:'vol', emh:'6', 'active-passive':'ap',
+      anomalies:'an', behavioural:'5', biases:'bias',
+      equities:'eq', charts:'charts', etfs:'etfs', crypto:'crypto',
+      chat:'Full'
+    };
+    const suffix = currentTopic !== null ? (suffixMap[currentTopic] ?? 'Full') : 'Full';
+    if (!document.getElementById('learnContent').classList.contains('visible')) {
+      showTopic('chat');
+      setTimeout(() => { learnChatProcess('Full', question, 'learnChatMsgsFull'); }, 400);
+      return;
+    }
+    const input = document.getElementById(`learnChatInput${suffix}`);
+    if (input) input.value = question;
+    learnChatProcess(suffix, question, `learnChatMsgs${suffix}`);
+  }
+
+  // send to halo and render the response — simulated delay to feel more natural
+  function learnChatProcess(suffix, text, msgsId) {
+    if (learnLoadingMap[suffix]) return;
+    learnLoadingMap[suffix] = true;
+    const container = document.getElementById(msgsId);
+    if (!container) { learnLoadingMap[suffix] = false; return; }
+    if (!learnHistories[suffix]) learnHistories[suffix] = [];
+    learnHistories[suffix].push({ role:'user', content:text });
+    addLearnMsg(container, 'user', text);
+    const typing = addLearnTyping(container);
+    setTimeout(() => {
+      typing.remove();
+      const reply = haloRespond(text, learnHistories[suffix]);
+      const replyText    = reply?.text    ?? reply;
+      const relatedSuggs = reply?.related ?? [];
+      learnHistories[suffix].push({ role:'assistant', content:replyText });
+      // keep history to last 12 messages to avoid it getting too big
+      // not sure if 12 is the right limit, but it seems to work ok
+      if (learnHistories[suffix].length > 12) learnHistories[suffix] = learnHistories[suffix].slice(-12);
+      addLearnMsg(container, 'assistant', replyText, relatedSuggs);
+      learnLoadingMap[suffix] = false;
+    }, 500 + Math.random() * 600);
+  }
+
+  function addLearnMsg(container, role, content, suggestions = []) {
+    const isUser = role === 'user';
+    const div = document.createElement('div');
+    div.className = `lc-msg${isUser ? ' user' : ''}`;
+    const av = document.createElement('div');
+    av.className = 'lc-avatar';
+    av.textContent = isUser
+      ? (window._haloUser?.avatar?.length <= 2 ? window._haloUser.avatar : (window._haloUser?.username?.[0]?.toUpperCase() || 'U'))
+      : 'F';
+    const bubble = document.createElement('div');
+    bubble.className = 'lc-text';
+    bubble.innerHTML = content
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+    div.appendChild(av); div.appendChild(bubble);
+    container.appendChild(div);
+    if (!isUser && suggestions.length) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px 36px;';
+      suggestions.forEach(s => {
+        const chip = document.createElement('span');
+        chip.className = 'learn-chip';
+        chip.style.fontSize = '11px';
+        chip.textContent = s;
+        chip.onclick = () => learnChatAsk(s);
+        row.appendChild(chip);
+      });
+      container.appendChild(row);
+    }
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function addLearnTyping(container) {
+    const div = document.createElement('div');
+    div.className = 'lc-msg lc-typing';
+    div.innerHTML = `<div class="lc-avatar">F</div><div class="lc-text"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  window.addEventListener('load', () => renderCards('all'));
+</script>
+{% endblock %}

@@ -1,0 +1,696 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}FlyingFunds{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/theme.css">
+  <script src="/static/js/utils.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family:'DM Sans',system-ui,sans-serif; background:var(--cream); color:var(--dark); overflow-x:hidden; }
+
+    /* floating pill nav */
+    .floatnav {
+      position:fixed; top:16px; left:50%; transform:translateX(-50%);
+      z-index:300; display:flex; align-items:center; gap:4px;
+      background:rgba(255,255,255,0.82); backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%); /* safari */
+      border:1px solid rgba(0,0,0,0.08); border-radius:40px;
+      padding:5px 6px 5px 14px;
+      box-shadow:0 4px 24px rgba(0,0,0,0.08),0 1px 4px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.9);
+      transition:box-shadow 0.3s; white-space:nowrap;
+    }
+    .floatnav.scrolled { box-shadow:0 8px 32px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.9); }
+    .fn-logo { font-family:'Instrument Serif',serif; font-size:16px; color:var(--dark); text-decoration:none; letter-spacing:-0.3px; margin-right:6px; flex-shrink:0; }
+    .fn-div  { width:1px; height:16px; background:rgba(0,0,0,0.1); margin:0 4px; flex-shrink:0; }
+    .fn-links { display:flex; align-items:center; gap:1px; }
+    .fn-links a { font-size:13px; font-weight:500; color:#555; text-decoration:none; padding:6px 13px; border-radius:30px; transition:all 0.15s; }
+    .fn-links a:hover { background:rgba(0,0,0,0.05); color:var(--dark); }
+    .fn-links a.active { background:rgba(0,0,0,0.06); color:var(--dark); font-weight:600; }
+    .fn-right { display:flex; align-items:center; gap:6px; margin-left:4px; }
+    .fn-signin { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; padding:7px 16px; background:var(--dark); color:#fff; border:none; border-radius:30px; cursor:pointer; text-decoration:none; transition:opacity 0.15s; flex-shrink:0; }
+    .fn-signin:hover { opacity:0.82; }
+    .fn-signup { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:7px 13px; color:#666; text-decoration:none; border-radius:30px; transition:all 0.15s; }
+    .fn-signup:hover { background:rgba(0,0,0,0.05); color:var(--dark); }
+    .fn-user-menu { position:relative; }
+    .fn-user-btn { display:flex; align-items:center; gap:7px; padding:4px 10px 4px 5px; background:var(--dark); border:none; border-radius:30px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; color:#fff; transition:opacity 0.15s; }
+    .fn-user-btn:hover { opacity:0.85; }
+    .fn-avatar { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.15); color:#fff; font-size:13px; display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.3); }
+    .fn-chevron { font-size:9px; opacity:0.6; transition:transform 0.2s; }
+    .fn-user-menu.open .fn-chevron { transform:rotate(180deg); }
+    .fn-dropdown { display:none; position:absolute; top:calc(100% + 10px); right:0; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:6px; min-width:200px; box-shadow:0 12px 40px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06); z-index:400; }
+    .fn-user-menu.open .fn-dropdown { display:block; }
+    .fn-dd-header { padding:10px 12px 12px; border-bottom:1px solid #f0f0f0; margin-bottom:4px; }
+    .fn-dd-name  { font-size:13px; font-weight:600; color:var(--dark); margin-bottom:1px; }
+    .fn-dd-email { font-size:11px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fn-dd-item { display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:10px; font-size:13px; color:#333; text-decoration:none; cursor:pointer; border:none; background:none; width:100%; text-align:left; font-family:'DM Sans',sans-serif; transition:background 0.12s; }
+    .fn-dd-item:hover { background:#f5f5f5; }
+    .fn-dd-item.danger { color:var(--danger); }
+    .fn-dd-item.danger:hover { background:#fef2f2; }
+    .fn-dd-sep { height:1px; background:#f0f0f0; margin:4px 0; }
+
+    /* sidebar */
+    .iconsidebar {
+      position:fixed; top:50%; left:16px; transform:translateY(-50%);
+      z-index:200; display:none; flex-direction:column; align-items:center; gap:4px;
+      background:rgba(255,255,255,0.85); backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
+      border:1px solid rgba(0,0,0,0.07); border-radius:20px; padding:10px 8px;
+      box-shadow:0 4px 24px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .is-link { position:relative; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; text-decoration:none; color:#666; transition:all 0.15s; cursor:pointer; border:none; background:none; font-family:'DM Sans',sans-serif; }
+    .is-link:hover { background:rgba(0,0,0,0.06); color:var(--dark); }
+    .is-link.active { background:var(--dark); color:#fff; }
+    .is-link.danger:hover { background:#fef2f2; color:var(--danger); }
+    .is-link::after { content:attr(data-tip); position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%) translateX(-4px); background:var(--dark); color:#fff; font-size:11px; font-weight:600; padding:5px 10px; border-radius:8px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.15s,transform 0.15s; font-family:'DM Sans',sans-serif; }
+    .is-link:hover::after { opacity:1; transform:translateY(-50%) translateX(0); }
+    .is-div { width:20px; height:1px; background:rgba(0,0,0,0.08); margin:4px 0; }
+
+    /* page body */
+    .page-body { min-height:100vh; }
+    .container { max-width:1100px; margin:0 auto; padding:80px 24px 32px; }
+    .card { background:#fff; border:1px solid #e5e5e5; border-radius:14px; padding:16px; margin:12px 0; }
+    .muted { color:#666; }
+    button { font-family:'DM Sans',sans-serif; padding:8px 14px; border-radius:10px; border:1px solid #ddd; cursor:pointer; background:#fff; }
+    input, textarea, select { font-family:'DM Sans',sans-serif; width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box; }
+
+    /* halo chat bubble */
+    #halo-bubble {
+      position:fixed; bottom:28px; right:28px; z-index:999;
+      display:none; /* shown when logged in */
+    }
+
+    /* Trigger button */
+    #halo-btn {
+      width:56px; height:56px; border-radius:50%;
+      background:linear-gradient(135deg, var(--rose), var(--brown));
+      border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 20px rgba(201,131,122,0.45);
+      transition:transform 0.2s, box-shadow 0.2s;
+      position:relative;
+    }
+    #halo-btn:hover { transform:scale(1.08); box-shadow:0 8px 28px rgba(201,131,122,0.5); }
+    #halo-btn svg { width:26px; height:26px; fill:#fff; }
+    .halo-unread {
+      position:absolute; top:-2px; right:-2px;
+      width:14px; height:14px; border-radius:50%;
+      background:#4a9470; border:2px solid var(--cream);
+      display:none;
+    }
+    .halo-unread.show { display:block; }
+
+    /* Tooltip on first load */
+    #halo-tooltip {
+      position:absolute; bottom:calc(100% + 10px); right:0;
+      background:var(--dark); color:#fff; font-family:'DM Sans',sans-serif;
+      font-size:12px; font-weight:500; padding:8px 14px; border-radius:12px;
+      white-space:nowrap; pointer-events:none;
+      box-shadow:0 4px 16px rgba(45,31,26,0.2);
+      animation:tooltipFade 4s ease forwards;
+    }
+    #halo-tooltip::after { content:''; position:absolute; top:100%; right:16px; border:6px solid transparent; border-top-color:var(--dark); }
+    @keyframes tooltipFade { 0%,60%{opacity:1} 100%{opacity:0} }
+
+    /* Chat panel */
+    #halo-panel {
+      position:absolute; bottom:68px; right:0;
+      width:380px; max-height:560px;
+      background:#fff; border-radius:20px;
+      border:1.5px solid rgba(45,31,26,0.1);
+      box-shadow:0 20px 60px rgba(45,31,26,0.15), 0 4px 16px rgba(45,31,26,0.08);
+      display:none; flex-direction:column; overflow:hidden;
+    }
+    #halo-panel.open { display:flex; }
+
+    /* Panel header */
+    .halo-header {
+      padding:14px 16px 12px;
+      background:linear-gradient(135deg, var(--rose), var(--brown));
+      display:flex; align-items:center; gap:10px; flex-shrink:0;
+    }
+    .halo-avatar-wrap {
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center;
+      font-size:18px; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.4);
+    }
+    .halo-header-text { flex:1; }
+    .halo-name { font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+    .halo-status { font-family:'DM Sans',sans-serif; font-size:11px; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:5px; }
+    .halo-status::before { content:''; width:6px; height:6px; border-radius:50%; background:#4aefa0; display:inline-block; }
+    .halo-close { background:rgba(255,255,255,0.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:background 0.15s; flex-shrink:0; }
+    .halo-close:hover { background:rgba(255,255,255,0.25); }
+
+    /* Quick topic chips */
+    .halo-chips {
+      padding:10px 12px 6px; display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0;
+      border-bottom:1px solid rgba(45,31,26,0.06);
+    }
+    .halo-chip {
+      font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600;
+      padding:4px 10px; background:var(--warm); border:1px solid rgba(45,31,26,0.1);
+      border-radius:20px; cursor:pointer; color:var(--dark); transition:all 0.15s;
+      white-space:nowrap;
+    }
+    .halo-chip:hover { background:var(--blush); border-color:var(--rose); color:var(--rose); }
+
+    /* Messages */
+    .halo-messages {
+      flex:1; overflow-y:auto; padding:12px;
+      display:flex; flex-direction:column; gap:10px;
+      min-height:0;
+    }
+    .halo-messages::-webkit-scrollbar { width:4px; }
+    .halo-messages::-webkit-scrollbar-thumb { background:rgba(45,31,26,0.12); border-radius:2px; }
+
+    .halo-msg {
+      display:flex; gap:8px; align-items:flex-end;
+      animation:msgIn 0.25s ease;
+    }
+    @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    .halo-msg.user { flex-direction:row-reverse; }
+
+    .halo-msg-avatar {
+      width:26px; height:26px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:13px;
+      background:linear-gradient(135deg, var(--rose), var(--brown));
+      color:#fff; font-weight:700; font-family:'DM Sans',sans-serif;
+    }
+    .halo-msg.user .halo-msg-avatar { background:var(--dark); }
+
+    .halo-bubble-text {
+      max-width:78%; padding:10px 13px; border-radius:16px 16px 16px 4px;
+      background:var(--warm); font-family:'DM Sans',sans-serif; font-size:13px;
+      color:var(--dark); line-height:1.6;
+      border:1px solid rgba(45,31,26,0.07);
+    }
+    .halo-msg.user .halo-bubble-text {
+      background:var(--dark); color:#fff;
+      border-radius:16px 16px 4px 16px; border-color:transparent;
+    }
+
+    .halo-sugg-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin: 6px 0 2px 36px; /* indent past avatar */
+    }
+    .halo-sugg-chip {
+      font-size: 11px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1.5px solid rgba(201,131,122,0.4);
+      color: #8b5e52; background: #fdf8f5;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .halo-sugg-chip:hover { background: #c9837a; color: #fff; border-color: #c9837a; }
+    [data-theme="dark"] .halo-sugg-chip { background: #2a1e1a; color: #c9837a; border-color: rgba(201,131,122,0.3); }
+    [data-theme="dark"] .halo-sugg-chip:hover { background: #c9837a; color: #fff; }
+
+    /* Typing indicator */
+    .halo-typing .halo-bubble-text {
+      padding:12px 16px;
+    }
+    .typing-dots { display:flex; gap:4px; align-items:center; }
+    .typing-dots span {
+      width:7px; height:7px; border-radius:50%; background:var(--muted);
+      animation:typingBounce 1.2s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(2) { animation-delay:0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    /* Input bar */
+    .halo-input-bar {
+      padding:10px 12px; border-top:1px solid rgba(45,31,26,0.08);
+      display:flex; gap:8px; align-items:flex-end; flex-shrink:0;
+      background:#fff;
+    }
+    #halo-input {
+      flex:1; font-family:'DM Sans',sans-serif; font-size:13px; resize:none;
+      border:1.5px solid rgba(45,31,26,0.12); border-radius:12px;
+      padding:9px 12px; outline:none; background:#fafafa; color:var(--dark);
+      max-height:100px; overflow-y:auto; transition:border-color 0.15s; line-height:1.5;
+    }
+    #halo-input:focus { border-color:var(--rose); background:#fff; }
+    #halo-input::placeholder { color:var(--muted); }
+    #halo-send {
+      width:36px; height:36px; border-radius:12px; flex-shrink:0;
+      background:var(--dark); border:none; cursor:pointer; color:#fff;
+      display:flex; align-items:center; justify-content:center; font-size:16px;
+      transition:all 0.15s;
+    }
+    #halo-send:hover { background:var(--brown); transform:scale(1.05); }
+    #halo-send:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+    @media(max-width:480px) {
+      #halo-panel { width:calc(100vw - 32px); right:-4px; }
+      #halo-bubble { bottom:16px; right:16px; }
+    }
+
+    /* dark mode nav/sidebar overrides — body + palette are in theme.css */
+    /* Nav */
+    [data-theme="dark"] .floatnav { background:rgba(18,12,10,0.9)!important; border-color:rgba(255,200,180,0.12)!important; }
+    [data-theme="dark"] .fn-logo { color:#ede4dc!important; }
+    [data-theme="dark"] .fn-div { background:rgba(255,200,180,0.15)!important; }
+    [data-theme="dark"] .fn-links a { color:#a09088!important; }
+    [data-theme="dark"] .fn-links a:hover,[data-theme="dark"] .fn-links a.active { background:rgba(255,255,255,0.08)!important; color:#ede4dc!important; }
+    [data-theme="dark"] .fn-dropdown { background:#1e1614!important; border-color:rgba(255,200,180,0.1)!important; box-shadow:0 12px 40px rgba(0,0,0,0.5),0 2px 8px rgba(0,0,0,0.3)!important; }
+    [data-theme="dark"] .fn-dd-header { background:#1e1614!important; border-color:rgba(255,200,180,0.1)!important; }
+    [data-theme="dark"] .fn-dd-name { color:#ede4dc!important; }
+    [data-theme="dark"] .fn-dd-email { color:#7a6a62!important; }
+    [data-theme="dark"] .fn-dd-item { background:#1e1614!important; color:#c0a898!important; border-color:transparent!important; }
+    [data-theme="dark"] .fn-dd-item:hover { background:#2a1e1a!important; color:#ede4dc!important; }
+    [data-theme="dark"] .fn-dd-item.danger { color:#e06c6c!important; }
+    [data-theme="dark"] .fn-dd-item.danger:hover { background:rgba(220,38,38,0.12)!important; }
+    [data-theme="dark"] .fn-dd-sep { background:rgba(255,200,180,0.1)!important; }
+
+    /* Sidebar */
+    [data-theme="dark"] .iconsidebar { background:rgba(18,12,10,0.9)!important; border-color:rgba(255,200,180,0.1)!important; }
+    [data-theme="dark"] .is-link { color:#a09088!important; }
+    [data-theme="dark"] .is-link:hover { background:rgba(255,255,255,0.08)!important; color:#ede4dc!important; }
+    [data-theme="dark"] .is-link.active { background:#c9837a!important; color:#fff!important; }
+    [data-theme="dark"] .is-link::after { background:#ede4dc!important; color:#1a1008!important; }
+    [data-theme="dark"] .is-div { background:rgba(255,200,180,0.1)!important; }
+
+    /* Cards */
+    [data-theme="dark"] .card,[data-theme="dark"] .s-card,
+    [data-theme="dark"] .kpi-card,[data-theme="dark"] .icard {
+      background:#1e1614!important; border-color:rgba(255,200,180,0.1)!important;
+    }
+    [data-theme="dark"] .suggest-card { background:linear-gradient(135deg,#2d1f1a 0%,#4a2820 100%)!important; }
+
+    /* Typography */
+    [data-theme="dark"] h1,[data-theme="dark"] h2,
+    [data-theme="dark"] h3,[data-theme="dark"] h4 { color:#ede4dc!important; }
+    [data-theme="dark"] .s-card-title { color:#ede4dc!important; }
+    [data-theme="dark"] .s-card-desc,[data-theme="dark"] .muted { color:#7a6a62!important; }
+    [data-theme="dark"] .bignum { color:#ede4dc!important; }
+    [data-theme="dark"] .stat-lbl { color:#7a6a62!important; }
+    [data-theme="dark"] .card-sub { color:#6a5a52!important; }
+    [data-theme="dark"] .portfolio-name { color:#ede4dc!important; }
+    [data-theme="dark"] .portfolio-meta { color:#7a6a62!important; }
+    [data-theme="dark"] .portfolio-row { border-color:rgba(255,200,180,0.06)!important; }
+
+    /* Tables */
+    [data-theme="dark"] .mkt-table th { color:#7a6a62!important; border-color:rgba(255,200,180,0.08)!important; }
+    [data-theme="dark"] .mkt-table td { color:#ede4dc!important; border-color:rgba(255,200,180,0.06)!important; }
+    [data-theme="dark"] tr:hover td { background:#2a1e1a!important; }
+
+    /* Buttons & inputs */
+    [data-theme="dark"] .btn-outline { background:#2a1e1a!important; color:#c0a898!important; border-color:rgba(255,200,180,0.2)!important; }
+    [data-theme="dark"] .btn-outline:hover { border-color:var(--rose)!important; color:#ede4dc!important; }
+    [data-theme="dark"] select,[data-theme="dark"] input[type="text"],
+    [data-theme="dark"] input[type="number"] { background:#2a1e1a!important; color:#ede4dc!important; border-color:rgba(255,200,180,0.15)!important; }
+    [data-theme="dark"] .dash-pv-range,[data-theme="dark"] .dash-mode-btn { background:#2a1e1a!important; color:#7a6a62!important; border-color:rgba(255,200,180,0.15)!important; }
+    [data-theme="dark"] .dash-pv-range.active,[data-theme="dark"] .dash-mode-btn.active { background:#c9837a!important; color:#fff!important; border-color:#c9837a!important; }
+    [data-theme="dark"] .intel-scenario-btn,[data-theme="dark"] .halo-q-btn { background:#2a1e1a!important; color:#c0a898!important; border-color:rgba(255,200,180,0.15)!important; }
+    [data-theme="dark"] .intel-scenario-btn.active { background:#c9837a!important; color:#fff!important; }
+    [data-theme="dark"] .pv-stat { background:#231918!important; }
+    [data-theme="dark"] .pv-val { color:#ede4dc!important; }
+
+    /* Warm-bg inline-style panels (intel section, etc.) */
+    [data-theme="dark"] [style*="background:var(--warm"] { background:#231918!important; }
+    [data-theme="dark"] [style*="background:#f5efe6"] { background:#231918!important; }
+    [data-theme="dark"] [style*="background:#faf7f2"] { background:#1a1410!important; }
+    [data-theme="dark"] [style*="background:#fff"] { background:#1e1614!important; }
+    [data-theme="dark"] [style*="background:#ffffff"] { background:#1e1614!important; }
+    [data-theme="dark"] [style*="color:#2d1f1a"] { color:#ede4dc!important; }
+    [data-theme="dark"] [style*="color:#888"] { color:#7a6a62!important; }
+    [data-theme="dark"] [style*="color:#555"] { color:#b0a098!important; }
+
+    /* Chat */
+    [data-theme="dark"] #halo-panel { background:#1e1614!important; border-color:rgba(255,200,180,0.1)!important; }
+    [data-theme="dark"] .halo-input-bar { background:#1e1614!important; border-color:rgba(255,200,180,0.08)!important; }
+    [data-theme="dark"] #halo-input { background:#2a1e1a!important; color:#ede4dc!important; border-color:rgba(255,200,180,0.15)!important; }
+    [data-theme="dark"] .halo-bubble-text { background:#2a1e1a!important; color:#ede4dc!important; border-color:rgba(255,200,180,0.08)!important; }
+    [data-theme="dark"] .halo-chips { border-color:rgba(255,200,180,0.06)!important; }
+    [data-theme="dark"] .halo-chip { background:#2a1e1a!important; border-color:rgba(255,200,180,0.12)!important; color:#c0a898!important; }
+
+    /* Theme toggle button */
+    .fn-theme-btn {
+      width:30px; height:30px; border-radius:50%; background:rgba(0,0,0,0.05);
+      border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-size:15px; transition:background 0.15s; flex-shrink:0;
+    }
+    .fn-theme-btn:hover { background:rgba(0,0,0,0.1); }
+    [data-theme="dark"] .fn-theme-btn { background:rgba(255,255,255,0.08)!important; }
+    [data-theme="dark"] .fn-theme-btn:hover { background:rgba(255,255,255,0.14)!important; }
+  </style>
+
+  <!-- Apply saved theme before paint — prevents flash -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('ff-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+<script src="/static/js/halo.js?v=3" onerror="window._haloLoadError=true"></script>
+</head>
+<body>
+
+<!-- nav -->
+<nav class="floatnav" id="floatnav">
+  <a href="/" class="fn-logo">✦ FlyingFunds</a>
+  <div class="fn-div"></div>
+  <div class="fn-links" id="fnLinks">
+    <a href="/market">Market</a>
+    <a href="/fx">FX</a>
+    <a href="/news">News</a>
+    <a href="/learn">Learn</a>
+    <a href="/about">About</a>
+  </div>
+  <div class="fn-right">
+    <button class="fn-theme-btn" id="fnThemeBtn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <div class="fn-user-menu" id="fnUserMenu" style="display:none;">
+      <button class="fn-user-btn" onclick="toggleUserMenu()">
+        <div class="fn-avatar" id="fnAvatar">?</div>
+        <span id="fnUserLabel">Account</span>
+        <span class="fn-chevron">▾</span>
+      </button>
+      <div class="fn-dropdown">
+        <div class="fn-dd-header">
+          <div class="fn-dd-name"  id="fnDDName">—</div>
+          <div class="fn-dd-email" id="fnDDEmail">—</div>
+        </div>
+        <a class="fn-dd-item" href="/dashboard"><span>🏠</span> Dashboard</a>
+        <a class="fn-dd-item" href="/portfolios-ui"><span>📁</span> Portfolios</a>
+        <a class="fn-dd-item" href="/watchlist"><span>👁</span> Watchlist</a>
+        <a class="fn-dd-item" href="/invest"><span>📈</span> Invest</a>
+        <a class="fn-dd-item" href="/settings"><span>⚙️</span> Settings</a>
+        <div class="fn-dd-sep"></div>
+        <button class="fn-dd-item danger" onclick="logout()"><span>→</span> Sign out</button>
+      </div>
+    </div>
+    <div id="fnAuthBtns">
+      <a href="/signup" class="fn-signup">Sign up</a>
+      <a href="/login"  class="fn-signin">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<!-- icon sidebar -->
+<aside class="iconsidebar" id="iconsidebar">
+  <a class="is-link" href="/dashboard"     data-tip="Dashboard"  id="is-dashboard">🏠</a>
+  <a class="is-link" href="/portfolios-ui" data-tip="Portfolios" id="is-portfolios">📁</a>
+  <a class="is-link" href="/invest"        data-tip="Invest"     id="is-invest">📈</a>
+  <a class="is-link" href="/diary"         data-tip="Diary"      id="is-diary">📓</a>
+  <a class="is-link" href="/frontier"      data-tip="Analytics Lab" id="is-frontier">💡</a>
+  <div class="is-div"></div>
+  <a class="is-link" href="/settings"      data-tip="Settings"   id="is-settings">⚙️</a>
+  <button class="is-link danger"           data-tip="Sign out"   onclick="logout()">→</button>
+</aside>
+
+<!-- page content -->
+<div class="page-body" id="pageBody">
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- halo chat bubble -->
+<div id="halo-bubble">
+  <div id="halo-panel">
+    <!-- Header -->
+    <div class="halo-header">
+      <div class="halo-avatar-wrap">🎓</div>
+      <div class="halo-header-text">
+        <div class="halo-name">Halo</div>
+        <div class="halo-status">Your finance tutor · always on</div>
+      </div>
+      <button class="halo-close" onclick="haloClose()">✕</button>
+    </div>
+
+    <!-- Quick topic chips -->
+    <div class="halo-chips" id="haloChips">
+      <span class="halo-chip" onclick="haloAsk('What is the Sharpe ratio and what does mine mean?')">Sharpe ratio</span>
+      <span class="halo-chip" onclick="haloAsk('Explain Value at Risk (VaR) in simple terms')">VaR explained</span>
+      <span class="halo-chip" onclick="haloAsk('What is Modern Portfolio Theory?')">Portfolio theory</span>
+      <span class="halo-chip" onclick="haloAsk('What are common behavioural biases that affect investors?')">Biases</span>
+      <span class="halo-chip" onclick="haloAsk('What is the difference between active and passive investing?')">Active vs passive</span>
+      <span class="halo-chip" onclick="haloAsk('How do I read a drawdown chart?')">Drawdown</span>
+    </div>
+
+    <!-- Messages -->
+    <div class="halo-messages" id="haloMessages">
+      <div class="halo-msg">
+        <div class="halo-msg-avatar">F</div>
+        <div class="halo-bubble-text">Hi! I'm Halo, your personal finance tutor. Ask me anything — from what a Sharpe ratio means to how portfolio theory works. I can explain concepts in plain English or go deep into the theory. What would you like to learn?</div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="halo-input-bar">
+      <textarea id="halo-input" placeholder="Ask anything about finance, investing, or your portfolio…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();haloSend()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button id="halo-send" onclick="haloSend()">↑</button>
+    </div>
+  </div>
+
+  <!-- Trigger button -->
+  <button id="halo-btn" onclick="haloToggle()" title="Ask Halo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+    </svg>
+    <div class="halo-unread" id="haloUnread"></div>
+  </button>
+  <div id="halo-tooltip">Ask Halo anything 🎓</div>
+</div>
+
+<script>
+  window.addEventListener('scroll', () => {
+    document.getElementById('floatnav').classList.toggle('scrolled', window.scrollY > 20);
+  }, { passive:true });
+
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('ff-theme', next);
+    const btn = document.getElementById('fnThemeBtn');
+    if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+  (function(){
+    const t = document.documentElement.getAttribute('data-theme') || 'light';
+    const btn = document.getElementById('fnThemeBtn');
+    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  })();
+
+  function toggleUserMenu() { document.getElementById('fnUserMenu').classList.toggle('open'); }
+  document.addEventListener('click', e => {
+    const m = document.getElementById('fnUserMenu');
+    if (m && !m.contains(e.target)) m.classList.remove('open');
+  });
+
+  function logout() { localStorage.removeItem('token'); window.location.href = '/login'; }
+
+  function markActive() {
+    const path = window.location.pathname;
+    document.querySelectorAll('.fn-links a').forEach(a =>
+      a.classList.toggle('active', a.getAttribute('href') === path));
+    document.querySelectorAll('.is-link[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      a.classList.toggle('active', href === path || (href !== '/' && path.startsWith(href)));
+    });
+  }
+
+  // TODO: tidy initAuth doing auth, sidebar, bubble, tooltip, portfolio fetch all in one
+  async function initAuth() {
+    const token = localStorage.getItem('token');
+    const authBtns = document.getElementById('fnAuthBtns');
+    const userMenu = document.getElementById('fnUserMenu');
+    const sidebar  = document.getElementById('iconsidebar');
+    const bubble   = document.getElementById('halo-bubble');
+
+    if (!token) {
+      authBtns.style.display = 'flex';
+      userMenu.style.display = 'none';
+      sidebar.style.display  = 'none';
+      bubble.style.display   = 'none';
+      return;
+    }
+    try {
+      const res = await fetch('/users/me', { headers:{ Authorization:token } });
+      if (!res.ok) throw new Error();
+      const user = await res.json();
+      console.log('user', user);
+      authBtns.style.display = 'none';
+      userMenu.style.display = 'block';
+      sidebar.style.display  = 'flex';
+      bubble.style.display   = 'block';
+
+      const name = user.username || user.email || '?';
+      const av   = (user.avatar && user.avatar !== 'person' && user.avatar !== '👤')
+        ? user.avatar : name.slice(0,2).toUpperCase();
+      document.getElementById('fnAvatar').textContent    = av;
+      document.getElementById('fnUserLabel').textContent = user.username || name.split('@')[0];
+      document.getElementById('fnDDName').textContent    = user.username || 'User';
+      document.getElementById('fnDDEmail').textContent   = user.email || '';
+
+      window._haloUser = user;
+
+      try {
+        const pr = await fetch('/portfolios/', { headers:{ Authorization:token } });
+        if (pr.ok) {
+          const ps = await pr.json();
+          if (ps.length) {
+            document.getElementById('is-dashboard').href = `/dashboard/${ps[0].id}`;
+            const dd = document.querySelector('.fn-dd-item[href="/dashboard"]');
+            if (dd) dd.href = `/dashboard/${ps[0].id}`;
+            window._haloPortfolios = ps;
+          }
+        }
+      } catch(_) {}
+
+      const seen = localStorage.getItem('ff_halo_seen');
+      if (!seen) {
+        setTimeout(() => {
+          const t = document.getElementById('halo-tooltip');
+          if (t) t.style.display = 'block';
+          localStorage.setItem('ff_halo_seen', '1');
+        }, 2000);
+      } else {
+        const t = document.getElementById('halo-tooltip');
+        if (t) t.style.display = 'none';
+      }
+
+    } catch(_) {
+      authBtns.style.display = 'flex';
+      userMenu.style.display = 'none';
+      sidebar.style.display  = 'none';
+      bubble.style.display   = 'none';
+      localStorage.removeItem('token');
+    }
+  }
+
+  markActive();
+  initAuth();
+
+  let haloOpen    = false;
+  let haloLoading = false;
+  let haloHistory = []; // [{role, content}]
+
+  function haloToggle() {
+    haloOpen = !haloOpen;
+    document.getElementById('halo-panel').classList.toggle('open', haloOpen);
+    document.getElementById('haloUnread').classList.remove('show');
+    const t = document.getElementById('halo-tooltip');
+    if (t) t.style.display = 'none';
+    if (haloOpen) setTimeout(() => document.getElementById('halo-input').focus(), 100);
+  }
+
+  function haloClose() {
+    haloOpen = false;
+    document.getElementById('halo-panel').classList.remove('open');
+  }
+
+  function haloAsk(question) {
+    document.getElementById('halo-input').value = question;
+    haloSend();
+  }
+
+  function haloAddMsg(role, content, suggestions = []) {
+    const container = document.getElementById('haloMessages');
+    const isUser = role === 'user';
+    const div = document.createElement('div');
+    div.className = `halo-msg${isUser ? ' user' : ''}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'halo-msg-avatar';
+    avatar.textContent = isUser
+      ? (window._haloUser?.avatar?.length === 1 || window._haloUser?.avatar?.length === 2 ? window._haloUser.avatar : (window._haloUser?.username?.[0]?.toUpperCase() || 'U'))
+      : 'F';
+
+    const bbl = document.createElement('div');
+    bbl.className = 'halo-bubble-text';
+    bbl.innerHTML = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+
+    div.appendChild(avatar);
+    div.appendChild(bbl);
+    container.appendChild(div);
+
+    if (!isUser && suggestions && suggestions.length > 0) {
+      const suggRow = document.createElement('div');
+      suggRow.className = 'halo-sugg-row';
+      suggestions.forEach(question => {
+        const chip = document.createElement('span');
+        chip.className = 'halo-sugg-chip';
+        chip.textContent = question;
+        chip.onclick = () => haloAsk(question);
+        suggRow.appendChild(chip);
+      });
+      container.appendChild(suggRow);
+    }
+
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function haloShowTyping() {
+    const container = document.getElementById('haloMessages');
+    const div = document.createElement('div');
+    div.className = 'halo-msg halo-typing';
+    div.id = 'haloTyping';
+    div.innerHTML = `<div class="halo-msg-avatar">F</div>
+      <div class="halo-bubble-text"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function haloHideTyping() {
+    const el = document.getElementById('haloTyping');
+    if (el) el.remove();
+  }
+
+  async function haloSend() {
+    const input = document.getElementById('halo-input');
+    const text  = input.value.trim();
+    if (!text || haloLoading) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    haloLoading = true;
+    document.getElementById('halo-send').disabled = true;
+
+    document.getElementById('haloChips').style.display = 'none';
+
+    haloAddMsg('user', text);
+    haloHistory.push({ role: 'user', content: text });
+    haloShowTyping();
+
+    // const oldEndpoint = '/api/chat'; // switched to local KB
+    let reply = null;
+    if (typeof haloRespond === 'function') {
+      reply = haloRespond(text, haloHistory);
+    } else {
+      reply = window._haloLoadError
+        ? "⚠️ Halo failed to load. Check that **app/static/js/halo.js** exists and that FastAPI has a StaticFiles mount for **/static**."
+        : "I'm having trouble connecting right now. Please try again in a moment.";
+    }
+
+    haloHideTyping();
+    if (reply) {
+      const replyText = reply?.text ?? reply;
+      const relatedSuggs = reply?.related ?? [];
+      haloHistory.push({ role: 'assistant', content: replyText });
+      if (haloHistory.length > 12) haloHistory = haloHistory.slice(-12);
+      haloAddMsg('assistant', replyText, relatedSuggs);
+    }
+    if (!haloOpen) document.getElementById('haloUnread').classList.add('show');
+    haloLoading = false;
+    document.getElementById('halo-send').disabled = false;
+  }
+
+
+
+
+</script>
+
+</body>
+</html>

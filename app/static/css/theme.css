@@ -1,0 +1,68 @@
+
+/* palette tokens */
+:root {
+  --cream:#faf7f2; --warm:#f5efe6; --blush:#f2e4d8;
+  --pink:#e8c4b4;  --rose:#c9837a; --brown:#8b5e52;
+  --dark:#2d1f1a;  --sage:#7a9e8e; --sage-lt:#d4e6de;
+  --sky:#7bafc4;   --sky-lt:#d6eaf4; --muted:#a08c82;
+  --accent:#c9837a; --danger:#b85050; --success:#4a9470;
+  --bg:#faf7f2; --surface:#ffffff;
+  --border:rgba(45,31,26,0.1); --text:#2d1f1a;
+  --nav-h:56px; --side-w:52px;
+}
+
+html[data-theme="dark"] {
+  --cream:#0f0c0b; --warm:#1a1410; --blush:#231918; --pink:#2d2220;
+  --surface:#1e1614; --border:rgba(255,210,190,0.1);
+  --text:#ede4dc; --dark:#ede4dc; --muted:#8a7a72; --bg:#0f0c0b;
+  color-scheme: dark;
+}
+
+/* page background every template inherits this */
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* dark mode global resets */
+[data-theme="dark"] body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* inputs and textareas dark mode. applied globally*/
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: #231918 !important;
+  color: #ede4dc !important;
+  border-color: rgba(255,200,180,0.15) !important;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: rgba(237,228,220,0.3) !important;
+}
+[data-theme="dark"] select option {
+  background: #231918;
+  color: #ede4dc;
+}
+
+/* generic surface card white bg in light, dark brown in dark */
+[data-theme="dark"] .card,
+[data-theme="dark"] .icard,
+[data-theme="dark"] .lab-card,
+[data-theme="dark"] .modal-inner {
+  background: #1e1614 !important;
+  border-color: rgba(255,200,180,0.08) !important;
+}
+
+/* empty states and muted text labels */
+[data-theme="dark"] .empty-state,
+[data-theme="dark"] .muted { color: var(--muted) !important; }
+
+/* common pill/badge backgrounds that get stuck as light */
+[data-theme="dark"] .tag,
+[data-theme="dark"] .chip {
+  background: rgba(255,200,180,0.08) !important;
+  color: #c0a898 !important;
+}

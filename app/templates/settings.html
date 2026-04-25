@@ -1,0 +1,842 @@
+{% extends "base.html" %}
+{% block title %}Settings | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .card {
+    background: var(--surface) !important;
+    border-color: rgba(45,31,26,0.1) !important;
+    box-shadow: 0 2px 12px rgba(45,31,26,0.06);
+  }
+  h1,h2,h3,h4 { color: var(--dark); font-family: 'DM Sans', sans-serif; }
+  .muted { color: var(--muted) !important; }
+  a:not([class]) { color: var(--brown); }
+  a:not([class]):hover { color: var(--dark); }
+  th { color: var(--muted) !important; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+  td { border-color: rgba(45,31,26,0.06) !important; }
+  tr:hover td { background: var(--warm) !important; }
+  .positive, .chgPos { color: #4a9470 !important; }
+  .negative, .chgNeg { color: #b85050 !important; }
+</style>
+<style>
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .settings-nav { position: sticky; top: calc(var(--nav-h, 56px) + 24px); }
+  .snav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: #555;
+    cursor: pointer; border: none; background: none;
+    width: 100%; text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: none;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+  .snav-item:hover { background: #f5f5f5; color: #2d1f1a; }
+  .snav-item.active { background: #f0f0ff; color: var(--rose); font-weight: 600; }
+
+  .sPanel { display: none; }
+  .sPanel.active { display: block; }
+
+  .panel-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px; font-weight: 400;
+    color: #2d1f1a; margin: 0 0 4px;
+    letter-spacing: -0.3px;
+  }
+  .panel-sub { font-size: 13px; color: #888; margin: 0 0 24px; }
+
+  .scard {
+    background: var(--surface); border: 1.5px solid #e5e5e5;
+    border-radius: 14px; padding: 20px 22px; margin-bottom: 16px;
+  }
+  .scard-title {
+    font-size: 13px; font-weight: 600; color: #2d1f1a;
+    margin: 0 0 14px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: #777; margin-bottom: 5px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .field input, .field select {
+    width: 100%; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 9px 12px;
+    border: 1.5px solid #e5e5e5; border-radius: 10px;
+    background: var(--surface); color: #2d1f1a;
+    box-sizing: border-box; outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--rose); }
+
+  .avatar-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+  .avatar-preview {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #f5f5f5; font-size: 34px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; border: 3px solid #e5e5e5;
+    transition: border-color 0.2s;
+  }
+  .avatar-right { flex: 1; min-width: 200px; }
+  .avatar-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .avatar-opt {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: #f5f5f5; font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .avatar-opt:hover { border-color: #aaa; transform: scale(1.1); }
+  .avatar-opt.selected { border-color: var(--rose); background: #f0f0ff; }
+
+  .emoji-input-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .emoji-input-row input {
+    width: 50px !important; font-size: 22px; text-align: center;
+    padding: 6px 8px; border-radius: 10px;
+    border: 1.5px solid #e5e5e5; box-sizing: border-box;
+  }
+  .emoji-input-row button {
+    font-size: 12px; font-weight: 600; padding: 7px 14px;
+    background: #2d1f1a; color: #fff; border: none;
+    border-radius: 8px; cursor: pointer;
+  }
+  .emoji-hint { font-size: 11px; color: #bbb; margin-top: 5px; }
+
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .market-tag {
+    padding: 6px 16px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    border: 1.5px solid #e5e5e5;
+    background: var(--surface); color: #555; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .market-tag:hover { border-color: #aaa; }
+  .market-tag.selected { background: #2d1f1a; color: #fff; border-color: #2d1f1a; }
+
+  .btn-save {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 9px 22px; background: #2d1f1a; color: #fff;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .save-status { font-size: 12px; color: #888; margin-left: 10px; }
+  .save-status.ok  { color: #16a34a; }
+  .save-status.err { color: #dc2626; }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid #f5f5f5; gap: 16px;
+  }
+  .toggle-row:last-of-type { border-bottom: none; }
+  .toggle-label { font-size: 14px; font-weight: 500; color: #2d1f1a; margin-bottom: 2px; }
+  .toggle-desc  { font-size: 12px; color: #999; }
+  .toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: #e5e5e5; border-radius: 24px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface); left: 3px; top: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--rose); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  .export-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+    margin-bottom: 10px; background: #fafafa;
+  }
+  .export-name { font-size: 14px; font-weight: 500; }
+  .export-meta { font-size: 12px; color: #aaa; }
+  .btn-export {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600;
+    padding: 7px 16px; background: var(--surface);
+    color: #2d1f1a; border: 1.5px solid #e5e5e5;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-export:hover { border-color: #2d1f1a; background: #2d1f1a; color: #fff; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #2d1f1a; color: #fff;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 10px 20px; border-radius: 10px;
+    opacity: 0; transition: all 0.25s;
+    pointer-events: none; z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok  { background: #16a34a; }
+  .toast.err { background: #dc2626; }
+
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: #888; }
+  .info-val   { font-weight: 500; color: #2d1f1a; }
+
+  .risk-row { display: flex; gap: 8px; margin-top: 6px; }
+  .risk-btn {
+    flex: 1; padding: 8px 4px; border-radius: 10px; border: 1.5px solid #e5e5e5;
+    background: var(--surface); font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600; color: #888;
+    cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .risk-btn:hover { border-color: #aaa; }
+  .risk-btn.active { background: #2d1f1a; color: #fff; border-color: #2d1f1a; }
+
+  [data-theme="dark"] .panel-title,
+  [data-theme="dark"] .scard-title,
+  [data-theme="dark"] .toggle-label,
+  [data-theme="dark"] .info-val { color: #ede4dc !important; }
+  [data-theme="dark"] .panel-sub,
+  [data-theme="dark"] .toggle-desc,
+  [data-theme="dark"] .info-label,
+  [data-theme="dark"] .save-status,
+  [data-theme="dark"] .export-meta { color: #8a7a72 !important; }
+  [data-theme="dark"] .snav-item { color: #c0a898 !important; }
+  [data-theme="dark"] .snav-item:hover { background: #2a1e1a !important; color: #ede4dc !important; }
+  [data-theme="dark"] .snav-item.active { color: var(--rose) !important; }
+  [data-theme="dark"] .field label { color: #8a7a72 !important; }
+  [data-theme="dark"] .field input,
+  [data-theme="dark"] .field select,
+  [data-theme="dark"] .field textarea { color: #ede4dc !important; border-color: rgba(255,200,180,0.15) !important; }
+  [data-theme="dark"] .market-tag { color: #c0a898 !important; border-color: rgba(255,200,180,0.15) !important; }
+  [data-theme="dark"] .risk-btn   { color: #c0a898 !important; border-color: rgba(255,200,180,0.15) !important; }
+  [data-theme="dark"] .risk-btn:hover { border-color: rgba(255,200,180,0.3) !important; }
+  [data-theme="dark"] .btn-export { color: #c0a898 !important; border-color: rgba(255,200,180,0.15) !important; }
+  [data-theme="dark"] .btn-export:hover { background: #ede4dc !important; color: #1a1008 !important; border-color: #ede4dc !important; }
+
+
+</style>
+
+<div class="settings-grid">
+
+  <div class="settings-nav card" style="padding: 10px;">
+    <button class="snav-item active" data-panel="profile" onclick="showPanel('profile')">
+      <span>👤</span> Profile
+    </button>
+    <button class="snav-item" data-panel="preferences" onclick="showPanel('preferences')">
+      <span>🎛️</span> Preferences
+    </button>
+    <button class="snav-item" data-panel="security" onclick="showPanel('security')">
+      <span>🔒</span> Security
+    </button>
+    <button class="snav-item" data-panel="notifications" onclick="showPanel('notifications')">
+      <span>🔔</span> Notifications
+    </button>
+    <button class="snav-item" data-panel="data" onclick="showPanel('data')">
+      <span>📦</span> Data & Export
+    </button>
+    <button class="snav-item" data-panel="account" onclick="showPanel('account')">
+      <span>⚙️</span> Account
+    </button>
+  </div>
+
+  <div>
+
+      <div class="settingsPanel active" id="panel-profile">
+      <h2 class="panel-title">Profile</h2>
+      <p class="panel-sub">How you appear within FlyingFunds.</p>
+
+      <div class="scard">
+        <div class="scard-title">Avatar</div>
+        <div class="avatar-row">
+          <div class="avatar-preview" id="avatarPreview">👤</div>
+          <div class="avatar-right">
+            <div class="avatar-options" id="avatarOptions">
+              <div class="avatar-opt" data-val="👩🏻‍💻" onclick="selectAvatar('👩🏻‍💻')">👩🏻‍💻</div>
+              <div class="avatar-opt" data-val="👨🏻‍💻" onclick="selectAvatar('👨🏻‍💻')">👨🏻‍💻</div>
+              <div class="avatar-opt" data-val="💸" onclick="selectAvatar('💸')">💸</div>
+              <div class="avatar-opt" data-val="🧑‍🚀" onclick="selectAvatar('🧑‍🚀')">🧑‍🚀</div>
+              <div class="avatar-opt" data-val="🦊" onclick="selectAvatar('🦊')">🦊</div>
+              <div class="avatar-opt" data-val="🐉" onclick="selectAvatar('🐉')">🐉</div>
+              <div class="avatar-opt" data-val="🌙" onclick="selectAvatar('🌙')">🌙</div>
+              <div class="avatar-opt" data-val="⚡" onclick="selectAvatar('⚡')">⚡</div>
+              <div class="avatar-opt" data-val="🎯" onclick="selectAvatar('🎯')">🎯</div>
+              <div class="avatar-opt" data-val="🚀" onclick="selectAvatar('🚀')">🚀</div>
+            </div>
+            <div class="emoji-input-row">
+              <input id="emojiInput" placeholder="" maxlength="4" title="Type or paste any emoji" />
+              <button onclick="applyCustomEmoji()">Edit</button>
+            </div>
+            <p class="emoji-hint">Or type / paste any emoji</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Display name</div>
+        <div class="field">
+          <label>Username</label>
+          <input id="profileUsername" placeholder="e.g. halimah" />
+        </div>
+        <div class="field">
+          <label>Email (read-only)</label>
+          <input id="profileEmail" disabled style="background:#fafafa;color:#aaa;" />
+        </div>
+      </div>
+
+      <button class="btn-save" onclick="saveProfile()">Save profile</button>
+      <span class="save-status" id="profileStatus"></span>
+    </div>
+
+      <div class="sPanel" id="panel-preferences">
+      <h2 class="panel-title">Preferences</h2>
+      <p class="panel-sub">Personalise your dashboard and AI suggestions.</p>
+
+      <div class="scard">
+        <div class="field">
+          <label>Investor type</label>
+          <select id="prefType">
+            <option value="">— Not set —</option>
+            <option value="student">Student, learning &amp; building confidence</option>
+            <option value="personal">Personal, growing personal savings</option>
+            <option value="business">Business, managing company funds</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Experience level</label>
+          <select id="prefLevel">
+            <option value="">— Not set —</option>
+            <option value="beginner">Beginner, just starting out</option>
+            <option value="intermediate">Intermediate, I know the basics</option>
+            <option value="advanced">Advanced, full depth</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Markets of interest</div>
+        <div class="tag-row" id="marketTags">
+          <div class="market-tag" data-val="US">🇺🇸 US</div>
+          <div class="market-tag" data-val="UK">🇬🇧 UK</div>
+          <div class="market-tag" data-val="EU">🇪🇺 Europe</div>
+          <div class="market-tag" data-val="Asia">🌏 Asia</div>
+          <div class="market-tag" data-val="Crypto">₿ Crypto</div>
+          <div class="market-tag" data-val="Commodities">🪙 Commodities</div>
+          <div class="market-tag" data-val="Forex">💱 Forex</div>
+          <div class="market-tag" data-val="ETFs">ETFs</div>
+          <div class="market-tag" data-val="Tech">🤖Tech</div>
+          <div class="market-tag" data-val="Healthcare">⚕️Healthcare</div>
+          <div class="market-tag" data-val="Energy">🔌Energy</div>
+          <div class="market-tag" data-val="Dividends">💰Dividends</div>
+          <div class="market-tag" data-val="Bonds">📈Bonds</div>
+          <div class="market-tag" data-val="Small Cap">Small Cap</div>
+          <div class="market-tag" data-val="High Growth">High Growth</div>
+
+        </div>
+        <p style="font-size:12px;color:#aaa;margin:4px 0 0;">Click to toggle markets.</p>
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Display</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Dark mode</div>
+            <div class="toggle-desc">Switch between light and dark theme</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="prefDarkMode" onchange="toggleTheme()" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Risk &amp; Horizon</div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Risk tolerance</label>
+          <div class="risk-row">
+            <button class="risk-btn active" id="risk-conservative" onclick="setRisk('conservative',this)">🛡 Conservative</button>
+            <button class="risk-btn" id="risk-moderate"     onclick="setRisk('moderate',this)">⚖ Moderate</button>
+            <button class="risk-btn" id="risk-aggressive"   onclick="setRisk('aggressive',this)">🚀 Aggressive</button>
+          </div>
+          <div style="font-size:11px;color:#bbb;margin-top:6px;" id="riskDesc">Preserves capital — prioritises low volatility and steady income.</div>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Investment horizon</label>
+          <select id="prefHorizon">
+            <option value="">— Not set —</option>
+            <option value="short">Short-term (&lt; 2 years)</option>
+            <option value="medium">Medium-term (2–10 years)</option>
+            <option value="long">Long-term (&gt; 10 years)</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-save" onclick="savePreferences()">Save preferences</button>
+      <span class="save-status" id="prefStatus"></span>
+    </div>
+
+      <div class="sPanel" id="panel-security">
+      <h2 class="panel-title">Security</h2>
+      <p class="panel-sub">Manage your password and account access.</p>
+
+      <div class="scard">
+        <div class="scard-title">Change password</div>
+        <div class="field">
+          <label>Current password</label>
+          <input id="currentPw" type="password" placeholder="••••••••" />
+        </div>
+        <div class="field">
+          <label>New password</label>
+          <input id="newPw" type="password" placeholder="••••••••" />
+        </div>
+        <div class="field">
+          <label>Confirm new password</label>
+          <input id="confirmPw" type="password" placeholder="••••••••" />
+        </div>
+        <button class="btn-save" onclick="changePassword()">Update password</button>
+        <span class="save-status" id="pwStatus"></span>
+      </div>
+    </div>
+
+      <div class="sPanel" id="panel-notifications">
+      <h2 class="panel-title">Notifications</h2>
+      <p class="panel-sub">Control what emails and alerts you receive.</p>
+
+      <div class="scard">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Weekly portfolio digest</div>
+            <div class="toggle-desc">A summary of your portfolio performance every Monday</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="notifWeekly" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Market news alerts</div>
+            <div class="toggle-desc">Breaking news relevant to your holdings</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="notifNews" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Risk threshold warnings</div>
+            <div class="toggle-desc">Alert when your portfolio's VaR or drawdown exceeds a threshold</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="notifRisk" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Rebalancing suggestions</div>
+            <div class="toggle-desc">Notify when there are rebalancing opportunities</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="notifRebal" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Price alerts</div>
+            <div class="toggle-desc">Alert on significant price movements in your holdings (±5%)</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="notifPrice" /><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <button class="btn-save" onclick="saveNotifications()">Save notification settings</button>
+      <span class="save-status" id="notifStatus"></span>
+    </div>
+
+      <div class="sPanel" id="panel-data">
+      <h2 class="panel-title">Data & Export</h2>
+      <p class="panel-sub">Download your portfolio data as CSV.</p>
+
+          <div class="scard">
+        <div class="scard-title">Export portfolios</div>
+        <div id="exportPortfolios">
+          <p style="font-size:13px;color:#aaa;">Loading portfolios…</p>
+        </div>
+      </div>
+      <p class="panel-sub" style="margin-top:4px;">Exports include symbol, quantity and average buy price as CSV.</p>
+    </div>
+
+      <div class="sPanel" id="panel-account">
+      <h2 class="panel-title">Account</h2>
+      <p class="panel-sub">Your account details and session.</p>
+
+      <div class="scard">
+        <div class="scard-title">Account info</div>
+        <div class="info-row"><span class="info-label">Email</span><span class="info-val" id="infoEmail">—</span></div>
+        <div class="info-row"><span class="info-label">Member since</span><span class="info-val" id="infoJoined">—</span></div>
+        <div class="info-row"><span class="info-label">Paper trading balance</span><span class="info-val" id="infoCash">—</span></div>
+      </div>
+
+      <div class="scard">
+        <div class="scard-title">Session</div>
+        <p style="font-size:13px;color:#888;margin:0 0 14px;">Sign out of your current session.</p>
+        <button class="btn-save" onclick="logout()">Sign out</button>
+      </div>
+
+      <div class="scard" style="border-color:rgba(184,80,80,0.3);">
+        <div class="scard-title" style="color:#b85050;">Delete account</div>
+        <p style="font-size:13px;color:#888;margin:0 0 16px;line-height:1.6;">
+          This permanently deletes your account and all associated data including portfolios, holdings, trade history and watchlist.
+          This cannot be undone.
+        </p>
+        <button class="btn-save" style="background:#b85050;" onclick="showDeleteZone()">Delete my account</button>
+
+        <div id="deleteZone" style="display:none;margin-top:20px;padding-top:20px;border-top:1px solid rgba(184,80,80,0.15);">
+          <p style="font-size:13px;color:#b85050;font-weight:600;margin:0 0 14px;">Confirm deletion</p>
+          <div class="field" style="margin-bottom:12px;">
+            <label>Your password</label>
+            <input type="password" id="deletePassword" placeholder="Enter your password" autocomplete="current-password">
+          </div>
+          <div class="field" style="margin-bottom:16px;">
+            <label>Type DELETE to confirm</label>
+            <input type="text" id="deleteConfirm" placeholder="DELETE" autocomplete="off">
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-save" style="background:#b85050;flex:1;" onclick="deleteAccount()">Yes, delete everything</button>
+            <button class="btn-save" style="background:#888;flex:1;" onclick="hideDeleteZone()">Cancel</button>
+          </div>
+          <div id="deleteErr" style="display:none;margin-top:10px;font-size:13px;color:#b85050;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  let selectedAvatar = '👤';
+  let selectedMarkets = [];
+
+  function showPanel(id) {
+    document.querySelectorAll('.sPanel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.snav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    document.querySelector(`[data-panel="${id}"]`).classList.add('active');
+    if (id === 'data') { loadExportPortfolios(); }
+  }
+
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  function setStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'save-status ' + (type || '');
+    if (type === 'ok') setTimeout(() => { el.textContent = ''; el.className = 'save-status'; }, 3000);
+  }
+
+  function selectAvatar(val) {
+    selectedAvatar = val;
+    document.getElementById('avatarPreview').textContent = val;
+    document.querySelectorAll('.avatar-opt').forEach(o => {
+      o.classList.toggle('selected', o.dataset.val === val);
+    });
+  }
+
+  function applyCustomEmoji() {
+    const val = document.getElementById('emojiInput').value.trim();
+    if (!val) return;
+    selectedAvatar = val;
+    document.getElementById('avatarPreview').textContent = val;
+    document.querySelectorAll('.avatar-opt').forEach(o => o.classList.remove('selected'));
+    document.getElementById('emojiInput').value = '';
+    toast('Avatar set — click Save profile to keep it');
+  }
+  document.getElementById('emojiInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') applyCustomEmoji();
+  });
+
+  document.querySelectorAll('.market-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const val = tag.dataset.val;
+      const idx = selectedMarkets.indexOf(val);
+      if (idx === -1) selectedMarkets.push(val);
+      else selectedMarkets.splice(idx, 1);
+      tag.classList.toggle('selected', selectedMarkets.includes(val));
+    });
+  });
+
+  async function loadUser() {
+    const res = await fetch('/users/me', { headers: { Authorization: tok() } });
+    if (!res.ok) { window.location.href = '/login'; return; }
+    const u = await res.json();
+
+    selectedAvatar = u.avatar || '👤';
+    document.getElementById('avatarPreview').textContent = selectedAvatar;
+    document.querySelectorAll('.avatar-opt').forEach(o => {
+      o.classList.toggle('selected', o.dataset.val === selectedAvatar);
+    });
+    document.getElementById('profileUsername').value = u.username || '';
+    document.getElementById('profileEmail').value    = u.email || '';
+
+    document.getElementById('prefType').value  = u.user_type || '';
+    document.getElementById('prefLevel').value = u.level || '';
+
+    try {
+      selectedMarkets = Array.isArray(u.markets) ? u.markets : JSON.parse(u.markets || '[]');
+    } catch { selectedMarkets = []; }
+    document.querySelectorAll('.market-tag').forEach(tag => {
+      tag.classList.toggle('selected', selectedMarkets.includes(tag.dataset.val));
+    });
+
+    // Sync localStorage-driven prefs
+    syncDarkToggle();
+    syncRisk();
+    const horizon = localStorage.getItem('ff-horizon');
+    if (horizon) document.getElementById('prefHorizon').value = horizon;
+
+    // notification prefs stored in localStorage since backend doesnt handle them yet
+    // TODO: move this to the DB at some point
+    const notifs = JSON.parse(localStorage.getItem('ff_notif_prefs') || '{}');
+    if ('weekly' in notifs) document.getElementById('notifWeekly').checked = notifs.weekly;
+    if ('news'   in notifs) document.getElementById('notifNews').checked   = notifs.news;
+    if ('risk'   in notifs) document.getElementById('notifRisk').checked   = notifs.risk;
+    if ('rebal'  in notifs) document.getElementById('notifRebal').checked  = notifs.rebal;
+    if ('price'  in notifs) document.getElementById('notifPrice').checked  = notifs.price;
+
+    // Account info (no user ID)
+    document.getElementById('infoEmail').textContent  = u.email || '—';
+    document.getElementById('infoJoined').textContent = u.created_at ? u.created_at.slice(0, 10) : '—';
+
+    try {
+      const br = await fetch('/trading/balance', { headers: { Authorization: tok() } });
+      if (br.ok) {
+        const b = await br.json();
+        document.getElementById('infoCash').textContent = '£' + Number(b.balance).toFixed(2);
+      }
+    } catch(_) {}
+  }
+
+  async function saveProfile() {
+    setStatus('profileStatus', 'Saving…');
+    const res = await fetch('/users/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({
+        username: document.getElementById('profileUsername').value.trim(),
+        avatar:   selectedAvatar,
+      }),
+    });
+    if (res.ok) { setStatus('profileStatus', '✓ Saved', 'ok'); toast('Profile updated', 'ok'); }
+    else { const d = await res.json().catch(() => ({})); setStatus('profileStatus', d.detail || 'Error', 'err'); }
+  }
+
+  async function savePreferences() {
+    // Persist localStorage-only prefs
+    localStorage.setItem('ff-risk', selectedRisk);
+    const horizon = document.getElementById('prefHorizon').value;
+    if (horizon) localStorage.setItem('ff-horizon', horizon);
+
+    setStatus('prefStatus', 'Saving…');
+    const res = await fetch('/users/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({
+        user_type: document.getElementById('prefType').value,
+        level:     document.getElementById('prefLevel').value,
+        markets:   JSON.stringify(selectedMarkets),
+      }),
+    });
+    if (res.ok) { setStatus('prefStatus', '✓ Saved', 'ok'); toast('Preferences saved', 'ok'); }
+    else { setStatus('prefStatus', 'Error saving', 'err'); }
+  }
+
+  function saveNotifications() {
+    const notifs = {
+      weekly: document.getElementById('notifWeekly').checked,
+      news:   document.getElementById('notifNews').checked,
+      risk:   document.getElementById('notifRisk').checked,
+      rebal:  document.getElementById('notifRebal').checked,
+      price:  document.getElementById('notifPrice').checked,
+    };
+    localStorage.setItem('ff_notif_prefs', JSON.stringify(notifs));
+    setStatus('notifStatus', '✓ Saved', 'ok');
+    toast('Notification preferences saved', 'ok');
+  }
+
+  async function changePassword() {
+    const cur  = document.getElementById('currentPw').value;
+    const nw   = document.getElementById('newPw').value;
+    const conf = document.getElementById('confirmPw').value;
+    if (!cur || !nw) return setStatus('pwStatus', 'Fill in all fields', 'err');
+    if (nw !== conf)  return setStatus('pwStatus', 'Passwords do not match', 'err');
+    if (nw.length < 8) return setStatus('pwStatus', 'Min 8 characters', 'err');
+
+    setStatus('pwStatus', 'Updating…');
+    const res = await fetch('/users/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ current_password: cur, new_password: nw }),
+    });
+    if (res.ok) {
+      setStatus('pwStatus', '✓ Password changed', 'ok');
+      toast('Password updated', 'ok');
+      ['currentPw','newPw','confirmPw'].forEach(id => document.getElementById(id).value = '');
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setStatus('pwStatus', d.detail || 'Error', 'err');
+    }
+  }
+
+  // sync the dark mode checkbox with current theme
+  // toggleTheme() lives in base.html which is a bit annoying
+  function syncDarkToggle() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const cb = document.getElementById('prefDarkMode');
+    if (cb) cb.checked = isDark;
+  }
+
+  const RISK_DESC = {
+    conservative: 'Preserves capital: prioritises low volatility and steady income.',
+    moderate:     'Balanced approach: accepts some volatility in pursuit of growth.',
+    aggressive:   'Maximises growth potential: comfortable with high volatility and drawdowns.',
+  };
+  let selectedRisk = localStorage.getItem('ff-risk') || 'conservative';
+
+  function setRisk(level, btn) {
+    selectedRisk = level;
+    document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('riskDesc').textContent = RISK_DESC[level] || '';
+    localStorage.setItem('ff-risk', level);
+  }
+
+  function syncRisk() {
+    const level = localStorage.getItem('ff-risk') || 'conservative';
+    selectedRisk = level;
+    const btn = document.getElementById('risk-' + level);
+    if (btn) {
+      document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('riskDesc').textContent = RISK_DESC[level] || '';
+    }
+  }
+
+  async function loadExportPortfolios() {
+    const container = document.getElementById('exportPortfolios');
+    container.innerHTML = '<p style="font-size:13px;color:#aaa;">Loading…</p>';
+    try {
+      const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+      if (!res.ok) { container.innerHTML = '<p style="color:#dc2626;font-size:13px;">Could not load portfolios.</p>'; return; }
+      const portfolios = await res.json();
+
+      if (!portfolios.length) {
+        container.innerHTML = '<p style="font-size:13px;color:#aaa;">No portfolios found.</p>';
+        return;
+      }
+
+      container.innerHTML = portfolios.map(p => `
+        <div class="export-card">
+          <div>
+            <div class="export-name">${p.name}</div>
+            <div class="export-meta">${p.holding_count ?? '—'} holdings</div>
+          </div>
+          <button class="btn-export" onclick="downloadCSV(${p.id}, '${p.name.replace(/'/g,"\\'")}')">
+            ⬇ Download CSV
+          </button>
+        </div>
+      `).join('');
+    } catch(e) {
+      container.innerHTML = '<p style="color:#dc2626;font-size:13px;">Error loading portfolios.</p>';
+    }
+  }
+
+  async function downloadCSV(portfolioId, portfolioName) {
+    try {
+      const res = await fetch(`/export/portfolio/${portfolioId}.csv`, { headers: { Authorization: tok() } });
+      if (!res.ok) { toast('Export failed — endpoint not available yet', 'err'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${portfolioName.replace(/\s+/g,'_')}_holdings.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Downloaded ✓', 'ok');
+    } catch(e) { toast('Download failed', 'err'); }
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+
+  function showDeleteZone() {
+    document.getElementById('deleteZone').style.display = 'block';
+    document.getElementById('deletePassword').focus();
+  }
+  function hideDeleteZone() {
+    document.getElementById('deleteZone').style.display = 'none';
+    document.getElementById('deletePassword').value = '';
+    document.getElementById('deleteConfirm').value = '';
+    document.getElementById('deleteErr').style.display = 'none';
+  }
+
+  async function deleteAccount() {
+    const pw  = document.getElementById('deletePassword').value;
+    const cfm = document.getElementById('deleteConfirm').value.trim();
+    const err = document.getElementById('deleteErr');
+
+    err.style.display = 'none';
+
+    if (cfm !== 'DELETE') {
+      err.textContent = 'Type DELETE (all caps) to confirm.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!pw) {
+      err.textContent = 'Please enter your password.';
+      err.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch('/users/me', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ password: pw }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        err.textContent = data.detail || 'Deletion failed. Check your password.';
+        err.style.display = 'block';
+        return;
+      }
+
+      // wipe everything locally before redirecting
+      localStorage.clear();
+      window.location.href = '/';
+    } catch(e) {
+      err.textContent = 'Network error. Try again.';
+      err.style.display = 'block';
+    }
+  }
+
+  window.addEventListener('load', loadUser);
+</script>
+{% endblock %}

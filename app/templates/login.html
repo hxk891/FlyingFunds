@@ -1,0 +1,765 @@
+{% extends "base.html" %}
+{% block title %}Login | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  body { margin: 0; }
+
+  .auth-wrap {
+    min-height: calc(100vh - 60px);
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+
+  /* LEFT PANEL */
+  .auth-left {
+    background: linear-gradient(145deg, #3d1f1a 0%, #6b3a30 40%, #c9837a 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 44px 48px;
+    color: #fff;
+  }
+
+  /* Animated blob orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .orb-1 {
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(201,131,122,0.35) 0%, transparent 65%);
+    top: -160px; right: -120px;
+    animation: driftA 12s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(122,158,142,0.25) 0%, transparent 65%);
+    bottom: -100px; left: -80px;
+    animation: driftB 15s ease-in-out infinite;
+  }
+  .orb-3 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(250,247,242,0.12) 0%, transparent 65%);
+    top: 50%; left: 38%;
+    animation: driftC 10s ease-in-out infinite;
+  }
+
+  @keyframes driftA {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-30px, 40px) scale(1.08); }
+  }
+  @keyframes driftB {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px, -30px) scale(1.1); }
+  }
+  @keyframes driftC {
+    0%, 100% { transform: translate(-50%,-50%) scale(1); }
+    50% { transform: translate(calc(-50% + 20px), calc(-50% - 20px)) scale(1.06); }
+  }
+
+  /* Grid texture overlay */
+  .auth-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .auth-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    letter-spacing: -0.3px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .auth-brand-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    display: inline-block;
+  }
+
+  .auth-hero {
+    position: relative;
+    z-index: 2;
+  }
+
+  .auth-hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin: 0 0 16px 0;
+  }
+
+  .auth-hero-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    margin: 0 0 32px 0;
+    max-width: 320px;
+  }
+
+  /* Mock dashboard card */
+  .mock-card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 18px;
+    padding: 20px 22px;
+    margin-bottom: 14px;
+    max-width: 340px;
+  }
+
+  .mock-card-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 10px;
+  }
+
+  .mock-stats {
+    display: flex;
+    gap: 20px;
+  }
+
+  .mock-stat { flex: 1; }
+  .mock-stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .mock-stat-val.pos { color: #6ee7b7; }
+  .mock-stat-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* Sparkline */
+  .mock-sparkline {
+    margin-top: 14px;
+    height: 44px;
+    width: 100%;
+  }
+
+  /* Mini stat pills */
+  .mock-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mock-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.75);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .mock-pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .auth-left-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* RIGHT PANEL */
+  .auth-right {
+    background: var(--cream);
+    background-image: radial-gradient(rgba(201,131,122,0.07) 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    overflow-y: auto;
+  }
+
+  .auth-form-box {
+    width: 100%;
+    max-width: 380px;
+    animation: slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-panel { display: none; }
+  .login-panel.visible { display: block; }
+
+  .step-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--rose);
+    margin-bottom: 6px;
+  }
+
+  .step-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 34px;
+    font-weight: 400;
+    color: var(--dark);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.8px;
+    line-height: 1.15;
+  }
+
+  .step-desc {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 28px 0;
+    line-height: 1.5;
+  }
+
+  /* Input fields with icon prefix */
+  .field {
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    pointer-events: none;
+    opacity: 0.4;
+    line-height: 1;
+  }
+
+  /* TODO: add password strength indicator at some point */
+  .field input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 13px 14px 13px 40px;
+    border: 1.5px solid rgba(45,31,26,0.12);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--dark);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px rgba(201,131,122,0.12);
+  }
+
+  .field input.no-icon {
+    padding-left: 14px;
+  }
+
+  .field input.code-input {
+    letter-spacing: 0.35em;
+    font-size: 24px;
+    text-align: center;
+    font-weight: 700;
+    padding: 16px 14px;
+  }
+
+  .forgot-link {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--brown);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: right;
+    display: block;
+    margin: -4px 0 20px auto;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  .forgot-link:hover { color: var(--dark); text-decoration: underline; }
+
+  /* Rose gradient primary button */
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #c9837a 0%, #8b5e52 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px rgba(201,131,122,0.35);
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(201,131,122,0.42);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .back-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--dark); }
+
+  .err-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .ok-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .auth-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 22px;
+    text-align: center;
+  }
+  .auth-footer a { color: var(--brown); text-decoration: none; font-weight: 600; }
+  .auth-footer a:hover { text-decoration: underline; }
+
+  .totp-hint {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 14px;
+  }
+
+  /* Divider */
+  .form-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0;
+  }
+  .form-divider::before, .form-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(45,31,26,0.1);
+  }
+  .form-divider span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 800px) {
+    .auth-wrap { grid-template-columns: 1fr; }
+    .auth-left { display: none; }
+    .auth-right { padding: 32px 20px; }
+  }
+
+  /* input dark mode handled globally in theme.css */
+  [data-theme="dark"] .auth-right { background: #160f0d !important; }
+</style>
+
+<div class="auth-wrap">
+
+  <!-- ══════════ LEFT PANEL ══════════ -->
+  <div class="auth-left">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="auth-brand">
+      <span>✦ FlyingFunds</span>
+    </div>
+
+    <div class="auth-hero">
+      <h2 class="auth-hero-title">Welcome<br><em>back.</em></h2>
+      <p class="auth-hero-sub">Your portfolio is waiting. Sign in to check performance, risk metrics, and AI-powered insights.</p>
+
+      <!-- Mock portfolio card -->
+      <div class="mock-card">
+        <div class="mock-card-label">Portfolio Overview</div>
+        <div class="mock-stats">
+          <div class="mock-stat">
+            <div class="mock-stat-val pos">+24.7%</div>
+            <div class="mock-stat-sub">Total return</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val">1.82</div>
+            <div class="mock-stat-sub">Sharpe ratio</div>
+          </div>
+          <div class="mock-stat">
+            <div class="mock-stat-val">2.1%</div>
+            <div class="mock-stat-sub">VaR (95%)</div>
+          </div>
+        </div>
+        <!-- SVG sparkline -->
+        <svg class="mock-sparkline" viewBox="0 0 300 44" preserveAspectRatio="none" fill="none">
+          <defs>
+            <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(110,231,183,0.4)"/>
+              <stop offset="100%" stop-color="rgba(110,231,183,0)"/>
+            </linearGradient>
+          </defs>
+          <polyline
+            points="0,38 25,32 50,28 75,30 100,22 125,18 150,20 175,14 200,10 225,12 250,8 275,4 300,2"
+            fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon
+            points="0,38 25,32 50,28 75,30 100,22 125,18 150,20 175,14 200,10 225,12 250,8 275,4 300,2 300,44 0,44"
+            fill="url(#sparkGrad)"/>
+        </svg>
+      </div>
+
+      <!-- Feature pills -->
+      <div class="mock-pills">
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#6ee7b7"></span>Live market data</div>
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#c9837a"></span>Risk analytics</div>
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#7bafc4"></span>AI insights</div>
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#f9ca74"></span>Paper trading</div>
+      </div>
+    </div>
+
+    <div class="auth-left-footer">FlyingFunds · For educational use</div>
+  </div>
+
+  <!-- ══════════ RIGHT PANEL ══════════ -->
+  <div class="auth-right">
+    <div class="auth-form-box">
+
+      <!-- Panel: Login -->
+      <div class="login-panel visible" id="panel-login">
+        <div class="step-label">Welcome back</div>
+        <h2 class="step-title">Sign in</h2>
+        <p class="step-desc">Enter your email or username to continue.</p>
+
+        <div class="field">
+          <label>Email or username</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉</span>
+            <input id="identifier" placeholder="you@email.com or username"
+                   onkeydown="if(event.key==='Enter') doLogin()"
+                   autocomplete="username" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input id="password" type="password" placeholder="Your password"
+                   onkeydown="if(event.key==='Enter') doLogin()"
+                   autocomplete="current-password" />
+          </div>
+        </div>
+
+        <button class="forgot-link" onclick="showPanel('panel-forgot')">Forgot password?</button>
+
+        <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign in →</button>
+        <div class="err-box" id="login-err"></div>
+
+        <div class="auth-footer">
+          Don't have an account? <a href="/signup">Create one free</a>
+        </div>
+      </div>
+
+      <!-- Panel: 2FA -->
+      <div class="login-panel" id="panel-2fa">
+        <button class="back-btn" onclick="showPanel('panel-login')">← Back</button>
+        <div class="step-label">Security check</div>
+        <h2 class="step-title">Two-factor<br>authentication</h2>
+        <p class="step-desc">Open your authenticator app and enter the 6-digit code.</p>
+
+        <div class="field">
+          <label>Authenticator code</label>
+          <input class="code-input no-icon" id="totp-code" placeholder="000 000" maxlength="6"
+                 inputmode="numeric" onkeydown="if(event.key==='Enter') do2FA()"
+                 autocomplete="one-time-code" />
+        </div>
+
+        <button class="btn-primary" onclick="do2FA()">Verify →</button>
+        <div class="err-box" id="tfa-err"></div>
+        <p class="totp-hint">Lost access to your app? Contact support.</p>
+      </div>
+
+      <!-- Panel: Forgot password -->
+      <div class="login-panel" id="panel-forgot">
+        <button class="back-btn" onclick="showPanel('panel-login')">← Back</button>
+        <div class="step-label">Account recovery</div>
+        <h2 class="step-title">Reset your<br>password</h2>
+        <p class="step-desc">Enter your email and we'll send a reset link valid for 1 hour.</p>
+
+        <div class="field">
+          <label>Email address</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉</span>
+            <input id="forgot-email" type="email" placeholder="you@email.com"
+                   onkeydown="if(event.key==='Enter') doForgot()" />
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="doForgot()">Send reset link →</button>
+        <div class="err-box" id="forgot-err"></div>
+        <div class="ok-box"  id="forgot-ok"></div>
+      </div>
+
+      <!-- Panel: Reset password -->
+      <div class="login-panel" id="panel-reset">
+        <div class="step-label">Almost there</div>
+        <h2 class="step-title">Choose a new<br>password</h2>
+        <p class="step-desc">Pick something strong, at least 8 characters.</p>
+
+        <div class="field">
+          <label>New password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input id="new-pw" type="password" placeholder="At least 8 characters"
+                   autocomplete="new-password" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Confirm new password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input id="new-pw2" type="password" placeholder="Repeat password"
+                   onkeydown="if(event.key==='Enter') doReset()"
+                   autocomplete="new-password" />
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="doReset()">Set new password →</button>
+        <div class="err-box" id="reset-err"></div>
+        <div class="ok-box"  id="reset-ok"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let tempToken = null;
+
+  function showPanel(id) {
+    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('visible'));
+    document.getElementById(id).classList.add('visible');
+  }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+    const okId = id.replace('-err', '-ok');
+    const okEl = document.getElementById(okId);
+    if (okEl) okEl.style.display = 'none';
+  }
+
+  function showOk(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+    const errEl = document.getElementById(id.replace('-ok', '-err'));
+    if (errEl) errEl.style.display = 'none';
+  }
+
+  function clearMsg(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  }
+
+  async function doLogin() {
+    const identifier = document.getElementById('identifier').value.trim();
+    const password   = document.getElementById('password').value;
+    const btn        = document.getElementById('loginBtn');
+
+    if (!identifier || !password) return showErr('login-err', 'Please fill in all fields.');
+    clearMsg('login-err');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    try {
+      const res  = await fetch('/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok) return showErr('login-err', data.detail || 'Invalid credentials.');
+
+      if (data.requires_2fa) {
+        tempToken = data.temp_token;
+        document.getElementById('totp-code').value = '';
+        showPanel('panel-2fa');
+        setTimeout(() => document.getElementById('totp-code').focus(), 100);
+        return;
+      }
+
+      finishLogin(data);
+    } catch (e) {
+      showErr('login-err', 'Network error. Is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign in →';
+    }
+  }
+
+  async function do2FA() {
+    const code = document.getElementById('totp-code').value.trim();
+    if (code.length !== 6) return showErr('tfa-err', 'Enter the 6-digit code.');
+    clearMsg('tfa-err');
+
+    try {
+      const res  = await fetch('/users/login/2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ temp_token: tempToken, totp_code: code })
+      });
+      const data = await res.json();
+      if (!res.ok) return showErr('tfa-err', data.detail || 'Invalid code.');
+      finishLogin(data);
+    } catch (e) {
+      showErr('tfa-err', 'Network error.');
+    }
+  }
+
+  function finishLogin(data) {
+    localStorage.setItem('token', `Bearer ${data.access_token}`);
+    if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/dashboard';
+  }
+
+  async function doForgot() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) return showErr('forgot-err', 'Enter your email address.');
+    clearMsg('forgot-err');
+
+    try {
+      const res  = await fetch('/users/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      showOk('forgot-ok', data.message || 'Check your inbox for a reset link.');
+    } catch (e) {
+      showErr('forgot-err', 'Network error.');
+    }
+  }
+
+  async function doReset() {
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (!token) return showErr('reset-err', 'Missing reset token — use the link from your email.');
+
+    const pw  = document.getElementById('new-pw').value;
+    const pw2 = document.getElementById('new-pw2').value;
+
+    if (!pw) return showErr('reset-err', 'Enter a new password.');
+    if (pw.length < 8) return showErr('reset-err', 'Password must be at least 8 characters.');
+    if (pw !== pw2) return showErr('reset-err', 'Passwords do not match.');
+    clearMsg('reset-err');
+
+    try {
+      const res  = await fetch('/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: pw })
+      });
+      const data = await res.json();
+      if (!res.ok) return showErr('reset-err', data.detail || 'Reset failed.');
+      showOk('reset-ok', 'Password updated! Redirecting to login…');
+      setTimeout(() => window.location.href = '/login', 2000);
+    } catch (e) {
+      showErr('reset-err', 'Network error.');
+    }
+  }
+
+  window.addEventListener('load', () => {
+    if (new URLSearchParams(window.location.search).get('token')) {
+      showPanel('panel-reset');
+    } else {
+      document.getElementById('identifier').focus();
+    }
+  });
+</script>
+
+{% endblock %}

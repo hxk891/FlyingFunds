@@ -1,0 +1,857 @@
+{% extends "base.html" %}
+{% block title %}Sign up | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  body { margin: 0; }
+
+  .signup-wrap {
+    min-height: calc(100vh - 60px);
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+
+  /* LEFT PANEL */
+  .auth-left {
+    background: linear-gradient(145deg, #3d1f1a 0%, #6b3a30 40%, #c9837a 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 44px 48px;
+    color: #fff;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .orb-1 {
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(201,131,122,0.35) 0%, transparent 65%);
+    top: -160px; right: -120px;
+    animation: driftA 12s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(122,158,142,0.25) 0%, transparent 65%);
+    bottom: -100px; left: -80px;
+    animation: driftB 15s ease-in-out infinite;
+  }
+  .orb-3 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(250,247,242,0.12) 0%, transparent 65%);
+    top: 50%; left: 38%;
+    animation: driftC 10s ease-in-out infinite;
+  }
+
+  @keyframes driftA {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-30px, 40px) scale(1.08); }
+  }
+  @keyframes driftB {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px, -30px) scale(1.1); }
+  }
+  @keyframes driftC {
+    0%, 100% { transform: translate(-50%,-50%) scale(1); }
+    50% { transform: translate(calc(-50% + 20px), calc(-50% - 20px)) scale(1.06); }
+  }
+
+  .auth-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .auth-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    letter-spacing: -0.3px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .auth-hero {
+    position: relative;
+    z-index: 2;
+  }
+
+  .auth-hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin: 0 0 14px 0;
+  }
+
+  .auth-hero-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+    max-width: 320px;
+  }
+
+  /* timeline */
+  .onboard-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+
+  .onboard-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    padding-bottom: 20px;
+  }
+
+  .onboard-step:last-child { padding-bottom: 0; }
+
+  .onboard-step::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255,255,255,0.12);
+  }
+  .onboard-step:last-child::before { display: none; }
+
+  .onboard-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .onboard-text { padding-top: 5px; }
+  .onboard-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 2px;
+  }
+  .onboard-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.4;
+  }
+
+  /* Mini pill badges */
+  .mock-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mock-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.75);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .mock-pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .auth-left-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* RIGHT PANEL */
+  .auth-right {
+    background: var(--cream);
+    background-image: radial-gradient(rgba(201,131,122,0.07) 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 32px;
+    overflow-y: auto;
+  }
+
+  .auth-form-box {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    animation: slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Progress bar */
+  .step-progress {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 28px;
+  }
+
+  .step-dot {
+    height: 5px;
+    border-radius: 3px;
+    flex: 1;
+    background: rgba(45,31,26,0.1);
+    transition: background 0.3s ease;
+  }
+  .step-dot.active  { background: var(--rose); }
+  .step-dot.done    { background: var(--brown); }
+
+  .step-panel { display: none; }
+  .step-panel.visible { display: block; }
+
+  .step-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--rose);
+    margin-bottom: 6px;
+  }
+
+  .step-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--dark);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+  }
+
+  .step-desc {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 22px 0;
+    line-height: 1.5;
+  }
+
+  /* Fields */
+  .field-group { display: flex; flex-direction: column; gap: 14px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    letter-spacing: 0.04em;
+  }
+
+  .input-wrap { position: relative; }
+  .input-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    pointer-events: none;
+    opacity: 0.4;
+    line-height: 1;
+  }
+
+  .field input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 13px 14px 13px 40px;
+    border: 1.5px solid rgba(45,31,26,0.12);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--dark);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: var(--rose);
+    box-shadow: 0 0 0 3px rgba(201,131,122,0.12);
+  }
+
+  /* Card selector grid */
+  .card-grid {
+    display: grid;
+    gap: 10px;
+  }
+  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+  .sel-card {
+    border: 1.5px solid rgba(45,31,26,0.1);
+    border-radius: 14px;
+    padding: 16px 14px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sel-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--rose);
+    box-shadow: 0 4px 12px rgba(201,131,122,0.12);
+  }
+  .sel-card.selected {
+    border-color: var(--dark);
+    background: linear-gradient(135deg, var(--dark) 0%, #4a2e26 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(45,31,26,0.25);
+  }
+  .sel-card.selected .sel-card-desc { color: rgba(255,255,255,0.5); }
+
+  .sel-card-icon { font-size: 22px; margin-bottom: 8px; }
+  .sel-card-title { font-size: 13px; font-weight: 700; }
+  .sel-card-desc { font-size: 12px; color: #999; margin-top: 4px; line-height: 1.4; }
+
+  /* Avatar picker */
+  .avatar-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .avatar-btn {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(45,31,26,0.1);
+    background: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  .avatar-btn:hover { transform: scale(1.1); border-color: var(--rose); }
+  .avatar-btn.selected {
+    border-color: var(--dark);
+    background: var(--dark);
+    box-shadow: 0 2px 8px rgba(45,31,26,0.2);
+  }
+
+  /* Tag pills for markets */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .tag-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(45,31,26,0.1);
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--dark);
+    font-weight: 500;
+  }
+  .tag-pill:hover { border-color: var(--rose); color: var(--brown); }
+  .tag-pill.selected {
+    background: linear-gradient(135deg, var(--dark) 0%, #4a2e26 100%);
+    color: #fff;
+    border-color: var(--dark);
+  }
+
+  /* Review card */
+  .review-box {
+    background: #fff;
+    border: 1.5px solid rgba(45,31,26,0.1);
+    border-radius: 14px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(45,31,26,0.05);
+  }
+  .review-row:last-child { border-bottom: none; }
+  .review-key { color: var(--muted); }
+  .review-val { font-weight: 600; color: var(--dark); max-width: 60%; text-align: right; }
+
+  /* Error */
+  .err-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 13px 24px;
+    background: linear-gradient(135deg, #c9837a 0%, #8b5e52 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-left: auto;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px rgba(201,131,122,0.35);
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(201,131,122,0.42);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-secondary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 13px 20px;
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid rgba(45,31,26,0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--rose); color: var(--dark); }
+
+  .auth-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 14px;
+    text-align: center;
+  }
+  .auth-footer a { color: var(--brown); text-decoration: none; font-weight: 600; }
+  .auth-footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 800px) {
+    .signup-wrap { grid-template-columns: 1fr; }
+    .auth-left { display: none; }
+    .auth-right { padding: 32px 20px; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* input/select dark mode handled globally in theme.css */
+  [data-theme="dark"] .auth-right { background: #160f0d !important; }
+  [data-theme="dark"] .sel-card {
+    background: #1e1614 !important;
+    border-color: rgba(255,200,180,0.1) !important;
+    color: #ede4dc !important;
+  }
+  [data-theme="dark"] .sel-card-desc { color: #7a6a62 !important; }
+  [data-theme="dark"] .review-row { border-color: rgba(255,200,180,0.07) !important; }
+  [data-theme="dark"] .step-title,
+  [data-theme="dark"] .step-desc { color: var(--text) !important; }
+</style>
+
+<div class="signup-wrap">
+
+  <!-- ══════════ LEFT PANEL ══════════ -->
+  <div class="auth-left">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="auth-brand">✦ FlyingFunds</div>
+
+    <div class="auth-hero">
+      <h2 class="auth-hero-title">Your portfolio,<br><em>intelligently</em><br>understood.</h2>
+      <p class="auth-hero-sub">Real-time analytics, AI insights, and risk metrics — built for investors who want more than just numbers.</p>
+
+      <!-- Onboarding steps timeline -->
+      <div class="onboard-steps">
+        <div class="onboard-step">
+          <div class="onboard-num">1</div>
+          <div class="onboard-text">
+            <div class="onboard-title">Create your account</div>
+            <div class="onboard-desc">Secure email & password setup</div>
+          </div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-num">2</div>
+          <div class="onboard-text">
+            <div class="onboard-title">Personalise your profile</div>
+            <div class="onboard-desc">Username, avatar, investor type</div>
+          </div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-num">3</div>
+          <div class="onboard-text">
+            <div class="onboard-title">Tell us your goals</div>
+            <div class="onboard-desc">Experience level & market interests</div>
+          </div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-num">4</div>
+          <div class="onboard-text">
+            <div class="onboard-title">Start investing</div>
+            <div class="onboard-desc">Personalised dashboard from day one</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature pills -->
+      <div class="mock-pills">
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#6ee7b7"></span>Live data</div>
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#c9837a"></span>Risk analytics</div>
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#7bafc4"></span>AI Halo</div>
+        <div class="mock-pill"><span class="mock-pill-dot" style="background:#f9ca74"></span>Free forever</div>
+      </div>
+    </div>
+
+    <div class="auth-left-footer">FlyingFunds · For educational use</div>
+  </div>
+
+  <!-- ══════════ RIGHT PANEL ══════════ -->
+  <div class="auth-right">
+    <div class="auth-form-box">
+
+      <!-- Progress dots -->
+      <div class="step-progress" id="stepProgress">
+        <div class="step-dot active" id="dot1"></div>
+        <div class="step-dot" id="dot2"></div>
+        <div class="step-dot" id="dot3"></div>
+        <div class="step-dot" id="dot4"></div>
+        <div class="step-dot" id="dot5"></div>
+      </div>
+
+      <!-- Step 1: Credentials -->
+      <div class="step-panel visible" id="step1">
+        <div class="step-label">Step 1 of 5</div>
+        <h2 class="step-title">Create your account</h2>
+        <p class="step-desc">Start with your login details, takes 30 seconds.</p>
+
+        <div class="field-group">
+          <div class="field">
+            <label>Email address</label>
+            <div class="input-wrap">
+              <span class="input-icon">✉</span>
+              <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔒</span>
+              <input id="password" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Confirm password</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔒</span>
+              <input id="password2" type="password" placeholder="Re-enter password" autocomplete="new-password" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Profile -->
+      <div class="step-panel" id="step2">
+        <div class="step-label">Step 2 of 5</div>
+        <h2 class="step-title">Make it yours</h2>
+        <p class="step-desc">Pick a username and an avatar that represents you.</p>
+
+        <div class="field-group">
+          <div class="field">
+            <label>Username</label>
+            <div class="input-wrap">
+              <span class="input-icon">@</span>
+              <input id="username" placeholder="e.g. alex_invest" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Choose an avatar</label>
+            <div class="avatar-row" id="avatarRow"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Investor type -->
+      <div class="step-panel" id="step3">
+        <div class="step-label">Step 3 of 5</div>
+        <h2 class="step-title">What describes you?</h2>
+        <p class="step-desc">This shapes your dashboard and suggestions.</p>
+        <div class="card-grid cols-3" id="typeGrid"></div>
+      </div>
+
+      <!-- Step 4: Experience -->
+      <div class="step-panel" id="step4">
+        <div class="step-label">Step 4 of 5</div>
+        <h2 class="step-title">Your experience level</h2>
+        <p class="step-desc">No judgement — helps us match insight depth to you.</p>
+        <div class="card-grid cols-3" id="levelGrid"></div>
+      </div>
+
+      <!-- Step 5: Markets + review -->
+      <div class="step-panel" id="step5">
+        <div class="step-label">Step 5 of 5</div>
+        <h2 class="step-title">Markets you care about</h2>
+        <p class="step-desc">Select as many as you like. Personalises your news feed.</p>
+        <div class="tag-row" id="marketRow"></div>
+        <div class="review-box" id="reviewBox"></div>
+      </div>
+
+      <div class="err-box" id="errBox"></div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" id="backBtn" style="display:none;" onclick="prevStep()">← Back</button>
+        <button class="btn-primary" id="nextBtn" onclick="nextStep()">Continue →</button>
+      </div>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login">Sign in</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const state = {
+    email: '', password: '', username: '',
+    avatar: '👤', user_type: '', level: '', markets: []
+  };
+  let step = 1;
+  const TOTAL = 5;
+
+  const avatars = ['👩🏻‍💻','🧑🏻‍💻','🧠','📈','💼','🦊','🐼','🐯','🦁','🐸','🚀','💎'];
+  const types = [
+    { key: 'student',  icon: '🎓', title: 'Student',  desc: 'Learning & building confidence' },
+    { key: 'personal', icon: '💰', title: 'Personal',  desc: 'Growing personal savings' },
+    { key: 'business', icon: '📊', title: 'Business',  desc: 'Managing company funds' }
+  ];
+  const levels = [
+    { key: 'beginner',     icon: '🌱', title: 'Beginner',     desc: 'Just starting out' },
+    { key: 'intermediate', icon: '📚', title: 'Intermediate', desc: 'I know the basics' },
+    { key: 'advanced',     icon: '⚡', title: 'Advanced',     desc: 'I want full depth' }
+  ];
+  const markets = ['US Stocks','UK Stocks','ETFs','Crypto','Commodities','Tech','Healthcare','Energy','Dividends','Bonds','Small Cap','High Growth'];
+
+  function $(id) { return document.getElementById(id); }
+  function showErr(msg) { const e = $('errBox'); e.style.display = 'block'; e.textContent = msg; }
+  function clearErr() { const e = $('errBox'); e.style.display = 'none'; }
+
+  function renderAvatars() {
+    $('avatarRow').innerHTML = avatars.map(a => `
+      <button type="button" class="avatar-btn${state.avatar===a?' selected':''}" onclick="selectAvatar('${a}')">${a}</button>
+    `).join('');
+  }
+  function selectAvatar(a) { state.avatar = a; renderAvatars(); }
+
+  function renderCards(containerId, items, stateKey) {
+    $(containerId).innerHTML = items.map(item => `
+      <button type="button" class="sel-card${state[stateKey]===item.key?' selected':''}" onclick="selectCard('${stateKey}','${item.key}','${containerId}')">
+        <div class="sel-card-icon">${item.icon}</div>
+        <div class="sel-card-title">${item.title}</div>
+        <div class="sel-card-desc">${item.desc}</div>
+      </button>
+    `).join('');
+  }
+  function selectCard(stateKey, val, containerId) {
+    state[stateKey] = val;
+    renderCards(containerId, stateKey==='user_type'?types:levels, stateKey);
+  }
+
+  function renderMarkets() {
+    $('marketRow').innerHTML = markets.map(m => `
+      <button type="button" class="tag-pill${state.markets.includes(m)?' selected':''}" onclick="toggleMarket('${m}')">${m}</button>
+    `).join('');
+  }
+  function toggleMarket(m) {
+    state.markets = state.markets.includes(m)
+      ? state.markets.filter(x => x!==m)
+      : [...state.markets, m];
+    renderMarkets();
+    renderReview();
+  }
+
+  function renderReview() {
+    if (step !== 5) return;
+    $('reviewBox').innerHTML = `
+      <div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;padding:4px 0 8px;">Summary</div>
+      ${[
+        ['Email', state.email || '—'],
+        ['Username', state.username || '—'],
+        ['Avatar', state.avatar],
+        ['Investor type', state.user_type || '—'],
+        ['Experience', state.level || '—'],
+        ['Interests', state.markets.length ? state.markets.join(', ') : '—']
+      ].map(([k,v]) => `<div class="review-row"><span class="review-key">${k}</span><span class="review-val">${v}</span></div>`).join('')}
+    `;
+  }
+
+  function updateProgress() {
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = $('dot'+i);
+      d.className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+    }
+    $('backBtn').style.display = step === 1 ? 'none' : 'inline-block';
+    $('nextBtn').textContent = step === TOTAL ? 'Create account ✦' : 'Continue →';
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= TOTAL; i++) {
+      $('step'+i).className = 'step-panel' + (i===n ? ' visible' : '');
+    }
+    step = n;
+    updateProgress();
+    clearErr();
+    renderReview();
+  }
+
+  function readStep1() {
+    state.email = $('email').value.trim();
+    state.password = $('password').value;
+    const p2 = $('password2').value;
+    return { p2 };
+  }
+
+  function validateStep() {
+    if (step === 1) {
+      const { p2 } = readStep1();
+      if (!state.email.includes('@')) return showErr('Please enter a valid email.'), false;
+      if (state.password.length < 8) return showErr('Password must be at least 8 characters.'), false;
+      if (state.password !== p2) return showErr('Passwords do not match.'), false;
+    }
+    if (step === 2) {
+      state.username = $('username').value.trim();
+      if (state.username.length < 3) return showErr('Username must be at least 3 characters.'), false;
+    }
+    if (step === 3 && !state.user_type) return showErr('Please select an investor type.'), false;
+    if (step === 4 && !state.level) return showErr('Please select your experience level.'), false;
+    return true;
+  }
+
+  function nextStep() {
+    if (step === 1) readStep1();
+    if (!validateStep()) return;
+    if (step < TOTAL) { setStep(step + 1); return; }
+    submitSignup();
+  }
+
+  function prevStep() { if (step > 1) setStep(step - 1); }
+
+  async function submitSignup() {
+    clearErr();
+    $('nextBtn').disabled = true;
+    $('nextBtn').textContent = 'Creating account…';
+
+    try {
+      const reg = await fetch('/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: state.email,
+          password: state.password,
+          username: state.username,
+          avatar: state.avatar,
+          user_type: state.user_type,
+          level: state.level,
+          markets: state.markets
+        })
+      });
+
+      if (!reg.ok) {
+        const txt = await reg.text();
+        throw new Error(`Registration failed (${reg.status}): ${txt}`);
+      }
+
+      const data = await reg.json();
+      localStorage.setItem('token', 'Bearer ' + data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user || {
+        email: state.email,
+        username: state.username,
+        avatar: state.avatar,
+        user_type: state.user_type,
+        level: state.level
+      }));
+
+      window.location.href = '/dashboard';
+    } catch (e) {
+      showErr(e.message);
+      $('nextBtn').disabled = false;
+      $('nextBtn').textContent = 'Create account ✦';
+    }
+  }
+
+  window.addEventListener('load', () => {
+    renderAvatars();
+    renderCards('typeGrid', types, 'user_type');
+    renderCards('levelGrid', levels, 'level');
+    renderMarkets();
+    updateProgress();
+  });
+</script>
+
+{% endblock %}
