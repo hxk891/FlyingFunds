@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Contact | FlyingFunds{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>Contact</h1>
+    <p class="muted">Demo contact form (no email sending yet).</p>
+
+    <form onsubmit="event.preventDefault(); alert('Thanks! (demo)');">
+      <label>Name</label>
+      <input required />
+      <label style="display:block; margin-top:10px;">Message</label>
+      <textarea rows="5" required></textarea>
+      <button style="margin-top:10px;">Send</button>
+    </form>
+  </div>
+{% endblock %}

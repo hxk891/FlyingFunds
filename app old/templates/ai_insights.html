@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% block title %}AI Insights | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  .insights-container {
+    display: grid;
+    gap: 16px;
+  }
+  
+  .insight-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .insight-card h3 {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .score-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  .sentiment-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+  
+  .sentiment-bullish {
+    background: #10b981;
+    color: white;
+  }
+  
+  .sentiment-bearish {
+    background: #ef4444;
+    color: white;
+  }
+  
+  .sentiment-neutral {
+    background: #6b7280;
+    color: white;
+  }
+  
+  .recommendation-item {
+    background: rgba(255,255,255,0.1);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 8px 0;
+    border-left: 4px solid #fbbf24;
+  }
+  
+  .strength-item {
+    background: rgba(16, 185, 129, 0.2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 4px 0;
+    border-left: 3px solid #10b981;
+  }
+  
+  .concern-item {
+    background: rgba(239, 68, 68, 0.2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 4px 0;
+    border-left: 3px solid #ef4444;
+  }
+  
+  .loading-spinner {
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .chat-container {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  
+  .chat-message {
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 12px;
+  }
+  
+  .chat-message.user {
+    background: #e5e7eb;
+    margin-left: 20%;
+  }
+  
+  .chat-message.ai {
+    background: #dbeafe;
+    margin-right: 20%;
+  }
+  
+  .chat-input-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  .rebalancing-trade {
+    background: white;
+    color: #111;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 8px 0;
+    border-left: 4px solid #3b82f6;
+  }
+  
+  .trade-action-buy {
+    border-left-color: #10b981;
+  }
+  
+  .trade-action-sell {
+    border-left-color: #ef4444;
+  }
+  
+  .priority-high {
+    background: #fef3c7;
+  }
+  
+  .priority-medium {
+    background: #e0e7ff;
+  }
+  
+  .priority-low {
+    background: #f3f4f6;
+  }
+</style>
+
+<h1>🤖 AI Portfolio Insights</h1>
+<p class="muted">Powered by Claude AI • Portfolio #{{ portfolio_id }}</p>
+
+<div class="card">
+  <button onclick="window.location.href='/dashboard/{{ portfolio_id }}'">← Back to Dashboard</button>
+  <button onclick="refreshAllInsights()" style="margin-left: 10px;">🔄 Refresh All</button>
+  <span id="mainStatus" class="muted" style="margin-left: 10px;"></span>
+</div>
+
+<!-- Main AI Analysis -->
+<div class="card insight-card" id="mainInsights" style="display: none;">
+  <h2>📊 Portfolio Analysis</h2>
+  
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;">
+    <div>
+      <div class="muted" style="color: rgba(255,255,255,0.8);">Diversification Score</div>
+      <div class="score-badge" id="diversificationScore">--</div>
+      <p id="diversificationExplanation" style="margin-top: 8px; font-size: 14px;"></p>
+    </div>
+    <div>
+      <div class="muted" style="color: rgba(255,255,255,0.8);">AI Sentiment</div>
+      <div id="sentimentIndicator" class="sentiment-indicator sentiment-neutral" style="margin-top: 8px;">
+        <span id="sentimentText">Neutral</span>
+      </div>
+      <div style="margin-top: 8px; font-size: 14px;">
+        Confidence: <span id="confidenceScore">--</span>%
+      </div>
+    </div>
+  </div>
+  
+  <h3>Risk Assessment</h3>
+  <div id="riskAssessment" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; line-height: 1.6;"></div>
+  
+  <h3 style="margin-top: 20px;">💪 Key Strengths</h3>
+  <div id="keyStrengths"></div>
+  
+  <h3 style="margin-top: 20px;">⚠️ Key Concerns</h3>
+  <div id="keyConcerns"></div>
+  
+  <h3 style="margin-top: 20px;">🎯 Top Recommendations</h3>
+  <div id="recommendations"></div>
+  
+  <h3 style="margin-top: 20px;">🏢 Sector Analysis</h3>
+  <div id="sectorAnalysis" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; line-height: 1.6;"></div>
+</div>
+
+<!-- Loading State -->
+<div class="card insight-card" id="loadingInsights">
+  <h2>Analyzing your portfolio...</h2>
+  <div class="loading-spinner"></div>
+  <p style="text-align: center; margin-top: 16px;">
+    Claude AI is examining your holdings, risk metrics, and market conditions.
+  </p>
+</div>
+
+<!-- News Sentiment -->
+<div class="card" id="newsSentiment" style="display: none;">
+  <h2>📰 News Sentiment Analysis</h2>
+  <p class="muted">Based on <span id="articlesCount">0</span> recent articles</p>
+  
+  <div style="margin: 16px 0;">
+    <strong>Overall Market Sentiment:</strong>
+    <span id="overallSentiment" class="sentiment-indicator sentiment-neutral">Neutral</span>
+  </div>
+  
+  <h3>Key Themes</h3>
+  <div id="keyThemes" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+  
+  <h3 style="margin-top: 16px;">⚠️ Risk Signals</h3>
+  <div id="riskSignals"></div>
+  
+  <h3 style="margin-top: 16px;">💡 Opportunities</h3>
+  <div id="opportunities"></div>
+  
+  <h3 style="margin-top: 16px;">Symbol-Specific Sentiment</h3>
+  <div id="symbolSentiments"></div>
+</div>
+
+<!-- Rebalancing Suggestions -->
+<div class="card" id="rebalancingSuggestions" style="display: none;">
+  <h2>⚖️ Rebalancing Suggestions</h2>
+  <p class="muted">AI-powered trade recommendations</p>
+  
+  <div id="rebalancingStrategy" style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;"></div>
+  
+  <h3>Suggested Trades</h3>
+  <div id="suggestedTrades"></div>
+  
+  <p class="muted" style="margin-top: 16px;">
+    ⚠️ These are AI-generated suggestions for educational purposes only. 
+    Always consult with a licensed financial advisor before making investment decisions.
+  </p>
+</div>
+
+<!-- AI Chat -->
+<div class="card">
+  <h2>💬 Ask Claude About Your Portfolio</h2>
+  <p class="muted">Get personalized investment insights</p>
+  
+  <div class="chat-container" id="chatMessages">
+    <div class="chat-message ai">
+      <strong>Claude AI:</strong><br>
+      Hi! I'm here to help you understand your portfolio better. Feel free to ask me questions like:
+      <ul style="margin-top: 8px;">
+        <li>"Should I be concerned about my portfolio concentration?"</li>
+        <li>"What sectors am I exposed to?"</li>
+        <li>"How does my portfolio compare to a typical balanced portfolio?"</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="chat-input-container">
+    <input 
+      id="chatInput" 
+      placeholder="Ask me anything about your portfolio..." 
+      onkeypress="if(event.key==='Enter') sendChatMessage()"
+    />
+    <button onclick="sendChatMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+  const portfolioId = {{ portfolio_id }};
+  const token = localStorage.getItem("token");
+  
+  if (!token) {
+    window.location.href = "/login";
+  }
+  
+  // Load all insights on page load
+  window.addEventListener("load", () => {
+    loadMainInsights();
+    loadNewsSentiment();
+    loadRebalancingSuggestions();
+  });
+  
+  async function loadMainInsights() {
+    document.getElementById("loadingInsights").style.display = "block";
+    document.getElementById("mainInsights").style.display = "none";
+    document.getElementById("mainStatus").textContent = "Loading insights...";
+    
+    try {
+      const res = await fetch(`/ai/portfolio/${portfolioId}/insights`, {
+        headers: { "Authorization": token }
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      
+      const data = await res.json();
+      const insights = data.insights;
+      
+      // Display insights
+      document.getElementById("diversificationScore").textContent = 
+        insights.diversification_score.toFixed(0);
+      
+      document.getElementById("diversificationExplanation").textContent = 
+        insights.diversification_explanation || "";
+      
+      // Sentiment
+      const sentimentText = insights.sentiment.charAt(0).toUpperCase() + 
+        insights.sentiment.slice(1);
+      document.getElementById("sentimentText").textContent = sentimentText;
+      
+      const sentimentEl = document.getElementById("sentimentIndicator");
+      sentimentEl.className = `sentiment-indicator sentiment-${insights.sentiment}`;
+      
+      document.getElementById("confidenceScore").textContent = 
+        insights.confidence.toFixed(0);
+      
+      // Risk assessment
+      document.getElementById("riskAssessment").innerHTML = 
+        insights.risk_assessment.replace(/\n/g, '<br><br>');
+      
+      // Strengths
+      const strengthsHtml = insights.key_strengths
+        .map(s => `<div class="strength-item">✓ ${s}</div>`)
+        .join('');
+      document.getElementById("keyStrengths").innerHTML = 
+        strengthsHtml || '<p class="muted">No specific strengths identified</p>';
+      
+      // Concerns
+      const concernsHtml = insights.key_concerns
+        .map(c => `<div class="concern-item">⚠️ ${c}</div>`)
+        .join('');
+      document.getElementById("keyConcerns").innerHTML = 
+        concernsHtml || '<p class="muted">No major concerns identified</p>';
+      
+      // Recommendations
+      const recsHtml = insights.recommendations
+        .map((r, i) => `<div class="recommendation-item"><strong>${i+1}.</strong> ${r}</div>`)
+        .join('');
+      document.getElementById("recommendations").innerHTML = recsHtml;
+      
+      // Sector analysis
+      document.getElementById("sectorAnalysis").innerHTML = 
+        insights.sector_analysis.replace(/\n/g, '<br><br>');
+      
+      // Show insights
+      document.getElementById("loadingInsights").style.display = "none";
+      document.getElementById("mainInsights").style.display = "block";
+      document.getElementById("mainStatus").textContent = "✅ Insights loaded";
+      
+    } catch (err) {
+      console.error("Insights error:", err);
+      document.getElementById("loadingInsights").innerHTML = `
+        <h2>❌ Unable to load insights</h2>
+        <p>${err.message}</p>
+        <button onclick="loadMainInsights()">Retry</button>
+      `;
+      document.getElementById("mainStatus").textContent = "⚠️ Error loading insights";
+    }
+  }
+  
+  async function loadNewsSentiment() {
+    try {
+      const res = await fetch(`/ai/portfolio/${portfolioId}/news-sentiment`, {
+        headers: { "Authorization": token }
+      });
+      
+      if (!res.ok) return;
+      
+      const data = await res.json();
+      const sentiment = data.sentiment;
+      
+      document.getElementById("articlesCount").textContent = data.articles_analyzed;
+      
+      // Overall sentiment
+      const overallEl = document.getElementById("overallSentiment");
+      overallEl.textContent = sentiment.overall_sentiment.charAt(0).toUpperCase() + 
+        sentiment.overall_sentiment.slice(1);
+      overallEl.className = `sentiment-indicator sentiment-${sentiment.overall_sentiment}`;
+      
+      // Key themes
+      const themesHtml = sentiment.key_themes
+        .map(t => `<span style="background: #e5e7eb; padding: 6px 12px; border-radius: 12px;">${t}</span>`)
+        .join('');
+      document.getElementById("keyThemes").innerHTML = 
+        themesHtml || '<p class="muted">No themes identified</p>';
+      
+      // Risk signals
+      const risksHtml = sentiment.risk_signals
+        .map(r => `<div class="concern-item">${r}</div>`)
+        .join('');
+      document.getElementById("riskSignals").innerHTML = 
+        risksHtml || '<p class="muted">No significant risk signals</p>';
+      
+      // Opportunities
+      const oppsHtml = (sentiment.opportunities || [])
+        .map(o => `<div class="strength-item">${o}</div>`)
+        .join('');
+      document.getElementById("opportunities").innerHTML = 
+        oppsHtml || '<p class="muted">No specific opportunities identified</p>';
+      
+      // Symbol sentiments
+      const symbolsHtml = Object.entries(sentiment.symbol_sentiments || {})
+        .map(([symbol, data]) => `
+          <div style="background: #f9fafb; padding: 12px; border-radius: 8px; margin: 8px 0;">
+            <strong>${symbol}</strong>: 
+            <span class="sentiment-indicator sentiment-${data.sentiment}" style="font-size: 12px;">
+              ${data.sentiment}
+            </span>
+            <span class="muted">(${data.confidence}% confidence)</span>
+            <br>
+            <small>${data.reasoning || ''}</small>
+          </div>
+        `)
+        .join('');
+      document.getElementById("symbolSentiments").innerHTML = 
+        symbolsHtml || '<p class="muted">No symbol-specific analysis available</p>';
+      
+      document.getElementById("newsSentiment").style.display = "block";
+      
+    } catch (err) {
+      console.error("News sentiment error:", err);
+    }
+  }
+  
+  async function loadRebalancingSuggestions() {
+    try {
+      const res = await fetch(`/ai/portfolio/${portfolioId}/rebalancing`, {
+        headers: { "Authorization": token }
+      });
+      
+      if (!res.ok) return;
+      
+      const data = await res.json();
+      const suggestions = data.suggestions;
+      
+      if (suggestions.length === 0) {
+        document.getElementById("rebalancingStrategy").innerHTML = `
+          <p><strong>✅ No rebalancing needed</strong></p>
+          <p>Your portfolio allocation looks well-balanced.</p>
+        `;
+        document.getElementById("suggestedTrades").innerHTML = "";
+        document.getElementById("rebalancingSuggestions").style.display = "block";
+        return;
+      }
+      
+      // Overall strategy (if provided by AI)
+      const strategy = suggestions[0]?.overall_strategy || 
+        "Review the following trade suggestions to improve portfolio balance.";
+      document.getElementById("rebalancingStrategy").innerHTML = `
+        <strong>Strategy:</strong> ${strategy}
+      `;
+      
+      // Trades
+      const tradesHtml = suggestions
+        .map(trade => `
+          <div class="rebalancing-trade trade-action-${trade.action} priority-${trade.priority}">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <strong style="font-size: 16px;">
+                  ${trade.action.toUpperCase()} ${trade.quantity} shares of ${trade.symbol}
+                </strong>
+                <div style="margin-top: 4px;">
+                  <span style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                    ${trade.priority} priority
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p style="margin: 8px 0 4px 0;"><strong>Reasoning:</strong> ${trade.reasoning}</p>
+            <p style="margin: 4px 0; color: #059669;"><strong>Expected Impact:</strong> ${trade.expected_impact}</p>
+          </div>
+        `)
+        .join('');
+      
+      document.getElementById("suggestedTrades").innerHTML = tradesHtml;
+      document.getElementById("rebalancingSuggestions").style.display = "block";
+      
+    } catch (err) {
+      console.error("Rebalancing suggestions error:", err);
+    }
+  }
+  
+  async function sendChatMessage() {
+    const input = document.getElementById("chatInput");
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Display user message
+    const chatContainer = document.getElementById("chatMessages");
+    chatContainer.innerHTML += `
+      <div class="chat-message user">
+        <strong>You:</strong><br>${message}
+      </div>
+    `;
+    
+    input.value = "";
+    
+    // Show loading
+    chatContainer.innerHTML += `
+      <div class="chat-message ai" id="aiThinking">
+        <strong>Claude AI:</strong><br>
+        <em>Thinking...</em>
+      </div>
+    `;
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    try {
+      const res = await fetch(`/ai/chat?message=${encodeURIComponent(message)}&portfolio_id=${portfolioId}`, {
+        method: "POST",
+        headers: { "Authorization": token }
+      });
+      
+      if (!res.ok) throw new Error("Chat failed");
+      
+      const data = await res.json();
+      
+      // Remove loading, add response
+      document.getElementById("aiThinking").remove();
+      chatContainer.innerHTML += `
+        <div class="chat-message ai">
+          <strong>Claude AI:</strong><br>
+          ${data.response.replace(/\n/g, '<br>')}
+        </div>
+      `;
+      
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      
+    } catch (err) {
+      document.getElementById("aiThinking").innerHTML = `
+        <strong>Claude AI:</strong><br>
+        <em style="color: red;">Sorry, I encountered an error. Please try again.</em>
+      `;
+    }
+  }
+  
+  function refreshAllInsights() {
+    document.getElementById("mainStatus").textContent = "Refreshing...";
+    loadMainInsights();
+    loadNewsSentiment();
+    loadRebalancingSuggestions();
+  }
+</script>
+
+{% endblock %}

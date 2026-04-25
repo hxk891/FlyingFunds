@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% block title %}FX | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  :root {
+    --cream:#faf7f2;--warm:#f5efe6;--blush:#f2e4d8;--pink:#e8c4b4;
+    --rose:#c9837a;--brown:#8b5e52;--dark:#2d1f1a;--sage:#7a9e8e;
+    --sage-lt:#d4e6de;--sky:#7bafc4;--muted:#a08c82;
+    --up:#4a9470;--dn:#b85050;
+    --surface:#ffffff;--border:rgba(45,31,26,0.1);
+  }
+  body { background:var(--cream)!important; color:var(--dark)!important; }
+
+  /* ── Page header ── */
+  .fx-header { margin-bottom:24px; display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .fx-header h1 { font-family:'Instrument Serif',serif; font-size:36px; font-weight:400; letter-spacing:-0.8px; margin:0; }
+  .fx-header p  { font-size:13px; color:var(--muted); margin:4px 0 0; }
+  .fx-live-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; font-weight:700; color:var(--up);
+    background:#eef6f2; border:1px solid rgba(74,148,112,0.25);
+    padding:4px 10px; border-radius:20px; letter-spacing:0.05em; text-transform:uppercase;
+  }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:var(--up); animation:pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Ticker strip ── */
+  .fx-ticker-wrap {
+    background:#fff; border:1.5px solid var(--border); border-radius:14px;
+    padding:10px 20px; margin-bottom:22px; overflow:hidden;
+  }
+  .fx-ticker { display:flex; gap:28px; overflow-x:auto; scrollbar-width:none; align-items:center; }
+  .fx-ticker::-webkit-scrollbar { display:none; }
+  .fx-tick-item { display:flex; flex-direction:column; align-items:center; flex-shrink:0; min-width:72px; }
+  .fx-tick-pair { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:0.05em; text-transform:uppercase; }
+  .fx-tick-rate { font-size:15px; font-weight:600; color:var(--dark); font-variant-numeric:tabular-nums; }
+  .fx-tick-chg  { font-size:11px; font-weight:600; }
+  .fx-tick-chg.up { color:var(--up); }
+  .fx-tick-chg.dn { color:var(--dn); }
+
+  /* ── Main grid ── */
+  .fx-main {
+    display:grid;
+    grid-template-columns: 1fr 320px;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:900px) { .fx-main { grid-template-columns:1fr; } }
+
+  /* ── Pair search ── */
+  .fx-pair-search {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:var(--warm); border-radius:12px; padding:10px 14px;
+    margin-bottom:12px;
+  }
+  .fx-pair-search label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; }
+  .fx-pair-search select {
+    padding:6px 10px; border:1.5px solid rgba(45,31,26,0.15); border-radius:8px;
+    font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--dark);
+    background:#fff; cursor:pointer; outline:none; transition:border-color 0.15s; min-width:80px;
+  }
+  .fx-pair-search select:focus { border-color:var(--rose); }
+  .fx-pair-sep { font-size:16px; font-weight:700; color:var(--muted); }
+  .fx-pair-go {
+    padding:6px 16px; background:var(--dark); color:#fff;
+    border:none; border-radius:8px; font-size:12px; font-weight:700;
+    cursor:pointer; transition:background 0.15s; font-family:'DM Sans',sans-serif;
+    letter-spacing:0.02em;
+  }
+  .fx-pair-go:hover { background:var(--brown); }
+
+  /* ── Chart card ── */
+  .fx-chart-card {
+    background:#fff; border:1.5px solid var(--border); border-radius:18px;
+    padding:20px 24px; display:flex; flex-direction:column; gap:14px;
+  }
+  .fx-chart-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .fx-pair-tabs { display:flex; flex-wrap:wrap; gap:5px; }
+  .fx-pair-btn  {
+    font-size:12px; font-weight:600; padding:5px 13px; border-radius:20px;
+    border:1.5px solid rgba(45,31,26,0.12); background:#fff; color:var(--muted);
+    cursor:pointer; transition:all 0.15s;
+  }
+  .fx-pair-btn:hover  { border-color:var(--rose); color:var(--dark); }
+  .fx-pair-btn.active { background:var(--dark); color:#fff; border-color:var(--dark); }
+  .fx-range-tabs { display:flex; gap:4px; }
+  .fx-range-btn  {
+    font-size:11px; font-weight:600; padding:4px 10px; border-radius:16px;
+    border:1.5px solid rgba(45,31,26,0.12); background:#fff; color:var(--muted);
+    cursor:pointer; transition:all 0.15s;
+  }
+  .fx-range-btn:hover  { border-color:var(--rose); color:var(--dark); }
+  .fx-range-btn.active { background:var(--dark); color:#fff; border-color:var(--dark); }
+  .fx-chart-meta { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .fx-current-rate { font-size:28px; font-weight:600; letter-spacing:-0.5px; color:var(--dark); }
+  .fx-rate-chg { font-size:13px; font-weight:600; }
+  #fxChart { height:280px; border-radius:12px; overflow:hidden; background:var(--warm); }
+  /* hide TradingView attribution */
+  #fxChart .tv-lightweight-charts a[href*="tradingview.com"] { display:none!important; }
+
+  /* ── Right column ── */
+  .fx-right { display:flex; flex-direction:column; gap:18px; }
+
+  /* ── Converter ── */
+  .fx-converter {
+    background:#fff; border:1.5px solid var(--border); border-radius:18px; padding:22px;
+  }
+  .fx-converter h3 { font-size:14px; font-weight:700; color:var(--dark); margin:0 0 16px; letter-spacing:-0.2px; }
+  .fx-conv-row { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .fx-conv-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; }
+  .fx-conv-input-wrap { display:flex; gap:8px; }
+  .fx-conv-amount {
+    flex:1; padding:10px 13px; border:1.5px solid rgba(45,31,26,0.15); border-radius:10px;
+    font-size:16px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--dark);
+    background:#fff; outline:none; min-width:0;
+    transition:border-color 0.15s;
+  }
+  .fx-conv-amount:focus { border-color:var(--rose); }
+  .fx-conv-select {
+    padding:10px 12px; border:1.5px solid rgba(45,31,26,0.15); border-radius:10px;
+    font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--dark);
+    background:#fff; cursor:pointer; outline:none; transition:border-color 0.15s;
+  }
+  .fx-conv-select:focus { border-color:var(--rose); }
+  .fx-swap-btn {
+    width:100%; margin:4px 0 12px; padding:8px; background:var(--warm);
+    border:1.5px solid rgba(45,31,26,0.12); border-radius:10px; cursor:pointer;
+    font-size:16px; transition:all 0.15s;
+  }
+  .fx-swap-btn:hover { background:var(--blush); border-color:var(--rose); }
+  .fx-conv-result {
+    background:var(--warm); border-radius:12px; padding:16px; text-align:center;
+  }
+  .fx-conv-result-amount { font-size:26px; font-weight:700; color:var(--dark); letter-spacing:-0.5px; }
+  .fx-conv-result-rate   { font-size:12px; color:var(--muted); margin-top:4px; }
+
+  /* ── Rates table ── */
+  .fx-rates-card {
+    background:#fff; border:1.5px solid var(--border); border-radius:18px;
+    padding:20px 0 8px;
+  }
+  .fx-rates-title {
+    font-size:13px; font-weight:700; color:var(--dark); padding:0 20px 12px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .fx-base-sel {
+    font-size:12px; font-weight:600; padding:4px 10px;
+    border:1.5px solid rgba(45,31,26,0.12); border-radius:20px;
+    background:#fff; color:var(--dark); cursor:pointer; outline:none;
+  }
+  .fx-rate-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 20px; transition:background 0.12s; cursor:pointer;
+  }
+  .fx-rate-row:hover { background:var(--warm); }
+  .fx-rate-flag  { font-size:18px; margin-right:10px; }
+  .fx-rate-cur   { font-size:13px; font-weight:700; color:var(--dark); }
+  .fx-rate-name  { font-size:11px; color:var(--muted); }
+  .fx-rate-val   { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--dark); }
+
+  /* ── Skeleton ── */
+  .skel { background:linear-gradient(90deg,#f5efe6 25%,#faf7f2 50%,#f5efe6 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:6px; }
+  @keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
+</style>
+
+<!-- Header -->
+<div class="fx-header">
+  <div>
+    <h1>FX Exchange</h1>
+    <p>Live currency rates &amp; historical charts</p>
+  </div>
+  <span class="fx-live-badge"><span class="live-dot"></span>Live</span>
+</div>
+
+<!-- Ticker strip -->
+<div class="fx-ticker-wrap">
+  <div class="fx-ticker" id="fxTicker">
+    <span style="font-size:12px;color:var(--muted);">Loading rates…</span>
+  </div>
+</div>
+
+<!-- Main 2-column layout -->
+<div class="fx-main">
+
+  <!-- Left: Chart -->
+  <div class="fx-chart-card">
+
+    <!-- Custom pair search -->
+    <div class="fx-pair-search">
+      <label>Chart any pair</label>
+      <select id="searchFrom" onchange="onSearchChange()"></select>
+      <span class="fx-pair-sep">/</span>
+      <select id="searchTo"   onchange="onSearchChange()"></select>
+      <button class="fx-pair-go" onclick="loadSearchPair()">Chart →</button>
+    </div>
+
+    <div class="fx-chart-top">
+      <div class="fx-pair-tabs" id="fxPairTabs">
+        <!-- populated by JS -->
+      </div>
+      <div class="fx-range-tabs">
+        <button class="fx-range-btn" data-range="1W" onclick="setFxRange('1W')">1W</button>
+        <button class="fx-range-btn active" data-range="1M" onclick="setFxRange('1M')">1M</button>
+        <button class="fx-range-btn" data-range="3M" onclick="setFxRange('3M')">3M</button>
+        <button class="fx-range-btn" data-range="6M" onclick="setFxRange('6M')">6M</button>
+        <button class="fx-range-btn" data-range="1Y" onclick="setFxRange('1Y')">1Y</button>
+      </div>
+    </div>
+    <div class="fx-chart-meta">
+      <div class="fx-current-rate" id="fxCurrentRate">—</div>
+      <div class="fx-rate-chg" id="fxRateChg"></div>
+    </div>
+    <div id="fxChart"></div>
+  </div>
+
+  <!-- Right column -->
+  <div class="fx-right">
+
+    <!-- Converter -->
+    <div class="fx-converter">
+      <h3>Currency Converter</h3>
+      <div class="fx-conv-row">
+        <div class="fx-conv-label">Amount</div>
+        <div class="fx-conv-input-wrap">
+          <input class="fx-conv-amount" id="convAmount" type="number" value="100" min="0" step="any" oninput="runConvert()">
+          <select class="fx-conv-select" id="convFrom" onchange="runConvert()">
+            <option>USD</option><option>EUR</option><option>GBP</option>
+            <option>JPY</option><option>CHF</option><option>AUD</option>
+            <option>CAD</option><option>NZD</option><option>CNY</option>
+            <option>HKD</option><option>SGD</option>
+          </select>
+        </div>
+      </div>
+      <button class="fx-swap-btn" onclick="swapCurrencies()" title="Swap currencies">⇅</button>
+      <div class="fx-conv-row">
+        <div class="fx-conv-label">Convert to</div>
+        <div class="fx-conv-input-wrap">
+          <select class="fx-conv-select" id="convTo" onchange="runConvert()" style="flex:1">
+            <option>EUR</option><option>USD</option><option>GBP</option>
+            <option>JPY</option><option>CHF</option><option>AUD</option>
+            <option>CAD</option><option>NZD</option><option>CNY</option>
+            <option>HKD</option><option>SGD</option>
+          </select>
+        </div>
+      </div>
+      <div class="fx-conv-result" id="convResult">
+        <div class="fx-conv-result-amount" id="convResultAmt">—</div>
+        <div class="fx-conv-result-rate"   id="convResultRate">Enter an amount above</div>
+      </div>
+    </div>
+
+    <!-- Rates table -->
+    <div class="fx-rates-card">
+      <div class="fx-rates-title">
+        <span>Rates vs</span>
+        <select class="fx-base-sel" id="fxBaseSelect" onchange="loadRates()">
+          <option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="GBP">GBP</option><option value="JPY">JPY</option>
+          <option value="CHF">CHF</option><option value="AUD">AUD</option>
+        </select>
+      </div>
+      <div id="fxRatesBody">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+  // ── Constants ────────────────────────────────────────────────────────────────
+  const PAIRS = ['EURUSD','GBPUSD','USDJPY','USDCHF','AUDUSD','USDCAD','EURGBP','GBPJPY'];
+  const PAIR_LABELS = {
+    EURUSD:'EUR/USD', GBPUSD:'GBP/USD', USDJPY:'USD/JPY',
+    USDCHF:'USD/CHF', AUDUSD:'AUD/USD', USDCAD:'USD/CAD',
+    EURGBP:'EUR/GBP', GBPJPY:'GBP/JPY',
+  };
+  const FLAGS = {
+    USD:'🇺🇸',EUR:'🇪🇺',GBP:'🇬🇧',JPY:'🇯🇵',CHF:'🇨🇭',
+    AUD:'🇦🇺',CAD:'🇨🇦',NZD:'🇳🇿',CNY:'🇨🇳',HKD:'🇭🇰',SGD:'🇸🇬',
+    NOK:'🇳🇴',SEK:'🇸🇪',
+  };
+  const CUR_NAMES = {
+    USD:'US Dollar',EUR:'Euro',GBP:'British Pound',JPY:'Japanese Yen',
+    CHF:'Swiss Franc',AUD:'Australian Dollar',CAD:'Canadian Dollar',
+    NZD:'New Zealand Dollar',CNY:'Chinese Yuan',HKD:'Hong Kong Dollar',
+    SGD:'Singapore Dollar',NOK:'Norwegian Krone',SEK:'Swedish Krona',
+  };
+
+  let currentPair  = 'EURUSD';
+  let currentRange = '1M';
+  let tvChart = null, tvSeries = null;
+
+  // ── Pair tabs ────────────────────────────────────────────────────────────────
+  function buildPairTabs() {
+    document.getElementById('fxPairTabs').innerHTML = PAIRS.map(p =>
+      `<button class="fx-pair-btn${p === currentPair ? ' active' : ''}" onclick="setPair('${p}')">${PAIR_LABELS[p]}</button>`
+    ).join('');
+  }
+
+  function setPair(pair) {
+    currentPair = pair;
+    document.querySelectorAll('.fx-pair-btn').forEach(b =>
+      b.classList.toggle('active', b.textContent === PAIR_LABELS[pair]));
+    loadChart();
+  }
+
+  function setFxRange(range) {
+    currentRange = range;
+    document.querySelectorAll('.fx-range-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.range === range));
+    loadChart();
+  }
+
+  // ── TradingView chart ────────────────────────────────────────────────────────
+  function destroyChart() {
+    if (tvChart) { tvChart.remove(); tvChart = null; tvSeries = null; }
+  }
+
+  function renderFxChart(t, c) {
+    const container = document.getElementById('fxChart');
+    const first = c[0], last = c[c.length - 1];
+    const isUp  = last >= first;
+    const UP = '#4a9470', DN = '#c9837a';
+
+    destroyChart();
+
+    tvChart = LightweightCharts.createChart(container, {
+      width:  container.clientWidth,
+      height: 280,
+      layout: {
+        background: { type:'solid', color:'transparent' },
+        textColor: '#a08c82',
+        fontFamily: "'DM Sans',system-ui,sans-serif",
+      },
+      grid: {
+        vertLines: { visible:false },
+        horzLines: { color:'rgba(45,31,26,0.06)' },
+      },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: {
+        borderVisible: false,
+        scaleMargins: { top:0.08, bottom:0.08 },
+      },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: currentRange === '1W',
+        secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+    });
+
+    tvSeries = tvChart.addAreaSeries({
+      lineColor:   isUp ? UP : DN,
+      topColor:    isUp ? 'rgba(74,148,112,0.15)' : 'rgba(201,131,122,0.15)',
+      bottomColor: 'rgba(0,0,0,0)',
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+
+    tvSeries.setData(t.map((ts, i) => ({ time: ts, value: c[i] })));
+    tvChart.timeScale().fitContent();
+
+    // Rate display
+    const chg    = last - first;
+    const chgPct = ((chg / first) * 100).toFixed(3);
+    const dp     = last < 10 ? 5 : 4;
+    document.getElementById('fxCurrentRate').textContent = last.toFixed(dp);
+    const chgEl = document.getElementById('fxRateChg');
+    chgEl.textContent  = `${isUp ? '▲' : '▼'} ${Math.abs(chg).toFixed(dp)} (${Math.abs(chgPct)}%)`;
+    chgEl.style.color  = isUp ? UP : DN;
+
+    new ResizeObserver(() => {
+      if (tvChart) tvChart.applyOptions({ width: container.clientWidth });
+    }).observe(container);
+  }
+
+  async function loadChart() {
+    const container = document.getElementById('fxChart');
+    container.innerHTML = '<div style="height:280px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;">Loading chart…</div>';
+    document.getElementById('fxCurrentRate').textContent = '—';
+    document.getElementById('fxRateChg').textContent     = '';
+
+    try {
+      const res = await fetch(`/api/fx/history?pair=${currentPair}&range=${currentRange}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      container.innerHTML = '';
+      renderFxChart(data.t, data.c);
+    } catch(e) {
+      container.innerHTML = `<div style="height:280px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;">Could not load chart for ${PAIR_LABELS[currentPair] || currentPair}</div>`;
+    }
+  }
+
+  // ── Ticker strip ─────────────────────────────────────────────────────────────
+  async function loadTicker() {
+    try {
+      const res  = await fetch('/api/fx/rates?base=USD');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      const tickerPairs = [
+        {pair:'EUR/USD', from:'USD', to:'EUR'},
+        {pair:'GBP/USD', from:'USD', to:'GBP'},
+        {pair:'USD/JPY', from:'JPY', to:'USD'},
+        {pair:'USD/CHF', from:'CHF', to:'USD'},
+        {pair:'AUD/USD', from:'USD', to:'AUD'},
+        {pair:'USD/CAD', from:'CAD', to:'USD'},
+        {pair:'NZD/USD', from:'USD', to:'NZD'},
+      ];
+
+      const rates = data.all_rates || {};
+      document.getElementById('fxTicker').innerHTML = tickerPairs.map(({pair, from, to}) => {
+        const r = rates[to] || rates[from];
+        if (!r) return '';
+        const displayRate = from === 'USD' ? (1/rates[to]).toFixed(4) : rates[from].toFixed(4);
+        return `<div class="fx-tick-item">
+          <div class="fx-tick-pair">${pair}</div>
+          <div class="fx-tick-rate">${displayRate}</div>
+        </div>`;
+      }).join('');
+    } catch(e) {}
+  }
+
+  // ── Rates table ──────────────────────────────────────────────────────────────
+  async function loadRates() {
+    const base = document.getElementById('fxBaseSelect').value;
+    const body = document.getElementById('fxRatesBody');
+    body.innerHTML = '<div style="padding:12px 20px;font-size:12px;color:var(--muted);">Loading…</div>';
+
+    try {
+      const res  = await fetch(`/api/fx/rates?base=${base}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      body.innerHTML = data.rates.map(r => `
+        <div class="fx-rate-row" onclick="setPair('${base}${r.currency}')">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="fx-rate-flag">${FLAGS[r.currency] || '🏳️'}</span>
+            <div>
+              <div class="fx-rate-cur">${r.currency}</div>
+              <div class="fx-rate-name">${CUR_NAMES[r.currency] || ''}</div>
+            </div>
+          </div>
+          <div class="fx-rate-val">${r.rate.toFixed(4)}</div>
+        </div>`).join('');
+    } catch(e) {
+      body.innerHTML = '<div style="padding:12px 20px;font-size:12px;color:var(--muted);">Could not load rates.</div>';
+    }
+  }
+
+  // ── Converter ────────────────────────────────────────────────────────────────
+  let convTimer = null;
+  function runConvert() {
+    clearTimeout(convTimer);
+    convTimer = setTimeout(doConvert, 300);
+  }
+
+  async function doConvert() {
+    const amount = parseFloat(document.getElementById('convAmount').value);
+    const from   = document.getElementById('convFrom').value;
+    const to     = document.getElementById('convTo').value;
+    if (!amount || isNaN(amount)) return;
+
+    try {
+      const res  = await fetch(`/api/fx/convert?amount=${amount}&from=${from}&to=${to}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const dp   = data.result > 100 ? 2 : data.result > 1 ? 4 : 6;
+      document.getElementById('convResultAmt').textContent  = `${data.result.toFixed(dp)} ${to}`;
+      document.getElementById('convResultRate').textContent = `1 ${from} = ${data.rate.toFixed(6)} ${to}  ·  ${data.date}`;
+    } catch(e) {
+      document.getElementById('convResultAmt').textContent  = '—';
+      document.getElementById('convResultRate').textContent = 'Could not fetch rate';
+    }
+  }
+
+  function swapCurrencies() {
+    const fromSel = document.getElementById('convFrom');
+    const toSel   = document.getElementById('convTo');
+    const tmp     = fromSel.value;
+    fromSel.value = toSel.value;
+    toSel.value   = tmp;
+    runConvert();
+  }
+
+  // ── Currency list — populates all dropdowns ───────────────────────────────
+  async function loadCurrencies() {
+    try {
+      const res  = await fetch('/api/fx/currencies');
+      if (!res.ok) return;
+      const list = await res.json(); // [{code, name}, ...]
+
+      const makeOptions = (selected1, selected2 = null) =>
+        list.map(c =>
+          `<option value="${c.code}"${c.code === selected1 || c.code === selected2 ? ' selected' : ''}>${c.code} — ${c.name}</option>`
+        ).join('');
+
+      // Pair search dropdowns
+      document.getElementById('searchFrom').innerHTML = makeOptions('EUR');
+      document.getElementById('searchTo').innerHTML   = makeOptions('USD');
+
+      // Converter dropdowns
+      document.getElementById('convFrom').innerHTML = makeOptions('USD');
+      document.getElementById('convTo').innerHTML   = makeOptions('EUR');
+
+      // Rates table base selector
+      document.getElementById('fxBaseSelect').innerHTML =
+        list.map(c => `<option value="${c.code}"${c.code === 'USD' ? ' selected' : ''}>${c.code}</option>`).join('');
+
+      doConvert();
+    } catch(e) {}
+  }
+
+  // ── Custom pair search ─────────────────────────────────────────────────────
+  function onSearchChange() {
+    const from = document.getElementById('searchFrom').value;
+    const to   = document.getElementById('searchTo').value;
+    if (from && to && from !== to) {
+      document.querySelector('.fx-pair-go').textContent = `Chart ${from}/${to} →`;
+    }
+  }
+
+  function loadSearchPair() {
+    const from = document.getElementById('searchFrom').value;
+    const to   = document.getElementById('searchTo').value;
+    if (!from || !to || from === to) return;
+
+    const pair  = from + to;
+    const label = `${from}/${to}`;
+
+    // Add as a tab if not already there (or update currentPair)
+    currentPair = pair;
+
+    // Deactivate all preset tabs, highlight none (custom pair)
+    document.querySelectorAll('.fx-pair-btn').forEach(b => b.classList.remove('active'));
+
+    // Update chart meta label
+    document.getElementById('fxCurrentRate').textContent = '—';
+    document.getElementById('fxRateChg').textContent     = '';
+
+    loadChart();
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  buildPairTabs();
+  loadCurrencies();   // populates all dropdowns, then calls doConvert
+  loadChart();
+  loadTicker();
+  loadRates();
+
+  // Refresh ticker every 5 minutes
+  setInterval(loadTicker, 5 * 60 * 1000);
+</script>
+{% endblock %}

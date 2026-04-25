@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+{% block title %}Portfolios | FlyingFunds{% endblock %}
+
+{% block content %}
+<style>
+  /* ── FlyingFunds warm palette ── */
+  :root {
+    --cream:   #faf7f2;
+    --warm:    #f5efe6;
+    --blush:   #f2e4d8;
+    --pink:    #e8c4b4;
+    --rose:    #c9837a;
+    --brown:   #8b5e52;
+    --dark:    #2d1f1a;
+    --sage:    #7a9e8e;
+    --sage-lt: #d4e6de;
+    --sky:     #7bafc4;
+    --sky-lt:  #d6eaf4;
+    --muted:   #a08c82;
+    --accent:  #c9837a;
+    --danger:  #b85050;
+    --success: #4a9470;
+    --bg:      #faf7f2;
+    --surface: #ffffff;
+    --border:  rgba(45,31,26,0.1);
+    --text:    #2d1f1a;
+  }
+  body { background: var(--cream) !important; color: var(--dark) !important; }
+  .card {
+    background: #fff !important;
+    border-color: rgba(45,31,26,0.1) !important;
+    box-shadow: 0 2px 12px rgba(45,31,26,0.06);
+  }
+  h1,h2,h3,h4 { color: var(--dark); font-family: 'DM Sans', sans-serif; }
+  .muted { color: var(--muted) !important; }
+  a:not([class]) { color: var(--brown); }
+  a:not([class]):hover { color: var(--dark); }
+  th { color: var(--muted) !important; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+  td { border-color: rgba(45,31,26,0.06) !important; }
+  tr:hover td { background: var(--warm) !important; }
+  .positive, .chg-pos { color: #4a9470 !important; }
+  .negative, .chg-neg { color: #b85050 !important; }
+</style>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: #2d1f1a;
+    letter-spacing: -0.5px;
+    margin: 0;
+  }
+  .page-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin: 4px 0 0;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .btn-create {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    background: #2d1f1a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-create:hover { opacity: 0.85; }
+
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .filter-tab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 20px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-tab.active, .filter-tab:hover {
+    background: #2d1f1a;
+    color: #fff;
+    border-color: #2d1f1a;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 18px; font-weight: 600; color: #2d1f1a; margin-bottom: 8px; }
+  .empty-sub   { font-size: 14px; color: #888; margin-bottom: 24px; }
+
+  /* Category group */
+  .category-group { margin-bottom: 32px; }
+  .category-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    padding-left: 4px;
+  }
+
+  /* Portfolio card */
+  .p-card {
+    background: #fff;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    cursor: default;
+  }
+  .p-card:hover { border-color: #d0d0d0; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .p-card.dragging { opacity: 0.4; }
+  .p-card.drag-over { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(201,131,122,0.15); }
+
+  .drag-handle {
+    color: #ccc;
+    cursor: grab;
+    font-size: 18px;
+    padding: 2px 4px;
+    line-height: 1;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .drag-handle:hover { color: #999; }
+  .drag-handle:active { cursor: grabbing; }
+
+  .p-card-body { flex: 1; min-width: 0; }
+  .p-card-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2d1f1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .p-card-meta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 3px;
+  }
+
+  .cat-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #f3f4f6;
+    color: #555;
+    flex-shrink: 0;
+  }
+
+  .p-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .action-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #e5e5e5;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .action-btn:hover { border-color: #aaa; color: #2d1f1a; }
+  .action-btn.open {
+    background: #2d1f1a;
+    color: #fff;
+    border-color: #2d1f1a;
+  }
+  .action-btn.open:hover { opacity: 0.85; }
+  .action-btn.danger:hover { border-color: #dc2626; color: #dc2626; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 18px;
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: #2d1f1a;
+    margin: 0 0 6px;
+  }
+  .modal-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    margin: 0 0 20px;
+  }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    background: #fff;
+    color: #2d1f1a;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--rose); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .btn-cancel {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 18px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+  }
+  .btn-confirm {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 20px;
+    background: #2d1f1a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-confirm:hover { opacity: 0.85; }
+  .btn-confirm.danger { background: #dc2626; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #2d1f1a; color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok  { background: #16a34a; }
+  .toast.err { background: #dc2626; }
+</style>
+
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Portfolios</h1>
+    <p class="page-sub">Manage, organise, and track all your portfolios.</p>
+  </div>
+  <button class="btn-create" onclick="openCreate()">+ New portfolio</button>
+</div>
+
+<!-- Category filter tabs -->
+<div class="toolbar">
+  <div class="filter-tabs" id="filterTabs">
+    <button class="filter-tab active" data-cat="all" onclick="setFilter('all')">All</button>
+  </div>
+</div>
+
+<!-- Portfolio list -->
+<div id="portfolioList"></div>
+
+<!-- ── Create modal ── -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal-box">
+    <h3 class="modal-title">New portfolio</h3>
+    <p class="modal-desc">Give it a name and optionally assign a category.</p>
+    <div class="field">
+      <label>Name</label>
+      <input id="createName" placeholder="e.g. Growth Stocks, ISA, Tech Plays"
+             onkeydown="if(event.key==='Enter') confirmCreate()" />
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="createCategory">
+        <option value="General">General</option>
+        <option value="Growth">Growth</option>
+        <option value="Income">Income</option>
+        <option value="Speculative">Speculative</option>
+        <option value="Retirement">Retirement</option>
+        <option value="ISA">ISA</option>
+        <option value="Crypto">Crypto</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreate()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmCreate()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Rename modal ── -->
+<div class="modal-overlay" id="renameModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Edit portfolio</h3>
+    <p class="modal-desc">Update the name or category.</p>
+    <div class="field">
+      <label>Name</label>
+      <input id="renameName" onkeydown="if(event.key==='Enter') confirmRename()" />
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="renameCategory">
+        <option value="General">General</option>
+        <option value="Growth">Growth</option>
+        <option value="Income">Income</option>
+        <option value="Speculative">Speculative</option>
+        <option value="Retirement">Retirement</option>
+        <option value="ISA">ISA</option>
+        <option value="Crypto">Crypto</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeRename()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete confirm modal ── -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Delete portfolio?</h3>
+    <p class="modal-desc" id="deleteDesc">This will permanently delete the portfolio and all its holdings and trades. This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDelete()">Cancel</button>
+      <button class="btn-confirm danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  let allPortfolios = [];
+  let activeFilter  = 'all';
+  let editingId     = null;
+  let deletingId    = null;
+  let dragSrcId     = null;
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // ── Load ──────────────────────────────────────────────────────────────────
+  async function loadPortfolios() {
+    const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+    if (!res.ok) { toast('Could not load portfolios', 'err'); return; }
+    allPortfolios = await res.json();
+    buildFilterTabs();
+    renderList();
+  }
+
+  function buildFilterTabs() {
+    const cats = ['all', ...new Set(allPortfolios.map(p => p.category || 'General'))];
+    const tabs = document.getElementById('filterTabs');
+    tabs.innerHTML = cats.map(c => `
+      <button class="filter-tab ${c === activeFilter ? 'active' : ''}"
+              data-cat="${c}" onclick="setFilter('${c}')">
+        ${c === 'all' ? 'All' : c}
+        ${c !== 'all' ? `<span style="color:#aaa;margin-left:4px;">${allPortfolios.filter(p => (p.category||'General') === c).length}</span>` : ''}
+      </button>
+    `).join('');
+  }
+
+  function setFilter(cat) {
+    activeFilter = cat;
+    document.querySelectorAll('.filter-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === cat);
+    });
+    renderList();
+  }
+
+  function renderList() {
+    const list = document.getElementById('portfolioList');
+    const filtered = activeFilter === 'all'
+      ? allPortfolios
+      : allPortfolios.filter(p => (p.category || 'General') === activeFilter);
+
+    if (!filtered.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📂</div>
+          <div class="empty-title">${activeFilter === 'all' ? 'No portfolios yet' : `No ${activeFilter} portfolios`}</div>
+          <div class="empty-sub">${activeFilter === 'all' ? 'Create your first portfolio to start tracking investments.' : 'Try a different category or create a new portfolio.'}</div>
+          ${activeFilter === 'all' ? '<button class="btn-create" onclick="openCreate()">+ New portfolio</button>' : ''}
+        </div>`;
+      return;
+    }
+
+    // Group by category if showing all
+    if (activeFilter === 'all') {
+      const groups = {};
+      filtered.forEach(p => {
+        const cat = p.category || 'General';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(p);
+      });
+
+      list.innerHTML = Object.entries(groups).map(([cat, ps]) => `
+        <div class="category-group">
+          <div class="category-label">${cat}</div>
+          <div class="p-list" data-cat="${cat}">
+            ${ps.map(p => portfolioCard(p)).join('')}
+          </div>
+        </div>
+      `).join('');
+    } else {
+      list.innerHTML = `<div class="p-list" data-cat="${activeFilter}">${filtered.map(p => portfolioCard(p)).join('')}</div>`;
+    }
+
+    attachDragListeners();
+  }
+
+  function portfolioCard(p) {
+    return `
+      <div class="p-card" id="card-${p.id}" draggable="true"
+           data-id="${p.id}"
+           ondragstart="onDragStart(event,${p.id})"
+           ondragover="onDragOver(event)"
+           ondragenter="onDragEnter(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event,${p.id})"
+           ondragend="onDragEnd(event)">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="p-card-body">
+          <div class="p-card-name">${p.name}</div>
+          <div class="p-card-meta">${p.holding_count} holding${p.holding_count !== 1 ? 's' : ''} · #${p.id}</div>
+        </div>
+        <span class="cat-pill">${p.category || 'General'}</span>
+        <div class="p-card-actions">
+          <button class="action-btn open" onclick="window.location.href='/dashboard/${p.id}'">Open</button>
+          <button class="action-btn" onclick="openRename(${p.id})">Edit</button>
+          <button class="action-btn danger" onclick="openDelete(${p.id}, '${p.name.replace(/'/g, "\\'")}')">Delete</button>
+        </div>
+      </div>`;
+  }
+
+  // ── Drag & drop reorder ───────────────────────────────────────────────────
+  function attachDragListeners() {} // event attrs handle it inline
+
+  function onDragStart(e, id) {
+    dragSrcId = id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => document.getElementById(`card-${id}`)?.classList.add('dragging'), 0);
+  }
+
+  function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  function onDragEnter(e) {
+    e.currentTarget.classList.add('drag-over');
+  }
+
+  function onDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function onDragEnd(e) {
+    document.querySelectorAll('.p-card').forEach(c => {
+      c.classList.remove('dragging', 'drag-over');
+    });
+  }
+
+  function onDrop(e, targetId) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    if (dragSrcId === targetId) return;
+
+    // Reorder allPortfolios array
+    const srcIdx = allPortfolios.findIndex(p => p.id === dragSrcId);
+    const tgtIdx = allPortfolios.findIndex(p => p.id === targetId);
+    if (srcIdx === -1 || tgtIdx === -1) return;
+
+    const [moved] = allPortfolios.splice(srcIdx, 1);
+    allPortfolios.splice(tgtIdx, 0, moved);
+
+    renderList();
+    saveOrder();
+  }
+
+  async function saveOrder() {
+    const ids = allPortfolios.map(p => p.id);
+    await fetch('/portfolios/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ ordered_ids: ids }),
+    });
+  }
+
+  // ── Create ────────────────────────────────────────────────────────────────
+  function openCreate() {
+    document.getElementById('createName').value = '';
+    document.getElementById('createCategory').value = 'General';
+    document.getElementById('createModal').classList.add('open');
+    setTimeout(() => document.getElementById('createName').focus(), 100);
+  }
+  function closeCreate() { document.getElementById('createModal').classList.remove('open'); }
+
+  async function confirmCreate() {
+    const name = document.getElementById('createName').value.trim();
+    const category = document.getElementById('createCategory').value;
+    if (!name) return toast('Enter a portfolio name', 'err');
+
+    const res = await fetch('/portfolios/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ name, category }),
+    });
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Failed to create', 'err');
+
+    closeCreate();
+    toast(`"${data.name}" created`, 'ok');
+    await loadPortfolios();
+  }
+
+  // ── Rename / Edit ─────────────────────────────────────────────────────────
+  function openRename(id) {
+    editingId = id;
+    const p = allPortfolios.find(p => p.id === id);
+    document.getElementById('renameName').value = p.name;
+    document.getElementById('renameCategory').value = p.category || 'General';
+    document.getElementById('renameModal').classList.add('open');
+    setTimeout(() => document.getElementById('renameName').focus(), 100);
+  }
+  function closeRename() { document.getElementById('renameModal').classList.remove('open'); editingId = null; }
+
+  async function confirmRename() {
+    const name     = document.getElementById('renameName').value.trim();
+    const category = document.getElementById('renameCategory').value;
+    if (!name) return toast('Name cannot be empty', 'err');
+
+    const res = await fetch(`/portfolios/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ name, category }),
+    });
+    if (!res.ok) return toast('Failed to update', 'err');
+
+    closeRename();
+    toast('Portfolio updated', 'ok');
+    await loadPortfolios();
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  function openDelete(id, name) {
+    deletingId = id;
+    document.getElementById('deleteDesc').textContent =
+      `This will permanently delete "${name}" and all its holdings and trades. This cannot be undone.`;
+    document.getElementById('deleteModal').classList.add('open');
+  }
+  function closeDelete() { document.getElementById('deleteModal').classList.remove('open'); deletingId = null; }
+
+  async function confirmDelete() {
+    const res = await fetch(`/portfolios/${deletingId}`, {
+      method: 'DELETE',
+      headers: { Authorization: tok() },
+    });
+    if (!res.ok && res.status !== 204) return toast('Failed to delete', 'err');
+
+    closeDelete();
+    toast('Portfolio deleted', 'ok');
+    await loadPortfolios();
+  }
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
+
+  window.addEventListener('load', loadPortfolios);
+</script>
+{% endblock %}

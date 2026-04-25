@@ -1,0 +1,721 @@
+{% extends "base.html" %}
+{% block title %}Market | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  /* ── Palette ── */
+  :root {
+    --cream:#faf7f2; --warm:#f5efe6; --blush:#f2e4d8;
+    --rose:#c9837a;  --brown:#8b5e52; --dark:#2d1f1a;
+    --sage:#7a9e8e;  --sky:#7bafc4;   --muted:#a08c82;
+    --up:#4a9470;    --dn:#b85050;
+  }
+  .container { max-width: none !important; padding: 0 !important; }
+
+  /* ── Layout ── */
+  .mkt-wrap {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: calc(100vh - 72px);
+    overflow: hidden;
+    margin-left: 76px; /* clear icon sidebar */
+  }
+
+  /* ── LEFT PANEL: search + watchlist ── */
+  .mkt-left {
+    border-right: 1px solid rgba(45,31,26,0.1);
+    background: #fff;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .mkt-search-wrap {
+    padding: 16px 14px 12px;
+    border-bottom: 1px solid rgba(45,31,26,0.08);
+    flex-shrink: 0;
+  }
+
+  .mkt-search {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--warm); border-radius: 12px; padding: 0 14px;
+    border: 1.5px solid transparent; transition: border-color 0.15s;
+  }
+  .mkt-search:focus-within { border-color: var(--rose); background: #fff; }
+  .mkt-search-icon { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+  .mkt-search input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    padding: 11px 0; width: 100%;
+  }
+  .mkt-search input::placeholder { color: var(--muted); }
+  #searchStatus { font-size: 11px; color: var(--muted); margin-top: 6px; padding: 0 2px; min-height: 16px; }
+
+  /* Popular chips */
+  .popular-chips {
+    display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 14px 4px;
+    flex-shrink: 0;
+  }
+  .pop-chip {
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    background: var(--warm); border: 1px solid rgba(45,31,26,0.1);
+    border-radius: 20px; cursor: pointer; color: var(--dark);
+    transition: all 0.15s;
+  }
+  .pop-chip:hover { background: var(--blush); border-color: var(--rose); color: var(--rose); }
+
+  /* Results / watchlist list */
+  .mkt-list {
+    flex: 1; overflow-y: auto;
+    padding: 4px 0;
+  }
+  .mkt-list::-webkit-scrollbar { width: 4px; }
+  .mkt-list::-webkit-scrollbar-thumb { background: rgba(45,31,26,0.12); border-radius: 2px; }
+
+  .mkt-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; cursor: pointer;
+    transition: background 0.12s; border-radius: 0;
+    position: relative;
+  }
+  .mkt-item:hover { background: var(--warm); }
+  .mkt-item.active { background: var(--blush); }
+  .mkt-item.active::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--rose); border-radius: 0 2px 2px 0;
+  }
+
+  .mkt-item-logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--warm); border: 1px solid rgba(45,31,26,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: var(--brown);
+    flex-shrink: 0; letter-spacing: -0.5px;
+  }
+  .mkt-item-body { flex: 1; min-width: 0; }
+  .mkt-item-sym { font-size: 13px; font-weight: 700; color: var(--dark); }
+  .mkt-item-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mkt-item-right { text-align: right; flex-shrink: 0; }
+  .mkt-item-price { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .mkt-item-chg { font-size: 11px; font-weight: 600; }
+  .up { color: var(--up); }
+  .dn { color: var(--dn); }
+
+  .list-section-label {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 10px 14px 4px; 
+  }
+
+  /* ── RIGHT PANEL: chart ── */
+  .mkt-right {
+    display: flex; flex-direction: column;
+    background: var(--cream); overflow: hidden;
+  }
+
+  /* Top bar */
+  .mkt-topbar {
+    padding: 16px 24px 14px;
+    border-bottom: 1px solid rgba(45,31,26,0.08);
+    background: #fff; flex-shrink: 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+
+  .mkt-sym-main {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px; font-weight: 400; color: var(--dark);
+    letter-spacing: -0.5px; line-height: 1;
+  }
+  .mkt-sym-name { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .mkt-price-block { text-align: right; }
+  .mkt-price-big {
+    font-family: 'Instrument Serif', serif;
+    font-size: 32px; font-weight: 400; color: var(--dark);
+    letter-spacing: -1px; line-height: 1;
+  }
+  .mkt-price-chg { font-size: 14px; font-weight: 600; margin-top: 3px; }
+
+  /* Stats strip */
+  .mkt-stats-strip {
+    display: flex; gap: 0; border-bottom: 1px solid rgba(45,31,26,0.08);
+    background: #fff; flex-shrink: 0; overflow-x: auto;
+  }
+  .mkt-stat {
+    padding: 10px 20px; border-right: 1px solid rgba(45,31,26,0.07);
+    flex-shrink: 0;
+  }
+  .mkt-stat:last-child { border-right: none; }
+  .mkt-stat-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+  .mkt-stat-val   { font-size: 15px; font-weight: 600; color: var(--dark); }
+
+  /* Chart area */
+  .mkt-chart-area {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 16px 24px 12px; overflow: hidden;
+  }
+
+  /* Range + mode bar */
+  .chart-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; flex-wrap: wrap; gap: 8px; flex-shrink: 0;
+  }
+  .range-group, .mode-group { display: flex; gap: 4px; }
+
+  .range-btn, .mode-btn {
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    padding: 5px 12px; border-radius: 20px;
+    border: 1.5px solid rgba(45,31,26,0.12);
+    background: #fff; color: var(--muted); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .range-btn:hover, .mode-btn:hover { border-color: var(--rose); color: var(--dark); }
+  .range-btn.active, .mode-btn.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+
+  /* The chart itself */
+  #mktChart {
+    flex: 1; min-height: 280px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(45,31,26,0.08);
+  }
+  /* Hide TradingView attribution link (Apache 2.0 licence — UI credit not required) */
+  .tv-lightweight-charts a[href*="tradingview.com"] {
+    display: none !important;
+  }
+
+  /* Live pulse indicator */
+  .live-dot {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: var(--up);
+  }
+  .live-dot::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--up); animation: livePulse 2s infinite;
+  }
+  @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+  /* Crosshair tooltip */
+  #chartTooltip {
+    position: absolute; pointer-events: none;
+    background: var(--dark); color: #fff;
+    border-radius: 10px; padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    box-shadow: 0 4px 16px rgba(45,31,26,0.2);
+    z-index: 50; display: none; white-space: nowrap;
+    transform: translate(-50%, -110%);
+  }
+
+  /* Empty / loading states */
+  .mkt-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--muted); font-family: 'DM Sans', sans-serif;
+    gap: 10px; text-align: center; padding: 40px;
+  }
+  .mkt-empty-icon { font-size: 48px; }
+  .mkt-empty h3 { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--dark); font-weight: 400; margin: 0; }
+  .mkt-empty p  { font-size: 14px; margin: 0; line-height: 1.6; }
+
+  /* Skeleton loader */
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  .skeleton {
+    background: linear-gradient(90deg, #f0ece6 25%, #e8e2da 50%, #f0ece6 75%);
+    background-size: 800px 100%; animation: shimmer 1.6s infinite;
+    border-radius: 6px; display: inline-block;
+  }
+
+  /* Mobile */
+  @media (max-width: 900px) {
+    .mkt-wrap { grid-template-columns: 1fr; height: auto; }
+    .mkt-left { height: 280px; border-right: none; border-bottom: 1px solid rgba(45,31,26,0.1); }
+    .mkt-right { height: calc(100vh - 400px); min-height: 400px; }
+  }
+</style>
+
+<!-- Remove top container padding for this page -->
+<style>.container { padding-top: 0 !important; padding-bottom: 0 !important; padding-left: 0 !important; padding-right: 0 !important; max-width: none !important; }</style>
+
+<div class="mkt-wrap" style="margin-top: 72px; margin-left: 76px;">
+
+  <!-- ══════════════════ LEFT PANEL ══════════════════ -->
+  <div class="mkt-left">
+
+    <!-- Search -->
+    <div class="mkt-search-wrap">
+      <div class="mkt-search">
+        <span class="mkt-search-icon">⌕</span>
+        <input id="symInput" placeholder="Search symbol… e.g. AAPL"
+               oninput="onSearchInput(this.value)"
+               onkeydown="if(event.key==='Enter') loadSymbol(this.value.trim().toUpperCase())" />
+      </div>
+      <div id="searchStatus"></div>
+    </div>
+
+    <!-- Popular chips -->
+    <div class="popular-chips">
+      <span class="list-section-label" style="padding:0;width:100%;">Popular</span>
+      <div class="pop-chip" onclick="loadSymbol('AAPL')">AAPL</div>
+      <div class="pop-chip" onclick="loadSymbol('MSFT')">MSFT</div>
+      <div class="pop-chip" onclick="loadSymbol('TSLA')">TSLA</div>
+      <div class="pop-chip" onclick="loadSymbol('NVDA')">NVDA</div>
+      <div class="pop-chip" onclick="loadSymbol('AMZN')">AMZN</div>
+      <div class="pop-chip" onclick="loadSymbol('GOOGL')">GOOGL</div>
+      <div class="pop-chip" onclick="loadSymbol('META')">META</div>
+      <div class="pop-chip" onclick="loadSymbol('JPM')">JPM</div>
+    </div>
+
+    <!-- List -->
+    <div class="mkt-list" id="mktList">
+      <div class="list-section-label">Recent</div>
+      <div id="recentList"></div>
+      <div class="list-section-label" style="margin-top:8px;">Watchlist</div>
+      <div id="watchlistList">
+        <div style="padding:12px 14px;font-size:13px;color:var(--muted);">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════ RIGHT PANEL ══════════════════ -->
+  <div class="mkt-right" id="mktRight">
+
+    <!-- Empty state -->
+    <div class="mkt-empty" id="mktEmpty">
+      <div class="mkt-empty-icon">📈</div>
+      <h3>Select a stock to get started</h3>
+      <p>Search for a symbol or pick one from the popular list on the left.<br>Get live quotes, interactive charts, and key stats.</p>
+    </div>
+
+    <!-- Chart view (hidden until stock selected) -->
+    <div id="mktChartView" style="display:none; flex:1; display:none; flex-direction:column; overflow:hidden;">
+
+      <!-- Top bar -->
+      <div class="mkt-topbar">
+        <div>
+          <div class="mkt-sym-main" id="topSym">—</div>
+          <div class="mkt-sym-name" id="topName">—</div>
+        </div>
+        <div class="mkt-price-block">
+          <div class="mkt-price-big" id="topPrice">—</div>
+          <div class="mkt-price-chg" id="topChg">—</div>
+        </div>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="mkt-stats-strip" id="statsStrip">
+        <div class="mkt-stat"><div class="mkt-stat-label">Open</div><div class="mkt-stat-val" id="statOpen">—</div></div>
+        <div class="mkt-stat"><div class="mkt-stat-label">High</div><div class="mkt-stat-val" id="statHigh">—</div></div>
+        <div class="mkt-stat"><div class="mkt-stat-label">Low</div><div class="mkt-stat-val" id="statLow">—</div></div>
+        <div class="mkt-stat"><div class="mkt-stat-label">Prev Close</div><div class="mkt-stat-val" id="statPrev">—</div></div>
+        <div class="mkt-stat"><div class="mkt-stat-label">Day Change</div><div class="mkt-stat-val" id="statChange">—</div></div>
+        <div class="mkt-stat" style="margin-left:auto;">
+          <div class="mkt-stat-label">Status</div>
+          <div class="mkt-stat-val"><span class="live-dot">Live</span></div>
+        </div>
+      </div>
+
+      <!-- Chart controls + chart -->
+      <div class="mkt-chart-area">
+        <div class="chart-controls">
+          <div class="range-group">
+            <button class="range-btn" data-range="1D" onclick="setRange('1D')">1D</button>
+            <button class="range-btn" data-range="1W" onclick="setRange('1W')">1W</button>
+            <button class="range-btn active" data-range="1M" onclick="setRange('1M')">1M</button>
+            <button class="range-btn" data-range="3M" onclick="setRange('3M')">3M</button>
+            <button class="range-btn" data-range="6M" onclick="setRange('6M')">6M</button>
+            <button class="range-btn" data-range="1Y" onclick="setRange('1Y')">1Y</button>
+            <button class="range-btn" data-range="ALL" onclick="setRange('ALL')">ALL</button>
+          </div>
+          <div class="mode-group">
+            <button class="mode-btn active" data-mode="line" onclick="setMode('line')">Line</button>
+            <button class="mode-btn" data-mode="area" onclick="setMode('area')">Area</button>
+            <button class="mode-btn" data-mode="candle" onclick="setMode('candle')">Candle</button>
+          </div>
+        </div>
+        <div id="mktChart" style="position:relative;">
+          <div id="chartTooltip"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  const CHART_KEY   = 'ff_mkt_v4';
+  const CACHE_KEY   = 'ff_mkt_cache_v4';
+  let currentSymbol = '';
+  let currentRange  = '1M';
+  let currentMode   = 'line';
+  let pollTimer     = null;
+  let liveTicks     = [];   // [{time, value}] for 1D live polling
+  let recentSymbols = JSON.parse(localStorage.getItem('ff_recent_syms') || '[]');
+
+  // TradingView chart instance
+  let tvChart  = null;
+  let tvSeries = null;
+
+  // Persistent cache: { symbol: { range: { timestamps, closes, ohlcv, savedAt } } }
+  let chartCache = {};
+  try { chartCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch(e) { chartCache = {}; }
+
+  function saveChartCache(sym, range, timestamps, closes, ohlcv) {
+    if (!chartCache[sym]) chartCache[sym] = {};
+    chartCache[sym][range] = { timestamps, closes, ohlcv, savedAt: Date.now() };
+    const TTL = 24 * 60 * 60 * 1000;
+    Object.keys(chartCache).forEach(s => {
+      Object.keys(chartCache[s]).forEach(r => {
+        if (Date.now() - chartCache[s][r].savedAt > TTL) delete chartCache[s][r];
+      });
+      if (!Object.keys(chartCache[s]).length) delete chartCache[s];
+    });
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(chartCache)); } catch(e) {}
+  }
+
+  function getCachedChart(sym, range) {
+    const c = chartCache[sym]?.[range];
+    if (!c) return null;
+    const TTL = range === '1D' ? 15*60*1000 : 24*60*60*1000;
+    if (Date.now() - c.savedAt > TTL) return null;
+    return c;
+  }
+
+  const NAMES = {
+    AAPL:'Apple Inc.',MSFT:'Microsoft Corp.',TSLA:'Tesla Inc.',NVDA:'NVIDIA Corp.',
+    AMZN:'Amazon.com Inc.',GOOGL:'Alphabet Inc.',META:'Meta Platforms',JPM:'JPMorgan Chase',
+    V:'Visa Inc.',BRK:'Berkshire Hathaway',WMT:'Walmart Inc.',JNJ:'Johnson & Johnson',
+    NFLX:'Netflix Inc.',AMD:'Advanced Micro Devices',INTC:'Intel Corp.',
+    BAC:'Bank of America',GS:'Goldman Sachs',DIS:'Walt Disney Co.',
+    UBER:'Uber Technologies',PYPL:'PayPal Holdings',
+  };
+
+
+
+  // ── Load a symbol ──────────────────────────────────────────────────────────
+  async function loadSymbol(sym) {
+    if (!sym) return;
+    sym = sym.toUpperCase().trim();
+    currentSymbol = sym;
+
+    // Show chart view
+    document.getElementById('mktEmpty').style.display = 'none';
+    const cv = document.getElementById('mktChartView');
+    cv.style.display = 'flex';
+
+    // Mark active in list
+    document.querySelectorAll('.mkt-item').forEach(el =>
+      el.classList.toggle('active', el.dataset.sym === sym));
+
+    // Update header skeleton
+    document.getElementById('topSym').textContent  = sym;
+    document.getElementById('topName').textContent = NAMES[sym] || sym;
+    document.getElementById('topPrice').innerHTML = '<span class="skeleton" style="width:80px;height:28px;"></span>';
+
+    // Update input
+    document.getElementById('symInput').value = sym;
+
+    // Save to recent
+    recentSymbols = [sym, ...recentSymbols.filter(s => s !== sym)].slice(0, 5);
+    localStorage.setItem('ff_recent_syms', JSON.stringify(recentSymbols));
+
+    // Fetch quote + chart in parallel
+    await Promise.all([fetchQuote(sym), fetchChart(sym, currentRange)]);
+
+    // Start live polling
+    startLivePoll(sym);
+    renderRecentList();
+  }
+
+  // ── Fetch quote ────────────────────────────────────────────────────────────
+  async function fetchQuote(sym) {
+    try {
+      const res = await fetch(`/market/public/quote/${sym}`);
+      if (!res.ok) return;
+      const q = await res.json();
+      updateQuoteUI(q);
+    } catch(e) {}
+  }
+
+  function updateQuoteUI(q) {
+    const price   = Number(q.price);
+    const chg     = Number(q.change || 0);
+    const chgPct  = Number(q.change_pct || 0);
+    const isUp    = chg >= 0;
+
+    document.getElementById('topPrice').textContent = `£${price.toFixed(2)}`;
+    document.getElementById('topChg').innerHTML =
+      `<span class="${isUp?'up':'dn'}">${isUp?'▲':'▼'} ${Math.abs(chg).toFixed(2)} (${Math.abs(chgPct).toFixed(2)}%)</span>`;
+
+    document.getElementById('statOpen').textContent   = `£${Number(q.open||0).toFixed(2)}`;
+    document.getElementById('statHigh').textContent   = `£${Number(q.high||0).toFixed(2)}`;
+    document.getElementById('statLow').textContent    = `£${Number(q.low||0).toFixed(2)}`;
+    document.getElementById('statPrev').textContent   = `£${Number(q.prev_close||0).toFixed(2)}`;
+    document.getElementById('statChange').innerHTML   =
+      `<span class="${isUp?'up':'dn'}">${isUp?'+':''}${chg.toFixed(2)}</span>`;
+  }
+
+  // ── TradingView chart renderer ────────────────────────────────────────────
+  function destroyTVChart() {
+    if (tvChart) { tvChart.remove(); tvChart = null; tvSeries = null; }
+  }
+
+  function renderTVChart(timestamps, closes, ohlcv) {
+    if (!timestamps || !timestamps.length) return;
+    const container = document.getElementById('mktChart');
+    const first = closes[0], last = closes[closes.length - 1];
+    const isUp   = last >= first;
+    const UP     = '#4a9470', DN = '#c9837a';
+
+    destroyTVChart();
+
+    tvChart = LightweightCharts.createChart(container, {
+      width:  container.clientWidth,
+      height: container.clientHeight || 340,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#a08c82',
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+      },
+      grid: {
+        vertLines: { visible: false },
+        horzLines: { color: 'rgba(45,31,26,0.06)' },
+      },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
+      timeScale: {
+        borderVisible: false,
+        timeVisible: currentRange === '1D',
+        secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      handleScroll: true,
+      handleScale: true,
+    });
+
+    if (currentMode === 'candle' && ohlcv && ohlcv.t) {
+      tvSeries = tvChart.addCandlestickSeries({
+        upColor: UP, downColor: DN,
+        borderUpColor: UP, borderDownColor: DN,
+        wickUpColor: UP, wickDownColor: DN,
+      });
+      tvSeries.setData(ohlcv.t.map((ts, i) => ({
+        time: ts, open: ohlcv.o[i], high: ohlcv.h[i],
+        low: ohlcv.l[i], close: ohlcv.c[i],
+      })));
+    } else if (currentMode === 'area') {
+      tvSeries = tvChart.addAreaSeries({
+        lineColor: isUp ? UP : DN,
+        topColor:    isUp ? 'rgba(74,148,112,0.18)' : 'rgba(201,131,122,0.18)',
+        bottomColor: 'rgba(0,0,0,0)',
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      tvSeries.setData(timestamps.map((ts, i) => ({ time: ts, value: closes[i] })));
+    } else {
+      tvSeries = tvChart.addLineSeries({
+        color: isUp ? UP : DN,
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      tvSeries.setData(timestamps.map((ts, i) => ({ time: ts, value: closes[i] })));
+    }
+
+    tvChart.timeScale().fitContent();
+
+    // Keep chart sized to container
+    new ResizeObserver(() => {
+      if (tvChart) tvChart.applyOptions({
+        width:  container.clientWidth,
+        height: container.clientHeight || 340,
+      });
+    }).observe(container);
+  }
+
+  // ── Fetch chart ────────────────────────────────────────────────────────────
+  async function fetchChart(sym, range) {
+    const cached = getCachedChart(sym, range);
+    if (cached) {
+      document.getElementById('searchStatus').innerHTML =
+        '<span style="color:var(--sage);">Cached ✓</span> · refreshing…';
+      renderTVChart(cached.timestamps, cached.closes, cached.ohlcv);
+    }
+    if (!cached) document.getElementById('searchStatus').textContent = 'Loading chart…';
+
+    try {
+      const res = await fetch(`/market/public/candles/${sym}?range=${range}`);
+      if (!res.ok) {
+        if (!cached) renderLiveChart(sym);
+        document.getElementById('searchStatus').textContent = cached ? 'Showing cached data' : '';
+        return;
+      }
+      const data = await res.json();
+      if (!data.t || !data.t.length) {
+        if (!cached) renderLiveChart(sym);
+        return;
+      }
+
+      const ohlcv = { t: data.t, o: data.o, h: data.h, l: data.l, c: data.c };
+      saveChartCache(sym, range, data.t, data.c, ohlcv);
+      renderTVChart(data.t, data.c, ohlcv);
+      document.getElementById('searchStatus').textContent = '';
+
+    } catch(e) {
+      if (!cached) renderLiveChart(sym);
+    }
+  }
+
+  // ── Live 1D chart (poll-based) ─────────────────────────────────────────────
+  async function pollAndUpdateLive(sym) {
+    try {
+      const res = await fetch(`/market/public/quote/${sym}`);
+      if (!res.ok) return;
+      const q = await res.json();
+      updateQuoteUI(q);
+
+      if (!q.price) return;
+      const nowTs = Math.floor(Date.now() / 1000);
+      liveTicks.push({ time: nowTs, value: Number(q.price) });
+      if (liveTicks.length > 480) liveTicks.shift();
+
+      if (currentRange === '1D') {
+        const ts = liveTicks.map(p => p.time);
+        const cs = liveTicks.map(p => p.value);
+        saveChartCache(sym, '1D', ts, cs, null);
+        if (tvSeries) {
+          tvSeries.update({ time: nowTs, value: Number(q.price) });
+        } else {
+          renderTVChart(ts, cs, null);
+        }
+      }
+    } catch(e) {}
+  }
+
+  function renderLiveChart(sym) {
+    const cached = getCachedChart(sym, '1D');
+    if (cached && cached.timestamps && cached.timestamps.length) {
+      liveTicks = cached.timestamps.map((ts, i) => ({ time: ts, value: cached.closes[i] }));
+      renderTVChart(cached.timestamps, cached.closes, null);
+    } else {
+      liveTicks = [];
+    }
+    pollAndUpdateLive(sym);
+  }
+
+  function startLivePoll(sym) {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => pollAndUpdateLive(sym), 15000);
+  }
+
+  // ── Range / Mode controls ──────────────────────────────────────────────────
+  function setRange(range) {
+    currentRange = range;
+    document.querySelectorAll('.range-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.range === range));
+    if (currentSymbol) fetchChart(currentSymbol, range);
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === mode));
+    if (currentSymbol) fetchChart(currentSymbol, currentRange);
+  }
+
+  // ── Search input ────────────────────────────────────────────────────────────
+  let searchTimeout = null;
+  function onSearchInput(val) {
+    val = val.trim().toUpperCase();
+    clearTimeout(searchTimeout);
+    if (!val) { document.getElementById('searchStatus').textContent = ''; return; }
+    searchTimeout = setTimeout(() => {
+      document.getElementById('searchStatus').textContent = `Press Enter to search ${val}`;
+    }, 300);
+  }
+
+  // ── Render lists ────────────────────────────────────────────────────────────
+  function renderRecentList() {
+    const el = document.getElementById('recentList');
+    if (!recentSymbols.length) { el.innerHTML = ''; return; }
+    el.innerHTML = recentSymbols.map(sym => buildListItem(sym, null, null)).join('');
+  }
+
+  async function loadWatchlistSidebar() {
+    const el = document.getElementById('watchlistList');
+    try {
+      const res = await fetch('/watchlist/', { headers: { Authorization: tok() } });
+      if (!res.ok || !tok()) {
+        el.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted);">Sign in to see your watchlist</div>';
+        return;
+      }
+      const items = await res.json();
+      if (!items.length) {
+        el.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted);">Your watchlist is empty</div>';
+        return;
+      }
+      el.innerHTML = items.map(i => buildListItem(i.symbol, null, null)).join('');
+
+      // Fetch live quotes for watchlist items
+      items.forEach(async i => {
+        try {
+          const qr = await fetch(`/market/public/quote/${i.symbol}`);
+          if (!qr.ok) return;
+          const q = await qr.json();
+          const row = document.querySelector(`[data-sym="${i.symbol}"]`);
+          if (!row) return;
+          row.querySelector('.mkt-item-price').textContent = `£${Number(q.price).toFixed(2)}`;
+          const chg = Number(q.change_pct);
+          const chgEl = row.querySelector('.mkt-item-chg');
+          chgEl.textContent  = `${chg>=0?'+':''}${chg.toFixed(2)}%`;
+          chgEl.className    = `mkt-item-chg ${chg>=0?'up':'dn'}`;
+        } catch(e) {}
+      });
+
+    } catch(e) {
+      el.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted);">Could not load watchlist</div>';
+    }
+  }
+
+  function buildListItem(sym, price, chgPct) {
+    const initials = sym.slice(0,3);
+    const name = NAMES[sym] || sym;
+    return `<div class="mkt-item" data-sym="${sym}" onclick="loadSymbol('${sym}')">
+      <div class="mkt-item-logo">${initials}</div>
+      <div class="mkt-item-body">
+        <div class="mkt-item-sym">${sym}</div>
+        <div class="mkt-item-name">${name}</div>
+      </div>
+      <div class="mkt-item-right">
+        <div class="mkt-item-price">${price ? '£'+Number(price).toFixed(2) : '—'}</div>
+        <div class="mkt-item-chg ${chgPct!=null?(chgPct>=0?'up':'dn'):''}">
+          ${chgPct!=null ? (chgPct>=0?'+':'')+Number(chgPct).toFixed(2)+'%' : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Restore last symbol ────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    renderRecentList();
+    loadWatchlistSidebar();
+
+    // Restore last viewed
+    const last = localStorage.getItem(`${CHART_KEY}:last`);
+    if (last) loadSymbol(last);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (currentSymbol) localStorage.setItem(`${CHART_KEY}:last`, currentSymbol);
+    if (pollTimer) clearInterval(pollTimer);
+  });
+</script>
+
+{% endblock %}

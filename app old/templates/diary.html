@@ -1,0 +1,1294 @@
+{% extends "base.html" %}
+{% block title %}Diary | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  /* ── FlyingFunds warm palette ── */
+  :root {
+    --cream:   #faf7f2;
+    --warm:    #f5efe6;
+    --blush:   #f2e4d8;
+    --pink:    #e8c4b4;
+    --rose:    #c9837a;
+    --brown:   #8b5e52;
+    --dark:    #2d1f1a;
+    --sage:    #7a9e8e;
+    --sage-lt: #d4e6de;
+    --sky:     #7bafc4;
+    --sky-lt:  #d6eaf4;
+    --muted:   #a08c82;
+    --accent:  #c9837a;
+    --danger:  #b85050;
+    --success: #4a9470;
+    --bg:      #faf7f2;
+    --surface: #ffffff;
+    --border:  rgba(45,31,26,0.1);
+    --text:    #2d1f1a;
+  }
+  body { background: var(--cream) !important; color: var(--dark) !important; }
+  .card {
+    background: #fff !important;
+    border-color: rgba(45,31,26,0.1) !important;
+    box-shadow: 0 2px 12px rgba(45,31,26,0.06);
+  }
+  h1,h2,h3,h4 { color: var(--dark); font-family: 'DM Sans', sans-serif; }
+  .muted { color: var(--muted) !important; }
+  a:not([class]) { color: var(--brown); }
+  a:not([class]):hover { color: var(--dark); }
+  th { color: var(--muted) !important; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+  td { border-color: rgba(45,31,26,0.06) !important; }
+  tr:hover td { background: var(--warm) !important; }
+  .positive, .chg-pos { color: #4a9470 !important; }
+  .negative, .chg-neg { color: #b85050 !important; }
+</style>
+<style>
+  /* ── Layout ── */
+  .diary-wrap {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .diary-wrap { grid-template-columns: 1fr; } }
+
+  /* ── Tabs ── */
+  .diary-tabs {
+    display: flex; gap: 4px;
+    background: #f0f0ee; border-radius: 12px;
+    padding: 4px; margin-bottom: 20px;
+    width: fit-content;
+  }
+  .dtab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    padding: 7px 16px; border-radius: 9px;
+    border: none; background: none; cursor: pointer; color: #777;
+    transition: all 0.15s;
+  }
+  .dtab.active { background: #fff; color: #2d1f1a; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  .diary-panel { display: none; }
+  .diary-panel.active { display: block; }
+
+  /* ── Cards ── */
+  .dc {
+    background: #fff; border: 1.5px solid #e5e5e5;
+    border-radius: 16px; padding: 20px 22px; margin-bottom: 16px;
+  }
+  .dc-title {
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+
+  /* ── Calendar ── */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .cal-month {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; font-weight: 400; letter-spacing: -0.3px;
+  }
+  .cal-nav { display: flex; gap: 6px; }
+  .cal-nav button {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1.5px solid #e5e5e5; background: #fff;
+    cursor: pointer; font-size: 14px; color: #555;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; padding: 0;
+  }
+  .cal-nav button:hover { background: #f5f5f5; border-color: #ccc; }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-dow {
+    text-align: center; font-size: 11px; font-weight: 600;
+    color: #bbb; padding: 6px 0; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .cal-day {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 10px; cursor: pointer; position: relative;
+    transition: all 0.12s; font-size: 13px; font-weight: 500; color: #4a3028;
+    gap: 2px;
+  }
+  .cal-day:hover { background: #f5f5f5; }
+  .cal-day.today { background: #2d1f1a; color: #fff; }
+  .cal-day.today:hover { background: #222; }
+  .cal-day.other-month { color: #ccc; }
+  .cal-day.has-entry { font-weight: 700; }
+  .cal-day .dot-row { display: flex; gap: 2px; }
+  .cal-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+  .dot-trade  { background: var(--rose); }
+  .dot-note   { background: #f59e0b; }
+  .dot-event  { background: #10b981; }
+  .dot-mood   { background: #ec4899; }
+  .cal-day.selected { background: var(--blush); color: var(--rose); border: 1.5px solid var(--rose); }
+  .cal-day.today.selected { background: var(--rose); color: #fff; }
+
+  /* ── Entry list ── */
+  .entry-item {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid #f5f5f5; align-items: flex-start;
+    cursor: pointer; transition: background 0.1s;
+  }
+  .entry-item:last-child { border-bottom: none; }
+  .entry-item:hover { background: #fafafa; margin: 0 -4px; padding-left: 4px; padding-right: 4px; border-radius: 8px; }
+  .entry-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .ei-trade  { background: #ede9fe; }
+  .ei-note   { background: #fef3c7; }
+  .ei-event  { background: #d1fae5; }
+  .ei-mood   { background: #fce7f3; }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-title { font-size: 14px; font-weight: 600; color: #2d1f1a; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-meta  { font-size: 12px; color: #aaa; }
+  .entry-tag {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    background: var(--blush); color: var(--rose); white-space: nowrap;
+  }
+
+  /* ── Mood log ── */
+  .mood-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .mood-opt {
+    font-size: 22px; width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: 2px solid transparent;
+    background: #f5f5f5; transition: all 0.15s;
+  }
+  .mood-opt:hover { transform: scale(1.1); border-color: #ddd; }
+  .mood-opt.selected { border-color: var(--rose); background: var(--blush); }
+
+  .confidence-row { display: flex; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .conf-label { font-size: 12px; color: #aaa; min-width: 20px; text-align: center; }
+  .conf-bar {
+    flex: 1; height: 6px; background: #f0f0f0; border-radius: 3px;
+    position: relative; cursor: pointer;
+  }
+  .conf-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--rose), #10b981); transition: width 0.2s; }
+  input[type=range].conf-slider {
+    width: 100%; margin: 0; accent-color: var(--rose);
+    padding: 0; border: none; background: none; height: 6px;
+  }
+
+  /* ── Form fields ── */
+  .dfield { margin-bottom: 12px; }
+  .dfield label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+  }
+  .dfield input, .dfield select, .dfield textarea {
+    width: 100%; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 9px 12px;
+    border: 1.5px solid #e5e5e5; border-radius: 10px;
+    background: #fff; color: #2d1f1a;
+    box-sizing: border-box; outline: none; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .dfield input:focus, .dfield select:focus, .dfield textarea:focus { border-color: var(--rose); }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 9px 20px; background: #2d1f1a; color: #fff;
+    border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 9px 16px; background: #fff; color: #555;
+    border: 1.5px solid #e5e5e5; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: #aaa; color: #2d1f1a; }
+  .btn-danger {
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 6px 14px; background: #fff; color: #dc2626;
+    border: 1.5px solid #fecaca; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: #fef2f2; }
+
+  /* ── Sidebar ── */
+  .sidebar-card { background: #fff; border: 1.5px solid #e5e5e5; border-radius: 16px; padding: 18px 20px; margin-bottom: 16px; }
+  .sc-title { font-size: 11px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+
+  /* Upcoming events */
+  .event-item {
+    display: flex; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5; align-items: flex-start;
+  }
+  .event-item:last-child { border-bottom: none; }
+  .event-date-badge {
+    width: 36px; text-align: center; flex-shrink: 0;
+  }
+  .event-day { font-size: 18px; font-weight: 700; line-height: 1; color: #2d1f1a; }
+  .event-mon { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+  .event-name { font-size: 13px; font-weight: 600; color: #2d1f1a; margin-bottom: 2px; }
+  .event-sub  { font-size: 11px; color: #aaa; }
+
+  /* Stats strip */
+  .stat-row { display: flex; gap: 0; }
+  .stat-box { flex: 1; text-align: center; padding: 8px 4px; border-right: 1px solid #f0f0f0; }
+  .stat-box:last-child { border-right: none; }
+  .stat-num { font-size: 22px; font-weight: 700; color: #2d1f1a; line-height: 1; }
+  .stat-lbl { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 500; backdrop-filter: blur(2px);
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 18px; padding: 28px;
+    width: 100%; max-width: 520px; margin: 16px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; font-weight: 400; margin: 0 0 20px;
+    letter-spacing: -0.3px;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #2d1f1a; color: #fff;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 10px 20px; border-radius: 10px;
+    opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok  { background: #16a34a; }
+
+  /* Selected day panel */
+  .day-entries-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .day-entries-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; font-weight: 400; letter-spacing: -0.2px;
+  }
+  .empty-state { text-align: center; padding: 32px 0; color: #ccc; font-size: 13px; }
+  .empty-state .big { font-size: 32px; margin-bottom: 8px; }
+
+  .type-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  }
+  .chip-trade  { background: #ede9fe; color: var(--rose); }
+  .chip-note   { background: #fef3c7; color: #d97706; }
+  .chip-event  { background: #d1fae5; color: #059669; }
+  .chip-mood   { background: #fce7f3; color: #db2777; }
+
+  /* ── To-do list ── */
+  .todo-add-row {
+    display: flex; gap: 8px; margin-bottom: 18px;
+  }
+  .todo-add-row input {
+    flex: 1; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 10px 14px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+    background: #fff; outline: none; transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .todo-add-row input:focus { border-color: var(--rose); }
+
+  .todo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px;
+    background: #fff; border: 1.5px solid #f0f0f0;
+    margin-bottom: 6px; cursor: grab; transition: all 0.15s;
+    user-select: none;
+  }
+  .todo-item:hover { border-color: #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .todo-item.dragging { opacity: 0.4; cursor: grabbing; }
+  .todo-item.drag-over { border-color: var(--rose); background: #f5f5ff; }
+  .todo-item.done-item {
+    background: #fafafa; border-color: #f0f0f0;
+    opacity: 0.6; cursor: default;
+  }
+
+  .todo-drag-handle {
+    color: #ccc; font-size: 14px; cursor: grab; flex-shrink: 0;
+    line-height: 1;
+  }
+  .todo-item.done-item .todo-drag-handle { display: none; }
+
+  .todo-checkbox {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid #ddd; background: #fff;
+    cursor: pointer; flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 12px;
+  }
+  .todo-checkbox:hover { border-color: var(--rose); }
+  .todo-checkbox.checked { background: var(--rose); border-color: var(--rose); color: #fff; }
+
+  .todo-text {
+    flex: 1; font-size: 14px; font-weight: 500; color: #2d1f1a;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .todo-item.done-item .todo-text {
+    text-decoration: line-through; color: #aaa; font-weight: 400;
+  }
+
+  .priority-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .p-high   { background: #fee2e2; color: #dc2626; }
+  .p-medium { background: #fef3c7; color: #d97706; }
+  .p-low    { background: #d1fae5; color: #059669; }
+
+  .todo-del {
+    width: 24px; height: 24px; border-radius: 6px; border: none;
+    background: none; cursor: pointer; color: #ccc; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.12s; padding: 0;
+  }
+  .todo-del:hover { background: #fef2f2; color: #dc2626; }
+
+  .todo-section-label {
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 18px 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .todo-section-label::after {
+    content: ''; flex: 1; height: 1px; background: #f0f0f0;
+  }
+
+  .todo-stats {
+    display: flex; gap: 16px; font-size: 12px; color: #aaa; margin-bottom: 16px;
+  }
+  .todo-stats strong { color: #2d1f1a; }
+</style>
+
+<!-- Page header -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1 style="font-family:'DM Serif Display',serif; font-size:30px; font-weight:400; margin:0 0 4px; letter-spacing:-0.5px;">Investment Diary</h1>
+    <p style="font-size:13px; color:#888; margin:0;">Track trades, thoughts, mood and upcoming events.</p>
+  </div>
+  <button class="btn-primary" onclick="openNewEntry()">+ New entry</button>
+</div>
+
+<div class="diary-wrap">
+
+  <!-- ── LEFT COLUMN ── -->
+  <div>
+    <!-- Tabs -->
+    <div class="diary-tabs">
+      <button class="dtab active" data-tab="calendar" onclick="switchTab('calendar')">📅 Calendar</button>
+      <button class="dtab" data-tab="journal" onclick="switchTab('journal')">📓 Journal</button>
+      <button class="dtab" data-tab="mood" onclick="switchTab('mood')">😊 Mood log</button>
+      <button class="dtab" data-tab="todo" onclick="switchTab('todo')">✅ To-do</button>
+    </div>
+
+    <!-- CALENDAR TAB -->
+    <div class="diary-panel active" id="tab-calendar">
+      <div class="dc">
+        <div class="cal-header">
+          <div class="cal-month" id="calMonthLabel">—</div>
+          <div class="cal-nav">
+            <button onclick="calNav(-1)">‹</button>
+            <button onclick="calNav(1)">›</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+      <!-- Selected day entries -->
+      <div class="dc" id="dayPanel">
+        <div class="day-entries-header">
+          <div class="day-entries-title" id="dayPanelTitle">Select a day</div>
+          <button class="btn-ghost" style="font-size:12px; padding:6px 12px;" onclick="openNewEntryForDay()">+ Add</button>
+        </div>
+        <div id="dayEntries">
+          <div class="empty-state"><div class="big">📅</div>Click a day to see entries</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOURNAL TAB -->
+    <div class="diary-panel" id="tab-journal">
+      <div class="dc">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <div class="dc-title" style="margin:0;">All entries</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="filterType" onchange="renderJournal()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:1.5px solid #e5e5e5; border-radius:8px; background:#fff; outline:none; width:auto;">
+              <option value="">All types</option>
+              <option value="trade">📈 Trades</option>
+              <option value="note">📝 Notes</option>
+              <option value="event">📆 Events</option>
+              <option value="mood">😊 Mood</option>
+            </select>
+            <select id="filterPortfolio" onchange="renderJournal()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:1.5px solid #e5e5e5; border-radius:8px; background:#fff; outline:none; width:auto;">
+              <option value="">All portfolios</option>
+            </select>
+          </div>
+        </div>
+        <div id="journalList"></div>
+      </div>
+    </div>
+
+    <!-- MOOD TAB -->
+    <div class="diary-panel" id="tab-mood">
+      <div class="dc">
+        <div class="dc-title">Mood over time</div>
+        <div id="moodChart" style="height:200px;"></div>
+      </div>
+      <div class="dc">
+        <div class="dc-title">Confidence trend</div>
+        <div id="confChart" style="height:160px;"></div>
+      </div>
+      <div class="dc" id="moodLogList">
+        <div class="dc-title">Mood entries</div>
+      </div>
+    </div>
+
+    <!-- TO-DO TAB -->
+    <div class="diary-panel" id="tab-todo">
+      <div class="dc">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-family:'DM Serif Display',serif; font-size:20px; font-weight:400; letter-spacing:-0.3px; margin-bottom:2px;">Tasks</div>
+            <div class="todo-stats" id="todoStats"><span><strong id="todoPending">0</strong> pending</span><span><strong id="todoDone">0</strong> done</span></div>
+          </div>
+          <select id="todoPriorityFilter" onchange="renderTodo()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:1.5px solid #e5e5e5; border-radius:8px; background:#fff; outline:none; width:auto;">
+            <option value="">All priorities</option>
+            <option value="high">🔴 High</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+        </div>
+
+        <!-- Add task row -->
+        <div class="todo-add-row">
+          <input id="todoInput" placeholder="Add a new task…" onkeydown="if(event.key==='Enter') addTodo()" />
+          <select id="todoPriority" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:10px 10px; border:1.5px solid #e5e5e5; border-radius:10px; background:#fff; outline:none; width:auto;">
+            <option value="medium">🟡 Medium</option>
+            <option value="high">🔴 High</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <button class="btn-primary" onclick="addTodo()">Add</button>
+        </div>
+
+        <!-- Active tasks (draggable) -->
+        <div id="todoActive"></div>
+
+        <!-- Done section -->
+        <div id="todoDoneSection" style="display:none;">
+          <div class="todo-section-label">Done</div>
+          <div id="todoDoneList"></div>
+          <button class="btn-ghost" style="font-size:12px; padding:6px 14px; margin-top:8px;" onclick="clearDone()">Clear all done</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT SIDEBAR ── -->
+  <div>
+    <!-- Stats -->
+    <div class="sidebar-card">
+      <div class="sc-title">This month</div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-num" id="statTrades">0</div><div class="stat-lbl">Trades</div></div>
+        <div class="stat-box"><div class="stat-num" id="statNotes">0</div><div class="stat-lbl">Notes</div></div>
+        <div class="stat-box"><div class="stat-num" id="statMoods">0</div><div class="stat-lbl">Mood logs</div></div>
+      </div>
+    </div>
+
+    <!-- Upcoming events -->
+    <div class="sidebar-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div class="sc-title" style="margin:0;">Upcoming events</div>
+        <button class="btn-ghost" style="font-size:11px; padding:5px 10px;" onclick="openNewEntryOfType('event')">+ Add</button>
+      </div>
+      <div id="upcomingEvents">
+        <div class="empty-state"><div class="big">📆</div>No upcoming events</div>
+      </div>
+    </div>
+
+    <!-- Quick mood log -->
+    <div class="sidebar-card">
+      <div class="sc-title">Quick mood log</div>
+      <div class="mood-row" id="quickMoodRow">
+        <div class="mood-opt" data-val="😄" onclick="quickMoodSelect('😄')">😄</div>
+        <div class="mood-opt" data-val="🙂" onclick="quickMoodSelect('🙂')">🙂</div>
+        <div class="mood-opt" data-val="😐" onclick="quickMoodSelect('😐')">😐</div>
+        <div class="mood-opt" data-val="😟" onclick="quickMoodSelect('😟')">😟</div>
+        <div class="mood-opt" data-val="😰" onclick="quickMoodSelect('😰')">😰</div>
+      </div>
+      <div class="dfield">
+        <label>Confidence (1–10)</label>
+        <input type="range" class="conf-slider" id="quickConf" min="1" max="10" value="5" />
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-top:2px;">
+          <span>Low</span><span id="confVal">5</span><span>High</span>
+        </div>
+      </div>
+      <div class="dfield">
+        <label>Quick note (optional)</label>
+        <input id="quickNote" placeholder="e.g. Feeling cautious about market…" />
+      </div>
+      <button class="btn-primary" style="width:100%;" onclick="saveQuickMood()">Log mood</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── NEW ENTRY MODAL ── -->
+<div class="modal-backdrop" id="entryModal">
+  <div class="modal">
+    <h2 class="modal-title" id="modalTitle">New entry</h2>
+
+    <div class="dfield">
+      <label>Type</label>
+      <select id="entryType" onchange="onTypeChange()">
+        <option value="note">📝 Daily note</option>
+        <option value="trade">📈 Trade journal</option>
+        <option value="event">📆 Event / reminder</option>
+        <option value="mood">😊 Mood log</option>
+      </select>
+    </div>
+
+    <div class="dfield">
+      <label>Date</label>
+      <input type="date" id="entryDate" />
+    </div>
+
+    <div class="dfield">
+      <label>Title</label>
+      <input id="entryTitle" placeholder="Give this entry a title…" />
+    </div>
+
+    <!-- Trade fields -->
+    <div id="tradeFields" style="display:none;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="dfield">
+          <label>Symbol</label>
+          <input id="tradeSymbol" placeholder="e.g. AAPL" />
+        </div>
+        <div class="dfield">
+          <label>Action</label>
+          <select id="tradeAction">
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+            <option value="watch">Watch / research</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="dfield">
+          <label>Price</label>
+          <input id="tradePrice" type="number" placeholder="0.00" />
+        </div>
+        <div class="dfield">
+          <label>Quantity</label>
+          <input id="tradeQty" type="number" placeholder="0" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Event fields -->
+    <div id="eventFields" style="display:none;">
+      <div class="dfield">
+        <label>Time (optional)</label>
+        <input type="time" id="eventTime" />
+      </div>
+    </div>
+
+    <!-- Mood fields -->
+    <div id="moodFields" style="display:none;">
+      <div class="dfield">
+        <label>How are you feeling?</label>
+        <div class="mood-row" id="modalMoodRow">
+          <div class="mood-opt" data-val="😄" onclick="modalMoodSelect('😄')">😄</div>
+          <div class="mood-opt" data-val="🙂" onclick="modalMoodSelect('🙂')">🙂</div>
+          <div class="mood-opt" data-val="😐" onclick="modalMoodSelect('😐')">😐</div>
+          <div class="mood-opt" data-val="😟" onclick="modalMoodSelect('😟')">😟</div>
+          <div class="mood-opt" data-val="😰" onclick="modalMoodSelect('😰')">😰</div>
+        </div>
+      </div>
+      <div class="dfield">
+        <label>Confidence (1–10): <span id="modalConfVal">5</span></label>
+        <input type="range" class="conf-slider" id="modalConf" min="1" max="10" value="5"
+               oninput="document.getElementById('modalConfVal').textContent=this.value" />
+      </div>
+    </div>
+
+    <div class="dfield">
+      <label>Portfolio (optional)</label>
+      <select id="entryPortfolio">
+        <option value="">— None —</option>
+      </select>
+    </div>
+
+    <div class="dfield">
+      <label>Notes</label>
+      <textarea id="entryNotes" rows="4" placeholder="Your thoughts, rationale, observations…"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="saveEntryBtn" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW ENTRY MODAL ── -->
+<div class="modal-backdrop" id="viewModal">
+  <div class="modal">
+    <div id="viewContent"></div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="deleteEntryBtn">Delete</button>
+      <button class="btn-ghost" onclick="document.getElementById('viewModal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  // ── Storage key ──────────────────────────────────────────────────────────
+  const STORE_KEY = 'ff_diary_v2';
+
+  function loadEntries() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch { return []; }
+  }
+  function saveEntries(entries) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  }
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  // ── Portfolio list ───────────────────────────────────────────────────────
+  let portfolios = [];
+
+  async function loadPortfolios() {
+    try {
+      const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+      if (res.ok) {
+        portfolios = await res.json();
+        ['entryPortfolio','filterPortfolio'].forEach(id => {
+          const sel = document.getElementById(id);
+          const base = id === 'filterPortfolio'
+            ? '<option value="">All portfolios</option>'
+            : '<option value="">— None —</option>';
+          sel.innerHTML = base + portfolios.map(p =>
+            `<option value="${p.id}">${p.name}</option>`
+          ).join('');
+        });
+      }
+    } catch(_) {}
+  }
+
+  function portfolioName(id) {
+    const p = portfolios.find(p => String(p.id) === String(id));
+    return p ? p.name : null;
+  }
+
+  // ── Calendar state ───────────────────────────────────────────────────────
+  const today = new Date();
+  let calYear  = today.getFullYear();
+  let calMonth = today.getMonth();
+  let selectedDate = null;
+
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+  function calNav(dir) { calMonth += dir; if (calMonth > 11) { calMonth=0; calYear++; } if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
+
+  function renderCalendar() {
+    const entries = loadEntries();
+    document.getElementById('calMonthLabel').textContent = `${MONTHS[calMonth]} ${calYear}`;
+
+    const grid = document.getElementById('calGrid');
+    const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+    const first = new Date(calYear, calMonth, 1).getDay();
+    const days  = new Date(calYear, calMonth+1, 0).getDate();
+    const prev  = new Date(calYear, calMonth, 0).getDate();
+
+    // prev month filler
+    for (let i = first-1; i >= 0; i--) {
+      html += `<div class="cal-day other-month">${prev-i}</div>`;
+    }
+
+    for (let d = 1; d <= days; d++) {
+      const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dayEntries = entries.filter(e => e.date === dateStr);
+      const isToday = calYear===today.getFullYear() && calMonth===today.getMonth() && d===today.getDate();
+      const isSel   = selectedDate === dateStr;
+
+      let dots = '';
+      if (dayEntries.length) {
+        const types = [...new Set(dayEntries.map(e => e.type))];
+        dots = `<div class="dot-row">${types.map(t => `<div class="cal-dot dot-${t}"></div>`).join('')}</div>`;
+      }
+
+      const cls = [
+        'cal-day',
+        isToday ? 'today' : '',
+        isSel   ? 'selected' : '',
+        dayEntries.length ? 'has-entry' : ''
+      ].filter(Boolean).join(' ');
+
+      html += `<div class="${cls}" onclick="selectDay('${dateStr}')">${d}${dots}</div>`;
+    }
+
+    // next month filler
+    const remaining = 42 - first - days;
+    for (let d = 1; d <= remaining; d++) {
+      html += `<div class="cal-day other-month">${d}</div>`;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  function selectDay(dateStr) {
+    selectedDate = dateStr;
+    renderCalendar();
+    renderDayPanel(dateStr);
+  }
+
+  function renderDayPanel(dateStr) {
+    const entries = loadEntries().filter(e => e.date === dateStr);
+    const d = new Date(dateStr + 'T12:00:00');
+    const label = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+    document.getElementById('dayPanelTitle').textContent = label;
+
+    if (!entries.length) {
+      document.getElementById('dayEntries').innerHTML =
+        `<div class="empty-state"><div class="big">✨</div>No entries for this day</div>`;
+      return;
+    }
+    document.getElementById('dayEntries').innerHTML = entries.map(e => entryItemHTML(e)).join('');
+  }
+
+  // ── Journal ──────────────────────────────────────────────────────────────
+  function renderJournal() {
+    const typeFilter  = document.getElementById('filterType').value;
+    const portFilter  = document.getElementById('filterPortfolio').value;
+    let entries = loadEntries();
+
+    if (typeFilter)  entries = entries.filter(e => e.type === typeFilter);
+    if (portFilter)  entries = entries.filter(e => String(e.portfolio_id) === portFilter);
+
+    entries.sort((a,b) => b.date.localeCompare(a.date));
+
+    const container = document.getElementById('journalList');
+    if (!entries.length) {
+      container.innerHTML = `<div class="empty-state"><div class="big">📓</div>No entries yet — add your first one!</div>`;
+      return;
+    }
+    container.innerHTML = entries.map(e => entryItemHTML(e)).join('');
+  }
+
+  // ── Mood charts ──────────────────────────────────────────────────────────
+  const MOOD_SCORE = { '😄': 5, '🙂': 4, '😐': 3, '😟': 2, '😰': 1 };
+
+  function renderMoodCharts() {
+    const entries = loadEntries()
+      .filter(e => e.type === 'mood' && e.mood)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .slice(-30);
+
+    if (!entries.length) {
+      document.getElementById('moodChart').innerHTML = `<div class="empty-state"><div class="big">😊</div>No mood entries yet</div>`;
+      document.getElementById('confChart').innerHTML = '';
+      document.getElementById('moodLogList').innerHTML = `<div class="dc-title">Mood entries</div><div class="empty-state">Start logging your mood!</div>`;
+      return;
+    }
+
+    Plotly.newPlot('moodChart', [{
+      type: 'scatter', mode: 'lines+markers',
+      x: entries.map(e => e.date),
+      y: entries.map(e => MOOD_SCORE[e.mood] || 3),
+      line: { color: '#ec4899', width: 2 },
+      marker: { size: 8, color: '#ec4899' },
+      text: entries.map(e => e.mood),
+      hovertemplate: '%{text} on %{x}<extra></extra>'
+    }], {
+      margin: { t:8, l:30, r:12, b:30 },
+      yaxis: { range:[0.5,5.5], tickvals:[1,2,3,4,5], ticktext:['😰','😟','😐','🙂','😄'] },
+      xaxis: { showgrid: false },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+    }, { displayModeBar: false, responsive: true });
+
+    const confEntries = entries.filter(e => e.confidence);
+    if (confEntries.length) {
+      Plotly.newPlot('confChart', [{
+        type: 'scatter', mode: 'lines',
+        x: confEntries.map(e => e.date),
+        y: confEntries.map(e => e.confidence),
+        fill: 'tozeroy',
+        line: { color: 'var(--rose)', width: 2 },
+        fillcolor: 'rgba(201,131,122,0.1)',
+      }], {
+        margin: { t:8, l:30, r:12, b:30 },
+        yaxis: { range:[0,11] },
+        xaxis: { showgrid: false },
+        paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      }, { displayModeBar: false, responsive: true });
+    }
+
+    // mood log list
+    const moodListEl = document.getElementById('moodLogList');
+    moodListEl.innerHTML = `<div class="dc-title">Mood entries</div>` +
+      [...entries].reverse().map(e => entryItemHTML(e)).join('');
+  }
+
+  // ── Sidebar: upcoming events ─────────────────────────────────────────────
+  function renderUpcoming() {
+    const todayStr = today.toISOString().slice(0,10);
+    const events = loadEntries()
+      .filter(e => e.type === 'event' && e.date >= todayStr)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .slice(0, 5);
+
+    const container = document.getElementById('upcomingEvents');
+    if (!events.length) {
+      container.innerHTML = `<div class="empty-state"><div class="big">📆</div>No upcoming events</div>`;
+      return;
+    }
+    container.innerHTML = events.map(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      const day = d.getDate();
+      const mon = d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase();
+      const pName = e.portfolio_id ? portfolioName(e.portfolio_id) : null;
+      return `<div class="event-item" onclick="viewEntry('${e.id}')">
+        <div class="event-date-badge">
+          <div class="event-day">${day}</div>
+          <div class="event-mon">${mon}</div>
+        </div>
+        <div>
+          <div class="event-name">${esc(e.title || 'Event')}</div>
+          <div class="event-sub">${pName ? esc(pName) : (e.time || '')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Stats ────────────────────────────────────────────────────────────────
+  function renderStats() {
+    const entries = loadEntries();
+    const m = today.getMonth(), y = today.getFullYear();
+    const thisMonth = entries.filter(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
+    document.getElementById('statTrades').textContent = thisMonth.filter(e => e.type==='trade').length;
+    document.getElementById('statNotes').textContent  = thisMonth.filter(e => e.type==='note').length;
+    document.getElementById('statMoods').textContent  = thisMonth.filter(e => e.type==='mood').length;
+  }
+
+  // ── Entry item HTML ──────────────────────────────────────────────────────
+  const TYPE_META = {
+    trade: { icon:'📈', cls:'ei-trade', chip:'chip-trade', label:'Trade' },
+    note:  { icon:'📝', cls:'ei-note',  chip:'chip-note',  label:'Note' },
+    event: { icon:'📆', cls:'ei-event', chip:'chip-event', label:'Event' },
+    mood:  { icon:'😊', cls:'ei-mood',  chip:'chip-mood',  label:'Mood' },
+  };
+
+  function entryItemHTML(e) {
+    const meta = TYPE_META[e.type] || TYPE_META.note;
+    const pName = e.portfolio_id ? portfolioName(e.portfolio_id) : null;
+    const d = new Date(e.date + 'T12:00:00');
+    const dateLabel = d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    const moodPart = e.mood ? ` · ${e.mood}` : '';
+    const pPart    = pName ? ` · ${esc(pName)}` : '';
+    const extra    = e.type==='trade' && e.symbol ? ` · ${esc(e.symbol)} ${e.action||''}` : '';
+    return `<div class="entry-item" onclick="viewEntry('${e.id}')">
+      <div class="entry-icon ${meta.cls}">${e.mood && e.type==='mood' ? e.mood : meta.icon}</div>
+      <div class="entry-body">
+        <div class="entry-title">${esc(e.title || '(untitled)')}</div>
+        <div class="entry-meta">${dateLabel}${extra}${moodPart}${pPart}</div>
+      </div>
+      <span class="type-chip ${meta.chip}">${meta.label}</span>
+    </div>`;
+  }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ── View entry ───────────────────────────────────────────────────────────
+  function viewEntry(id) {
+    const entries = loadEntries();
+    const e = entries.find(e => e.id === id);
+    if (!e) return;
+
+    const meta = TYPE_META[e.type] || TYPE_META.note;
+    const pName = e.portfolio_id ? portfolioName(e.portfolio_id) : null;
+    const d = new Date(e.date + 'T12:00:00');
+    const dateLabel = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    let extra = '';
+    if (e.type === 'trade') {
+      extra = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0;padding:12px;background:#f9f9f9;border-radius:10px;">
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Symbol</div><div style="font-size:15px;font-weight:700;">${esc(e.symbol||'—')}</div></div>
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Action</div><div style="font-size:15px;font-weight:700;">${esc(e.action||'—')}</div></div>
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Price</div><div style="font-size:15px;font-weight:700;">${e.price ? '£'+Number(e.price).toFixed(2) : '—'}</div></div>
+      </div>`;
+    }
+    if (e.type === 'mood') {
+      extra = `<div style="margin:12px 0;padding:12px;background:#f9f9f9;border-radius:10px;display:flex;gap:20px;">
+        <div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Mood</div><div style="font-size:28px;">${e.mood||'—'}</div></div>
+        ${e.confidence ? `<div><div style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;">Confidence</div><div style="font-size:22px;font-weight:700;">${e.confidence}/10</div></div>` : ''}
+      </div>`;
+    }
+
+    document.getElementById('viewContent').innerHTML = `
+      <span class="type-chip ${meta.chip}" style="margin-bottom:12px;display:inline-flex;">${meta.label}</span>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;margin:8px 0 4px;letter-spacing:-0.3px;">${esc(e.title||'(untitled)')}</h2>
+      <div style="font-size:13px;color:#aaa;margin-bottom:12px;">${dateLabel}${pName ? ' · '+esc(pName) : ''}</div>
+      ${extra}
+      ${e.notes ? `<div style="font-size:14px;line-height:1.65;color:#4a3028;white-space:pre-wrap;">${esc(e.notes)}</div>` : '<div style="color:#ccc;font-size:13px;">No notes.</div>'}
+    `;
+
+    document.getElementById('deleteEntryBtn').onclick = () => deleteEntry(id);
+    document.getElementById('viewModal').classList.add('open');
+  }
+
+  function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    const entries = loadEntries().filter(e => e.id !== id);
+    saveEntries(entries);
+    document.getElementById('viewModal').classList.remove('open');
+    renderAll();
+    toast('Entry deleted');
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.diary-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.dtab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+    if (tab === 'mood') renderMoodCharts();
+    if (tab === 'journal') renderJournal();
+    if (tab === 'todo') renderTodo();
+  }
+
+  // ── Modal ────────────────────────────────────────────────────────────────
+  let modalMood = '';
+  let editingId = null;
+
+  function openNewEntry() { openModal(null, null, null); }
+  function openNewEntryForDay() { openModal(null, selectedDate, null); }
+  function openNewEntryOfType(type) { openModal(type, null, null); }
+
+  function openModal(type, date, existingId) {
+    editingId = existingId;
+    document.getElementById('modalTitle').textContent = existingId ? 'Edit entry' : 'New entry';
+    document.getElementById('entryType').value  = type || 'note';
+    document.getElementById('entryDate').value  = date || today.toISOString().slice(0,10);
+    document.getElementById('entryTitle').value = '';
+    document.getElementById('entryNotes').value = '';
+    document.getElementById('entryPortfolio').value = '';
+    document.getElementById('tradeSymbol').value = '';
+    document.getElementById('tradePrice').value  = '';
+    document.getElementById('tradeQty').value    = '';
+    document.getElementById('tradeAction').value = 'buy';
+    document.getElementById('eventTime').value   = '';
+    document.getElementById('modalConf').value   = '5';
+    document.getElementById('modalConfVal').textContent = '5';
+    modalMood = '';
+    document.querySelectorAll('#modalMoodRow .mood-opt').forEach(o => o.classList.remove('selected'));
+    onTypeChange();
+    document.getElementById('entryModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('entryModal').classList.remove('open'); }
+
+  function onTypeChange() {
+    const type = document.getElementById('entryType').value;
+    document.getElementById('tradeFields').style.display = type==='trade' ? 'block' : 'none';
+    document.getElementById('eventFields').style.display = type==='event' ? 'block' : 'none';
+    document.getElementById('moodFields').style.display  = type==='mood'  ? 'block' : 'none';
+  }
+
+  function modalMoodSelect(val) {
+    modalMood = val;
+    document.querySelectorAll('#modalMoodRow .mood-opt').forEach(o => {
+      o.classList.toggle('selected', o.dataset.val === val);
+    });
+  }
+
+  function saveEntry() {
+    const type  = document.getElementById('entryType').value;
+    const date  = document.getElementById('entryDate').value;
+    const title = document.getElementById('entryTitle').value.trim();
+    const notes = document.getElementById('entryNotes').value.trim();
+    const portId = document.getElementById('entryPortfolio').value;
+
+    if (!date) return toast('Please pick a date', '');
+
+    const entry = {
+      id:           editingId || genId(),
+      type, date,
+      title:        title || typeDefaultTitle(type, date),
+      notes,
+      portfolio_id: portId || null,
+      created_at:   new Date().toISOString(),
+    };
+
+    if (type === 'trade') {
+      entry.symbol = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+      entry.action = document.getElementById('tradeAction').value;
+      entry.price  = parseFloat(document.getElementById('tradePrice').value) || null;
+      entry.qty    = parseFloat(document.getElementById('tradeQty').value) || null;
+    }
+    if (type === 'event') {
+      entry.time = document.getElementById('eventTime').value;
+    }
+    if (type === 'mood') {
+      entry.mood       = modalMood;
+      entry.confidence = parseInt(document.getElementById('modalConf').value);
+    }
+
+    const entries = loadEntries().filter(e => e.id !== entry.id);
+    entries.push(entry);
+    saveEntries(entries);
+    closeModal();
+    renderAll();
+    toast('Entry saved ✓', 'ok');
+  }
+
+  function typeDefaultTitle(type, date) {
+    const d = new Date(date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    const map = { note:'Note', trade:'Trade', event:'Event', mood:'Mood log' };
+    return `${map[type]||'Entry'} · ${label}`;
+  }
+
+  // ── Quick mood ────────────────────────────────────────────────────────────
+  let quickMood = '';
+  function quickMoodSelect(val) {
+    quickMood = val;
+    document.querySelectorAll('#quickMoodRow .mood-opt').forEach(o => {
+      o.classList.toggle('selected', o.dataset.val === val);
+    });
+  }
+  document.getElementById('quickConf').addEventListener('input', function() {
+    document.getElementById('confVal').textContent = this.value;
+  });
+  function saveQuickMood() {
+    if (!quickMood) return toast('Pick a mood first!', '');
+    const entry = {
+      id:         genId(),
+      type:       'mood',
+      date:       today.toISOString().slice(0,10),
+      title:      `Mood log · ${today.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,
+      mood:       quickMood,
+      confidence: parseInt(document.getElementById('quickConf').value),
+      notes:      document.getElementById('quickNote').value.trim(),
+      portfolio_id: null,
+      created_at: new Date().toISOString(),
+    };
+    const entries = loadEntries();
+    entries.push(entry);
+    saveEntries(entries);
+    quickMood = '';
+    document.querySelectorAll('#quickMoodRow .mood-opt').forEach(o => o.classList.remove('selected'));
+    document.getElementById('quickNote').value = '';
+    document.getElementById('quickConf').value = '5';
+    document.getElementById('confVal').textContent = '5';
+    renderAll();
+    toast('Mood logged ✓', 'ok');
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 2800);
+  }
+
+  // ── Render all ────────────────────────────────────────────────────────────
+  function renderAll() {
+    renderCalendar();
+    renderJournal();
+    renderTodo();
+    renderUpcoming();
+    renderStats();
+    if (selectedDate) renderDayPanel(selectedDate);
+    const activeTab = document.querySelector('.dtab.active')?.dataset?.tab;
+    if (activeTab === 'mood') renderMoodCharts();
+  }
+
+  // ── Close modals on backdrop click ────────────────────────────────────────
+  document.getElementById('entryModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById('viewModal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  // ── TO-DO ─────────────────────────────────────────────────────────────────
+  const TODO_KEY = 'ff_todos_v1';
+
+  function loadTodos() {
+    try { return JSON.parse(localStorage.getItem(TODO_KEY) || '[]'); } catch { return []; }
+  }
+  function saveTodos(todos) { localStorage.setItem(TODO_KEY, JSON.stringify(todos)); }
+
+  function addTodo() {
+    const input = document.getElementById('todoInput');
+    const text  = input.value.trim();
+    if (!text) return;
+    const priority = document.getElementById('todoPriority').value;
+    const todos = loadTodos();
+    // Insert at top of active list (highest sort_order + 1)
+    const maxOrder = todos.filter(t => !t.done).reduce((m, t) => Math.max(m, t.sort_order || 0), 0);
+    todos.push({ id: genId(), text, priority, done: false, sort_order: maxOrder + 1, created_at: new Date().toISOString() });
+    saveTodos(todos);
+    input.value = '';
+    renderTodo();
+    toast('Task added ✓', 'ok');
+  }
+
+  function toggleTodo(id) {
+    const todos = loadTodos();
+    const t = todos.find(t => t.id === id);
+    if (!t) return;
+    t.done = !t.done;
+    t.done_at = t.done ? new Date().toISOString() : null;
+    saveTodos(todos);
+    renderTodo();
+  }
+
+  function deleteTodo(id) {
+    saveTodos(loadTodos().filter(t => t.id !== id));
+    renderTodo();
+  }
+
+  function clearDone() {
+    saveTodos(loadTodos().filter(t => !t.done));
+    renderTodo();
+  }
+
+  function renderTodo() {
+    const filter = document.getElementById('todoPriorityFilter').value;
+    let todos = loadTodos();
+
+    const active = todos
+      .filter(t => !t.done && (!filter || t.priority === filter))
+      .sort((a, b) => {
+        // Priority order: high > medium > low, then by sort_order
+        const po = { high: 0, medium: 1, low: 2 };
+        const pd = (po[a.priority] ?? 1) - (po[b.priority] ?? 1);
+        if (pd !== 0) return pd;
+        return (b.sort_order || 0) - (a.sort_order || 0);
+      });
+
+    const done = todos
+      .filter(t => t.done && (!filter || t.priority === filter))
+      .sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+
+    // Stats
+    document.getElementById('todoPending').textContent = todos.filter(t => !t.done).length;
+    document.getElementById('todoDone').textContent    = todos.filter(t => t.done).length;
+
+    // Active list
+    const activeEl = document.getElementById('todoActive');
+    if (!active.length) {
+      activeEl.innerHTML = `<div class="empty-state" style="padding:24px 0;"><div class="big">✅</div>${filter ? 'No tasks with this priority' : 'Nothing pending — nice!'}</div>`;
+    } else {
+      activeEl.innerHTML = active.map(t => todoItemHTML(t, false)).join('');
+      initDragDrop();
+    }
+
+    // Done list
+    const doneSection = document.getElementById('todoDoneSection');
+    const doneEl = document.getElementById('todoDoneList');
+    if (done.length) {
+      doneSection.style.display = 'block';
+      doneEl.innerHTML = done.map(t => todoItemHTML(t, true)).join('');
+    } else {
+      doneSection.style.display = 'none';
+    }
+  }
+
+  function todoItemHTML(t, isDone) {
+    const pClass = { high: 'p-high', medium: 'p-medium', low: 'p-low' }[t.priority] || 'p-medium';
+    const pLabel = { high: '🔴 High', medium: '🟡 Medium', low: '🟢 Low' }[t.priority] || 'Medium';
+    return `
+      <div class="todo-item${isDone ? ' done-item' : ''}" data-id="${t.id}" draggable="${!isDone}">
+        <span class="todo-drag-handle" title="Drag to reorder">⠿</span>
+        <div class="todo-checkbox ${isDone ? 'checked' : ''}" onclick="toggleTodo('${t.id}')">
+          ${isDone ? '✓' : ''}
+        </div>
+        <div class="todo-text" title="${esc(t.text)}">${esc(t.text)}</div>
+        <span class="priority-badge ${pClass}">${pLabel}</span>
+        <button class="todo-del" onclick="deleteTodo('${t.id}')" title="Delete">✕</button>
+      </div>`;
+  }
+
+  // ── Drag & drop reorder ───────────────────────────────────────────────────
+  let dragSrc = null;
+
+  function initDragDrop() {
+    document.querySelectorAll('#todoActive .todo-item').forEach(item => {
+      item.addEventListener('dragstart', e => {
+        dragSrc = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        document.querySelectorAll('#todoActive .todo-item').forEach(i => i.classList.remove('drag-over'));
+        // Save new order based on DOM position
+        const ids = [...document.querySelectorAll('#todoActive .todo-item')].map(i => i.dataset.id);
+        const todos = loadTodos();
+        ids.forEach((id, idx) => {
+          const t = todos.find(t => t.id === id);
+          if (t) t.sort_order = ids.length - idx;
+        });
+        saveTodos(todos);
+      });
+      item.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (item !== dragSrc) {
+          document.querySelectorAll('#todoActive .todo-item').forEach(i => i.classList.remove('drag-over'));
+          item.classList.add('drag-over');
+        }
+      });
+      item.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragSrc && dragSrc !== item) {
+          const container = document.getElementById('todoActive');
+          const items = [...container.querySelectorAll('.todo-item')];
+          const srcIdx  = items.indexOf(dragSrc);
+          const destIdx = items.indexOf(item);
+          if (srcIdx < destIdx) item.after(dragSrc);
+          else item.before(dragSrc);
+        }
+        item.classList.remove('drag-over');
+      });
+    });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  window.addEventListener('load', async () => {
+    await loadPortfolios();
+    renderAll();
+    // Select today by default
+    const todayStr = today.toISOString().slice(0,10);
+    selectDay(todayStr);
+  });
+</script>
+{% endblock %}

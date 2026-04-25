@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+{% block title %}Watchlist | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  /* ── FlyingFunds warm palette ── */
+  :root {
+    --cream:   #faf7f2;
+    --warm:    #f5efe6;
+    --blush:   #f2e4d8;
+    --pink:    #e8c4b4;
+    --rose:    #c9837a;
+    --brown:   #8b5e52;
+    --dark:    #2d1f1a;
+    --sage:    #7a9e8e;
+    --sage-lt: #d4e6de;
+    --sky:     #7bafc4;
+    --sky-lt:  #d6eaf4;
+    --muted:   #a08c82;
+    --accent:  #c9837a;
+    --danger:  #b85050;
+    --success: #4a9470;
+    --bg:      #faf7f2;
+    --surface: #ffffff;
+    --border:  rgba(45,31,26,0.1);
+    --text:    #2d1f1a;
+  }
+  body { background: var(--cream) !important; color: var(--dark) !important; }
+  .card {
+    background: #fff !important;
+    border-color: rgba(45,31,26,0.1) !important;
+    box-shadow: 0 2px 12px rgba(45,31,26,0.06);
+  }
+  h1,h2,h3,h4 { color: var(--dark); font-family: 'DM Sans', sans-serif; }
+  .muted { color: var(--muted) !important; }
+  a:not([class]) { color: var(--brown); }
+  a:not([class]):hover { color: var(--dark); }
+  th { color: var(--muted) !important; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+  td { border-color: rgba(45,31,26,0.06) !important; }
+  tr:hover td { background: var(--warm) !important; }
+  .positive, .chg-pos { color: #4a9470 !important; }
+  .negative, .chg-neg { color: #b85050 !important; }
+</style>
+<style>
+  /* ── Page layout ── */
+  .wl-wrap {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .wl-wrap { grid-template-columns: 1fr; } }
+
+  /* ── Cards ── */
+  .wc {
+    background: #fff;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+  }
+  .wc-title {
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;
+  }
+
+  /* ── Add bar ── */
+  .add-bar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .add-bar input, .add-bar textarea {
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 10px 14px; border: 1.5px solid #e5e5e5;
+    border-radius: 10px; background: #fff; outline: none;
+    transition: border-color 0.15s; box-sizing: border-box;
+  }
+  .add-bar input:focus, .add-bar textarea:focus { border-color: #6366f1; }
+  .add-sym   { width: 110px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+  .add-target { width: 120px; }
+  .add-notes  { flex: 1; min-width: 160px; }
+
+  /* ── Watchlist table ── */
+  .wl-table { width: 100%; border-collapse: collapse; }
+  .wl-table th {
+    text-align: left; padding: 8px 12px;
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    border-bottom: 1.5px solid #f0f0f0;
+  }
+  .wl-table td {
+    padding: 14px 12px; border-bottom: 1px solid #f5f5f5;
+    font-size: 14px; vertical-align: middle;
+  }
+  .wl-table tr:last-child td { border-bottom: none; }
+  .wl-table tr:hover td { background: #fafafa; }
+
+  .sym-badge {
+    font-weight: 700; font-size: 15px; color: #2d1f1a;
+    letter-spacing: 0.03em;
+  }
+  .sym-notes {
+    font-size: 12px; color: #aaa; margin-top: 2px;
+    max-width: 180px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .price-cell { font-weight: 600; font-size: 15px; }
+  .chg-pos { color: #4a9470; font-weight: 600; }
+  .chg-neg { color: #b85050; font-weight: 600; }
+
+  /* Target price indicator */
+  .target-cell { font-size: 13px; }
+  .target-above { color: #4a9470; font-weight: 600; }
+  .target-below { color: #b85050; font-weight: 600; }
+  .target-hit {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fef3c7; color: #d97706;
+    font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; margin-left: 6px;
+  }
+
+  /* Action buttons */
+  .wl-btn {
+    padding: 5px 10px; border-radius: 7px; font-size: 12px;
+    font-family: 'DM Sans', sans-serif; font-weight: 500;
+    cursor: pointer; border: 1.5px solid #e5e5e5; background: #fff;
+    transition: all 0.12s; color: #555;
+  }
+  .wl-btn:hover { border-color: #aaa; color: #2d1f1a; }
+  .wl-btn-del { color: #b85050; border-color: #fecaca; }
+  .wl-btn-del:hover { background: #fef2f2; border-color: #b85050; }
+
+  /* ── Sidebar ── */
+  .sc-title {
+    font-size: 11px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+  }
+
+  /* Spark stats */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box {
+    background: #f7f7f6; border-radius: 12px; padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 700; color: #2d1f1a; line-height: 1; }
+  .stat-lbl { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
+
+  /* Gainers / losers */
+  .mover-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px;
+  }
+  .mover-item:last-child { border-bottom: none; }
+  .mover-sym { font-weight: 700; color: #2d1f1a; }
+  .mover-sub { font-size: 11px; color: #aaa; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 10px 20px; background: #2d1f1a; color: #fff;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: opacity 0.15s; white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 16px; background: #fff; color: #555;
+    border: 1.5px solid #e5e5e5; border-radius: 10px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: #aaa; color: #2d1f1a; }
+
+  /* ── Edit modal ── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35); z-index: 500;
+    backdrop-filter: blur(2px);
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 18px; padding: 28px;
+    width: 100%; max-width: 420px; margin: 16px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; font-weight: 400; margin: 0 0 20px;
+    letter-spacing: -0.3px;
+  }
+  .dfield { margin-bottom: 14px; }
+  .dfield label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+  }
+  .dfield input, .dfield textarea {
+    width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 10px 12px; border: 1.5px solid #e5e5e5; border-radius: 10px;
+    background: #fff; outline: none; box-sizing: border-box; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .dfield input:focus, .dfield textarea:focus { border-color: #6366f1; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #2d1f1a; color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; padding: 10px 20px; border-radius: 10px;
+    opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok   { background: #4a9470; }
+  .toast.err  { background: #b85050; }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 48px 24px; color: #bbb; }
+  .empty-state .big { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; margin: 0; }
+
+  /* Loading skeleton pulse */
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .skeleton {
+    background: #f0f0f0; border-radius: 6px; display: inline-block;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  /* Price direction flash */
+  @keyframes flashGreen { 0%{background:#dcfce7} 100%{background:transparent} }
+  @keyframes flashRed   { 0%{background:#fee2e2} 100%{background:transparent} }
+  .flash-up  { animation: flashGreen 0.8s ease-out; }
+  .flash-dn  { animation: flashRed   0.8s ease-out; }
+</style>
+
+<!-- Page header -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1 style="font-family:'DM Serif Display',serif; font-size:30px; font-weight:400; margin:0 0 4px; letter-spacing:-0.5px;">Watchlist</h1>
+    <p style="font-size:13px; color:#888; margin:0;">Track stocks you're interested in. Set a target price to know when to act.</p>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <span style="font-size:12px; color:#aaa;" id="lastRefresh"></span>
+    <button class="btn-ghost" onclick="refreshAll()" id="refreshBtn">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="wl-wrap">
+
+  <!-- ── LEFT: main table ── -->
+  <div>
+    <!-- Add stock bar -->
+    <div class="wc">
+      <div class="wc-title">Add to watchlist</div>
+      <div class="add-bar">
+        <input class="add-sym" id="addSym" placeholder="AAPL" maxlength="10"
+               onkeydown="if(event.key==='Enter') addStock()"
+               oninput="this.value=this.value.toUpperCase()" />
+        <input class="add-target" id="addTarget" type="number" placeholder="Target £" step="0.01" />
+        <input class="add-notes" id="addNotes" placeholder="Notes (optional)" />
+        <button class="btn-primary" onclick="addStock()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Watchlist table -->
+    <div class="wc" style="padding: 0; overflow: hidden;">
+      <div id="wlTableWrap">
+        <div class="empty-state">
+          <div class="big">👁</div>
+          <p>Your watchlist is empty.<br>Add a stock above to start tracking.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: sidebar ── -->
+  <div>
+    <!-- Summary stats -->
+    <div class="wc">
+      <div class="sc-title">Overview</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-num" id="statTotal">—</div>
+          <div class="stat-lbl">Watching</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statTargets">—</div>
+          <div class="stat-lbl">With targets</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num chg-pos" id="statGainers">—</div>
+          <div class="stat-lbl">Up today</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num chg-neg" id="statLosers">—</div>
+          <div class="stat-lbl">Down today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top movers -->
+    <div class="wc">
+      <div class="sc-title">Top movers today</div>
+      <div id="moversPanel">
+        <div style="color:#ccc; font-size:13px; text-align:center; padding:16px 0;">Add stocks to see movers</div>
+      </div>
+    </div>
+
+    <!-- Target alerts -->
+    <div class="wc" id="alertsCard" style="display:none;">
+      <div class="sc-title">🎯 Target alerts</div>
+      <div id="alertsList"></div>
+    </div>
+
+    <!-- Quick tip -->
+    <div class="wc" style="background: linear-gradient(135deg, #2d1f1a 0%, #8b5e52 100%); border-color: transparent; color: #fff;">
+      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">💡 Tip</div>
+      <p style="font-size:13px; color:rgba(255,255,255,0.7); margin:0; line-height:1.6;" id="tipText">
+        Set a <strong style="color:#fff;">target price</strong> to get an alert when a stock crosses your chosen level — great for planning entry points.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Edit modal ── -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <h2 class="modal-title" id="editModalTitle">Edit</h2>
+    <input type="hidden" id="editId" />
+    <div class="dfield">
+      <label>Target price (optional)</label>
+      <input id="editTarget" type="number" placeholder="e.g. 180.00" step="0.01" />
+    </div>
+    <div class="dfield">
+      <label>Notes</label>
+      <textarea id="editNotes" rows="3" placeholder="Your thesis, key levels, reminders…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeEdit()">Cancel</button>
+      <button class="btn-primary" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let watchlistData = [];   // [{id, symbol, notes, target_price, added_at}]
+  let quotesCache   = {};   // {SYMBOL: {price, change_pct, ...}}
+  let prevPrices    = {};   // for flash animation
+
+  const TIPS = [
+    'Set a <strong style="color:#fff;">target price</strong> to plan your entry point before the market moves.',
+    'A watchlist helps separate <strong style="color:#fff;">research</strong> from real positions — study before you buy.',
+    'Compare your watchlist returns to your actual portfolio — are your best ideas in your portfolio?',
+    'Adding <strong style="color:#fff;">notes</strong> to each stock keeps your investment thesis clear over time.',
+    'Prices refresh every <strong style="color:#fff;">30 seconds</strong> — or hit Refresh for an instant update.',
+  ];
+
+  // ── Load watchlist from backend ────────────────────────────────────────────
+  async function loadWatchlist() {
+    try {
+      const res = await fetch('/watchlist/', { headers: { Authorization: tok() } });
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      if (!res.ok) return;
+      watchlistData = await res.json();
+    } catch(_) {}
+    renderTable();
+    await fetchAllQuotes();
+    renderSidebar();
+  }
+
+  // ── Fetch quotes for all symbols ───────────────────────────────────────────
+  async function fetchAllQuotes() {
+    if (!watchlistData.length) return;
+    await Promise.all(watchlistData.map(item => fetchQuote(item.symbol)));
+    renderTable();
+    renderSidebar();
+  }
+
+  async function fetchQuote(symbol) {
+    try {
+      const res = await fetch(`/market/public/quote/${symbol}`);
+      if (!res.ok) return;
+      const q = await res.json();
+      prevPrices[symbol] = quotesCache[symbol]?.price;
+      quotesCache[symbol] = q;
+    } catch(_) {}
+  }
+
+  // ── Render main table ──────────────────────────────────────────────────────
+  function renderTable() {
+    const wrap = document.getElementById('wlTableWrap');
+
+    if (!watchlistData.length) {
+      wrap.innerHTML = `<div class="empty-state">
+        <div class="big">👁</div>
+        <p>Your watchlist is empty.<br>Add a stock above to start tracking.</p>
+      </div>`;
+      return;
+    }
+
+    let html = `<table class="wl-table">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Price</th>
+          <th>Day %</th>
+          <th>High / Low</th>
+          <th>Target</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    for (const item of watchlistData) {
+      const q = quotesCache[item.symbol];
+      const prev = prevPrices[item.symbol];
+      const flashCls = q && prev
+        ? (q.price > prev ? 'flash-up' : q.price < prev ? 'flash-dn' : '')
+        : '';
+
+      // Price cell
+      const priceCell = q
+        ? `<span class="${flashCls}">${fmtPrice(q.price)}</span>`
+        : `<span class="skeleton" style="width:56px;height:16px;"></span>`;
+
+      // Change cell
+      let chgCell = q
+        ? `<span class="${q.change_pct >= 0 ? 'chg-pos' : 'chg-neg'}">
+             ${q.change_pct >= 0 ? '▲' : '▼'} ${Math.abs(q.change_pct).toFixed(2)}%
+           </span>`
+        : `<span class="skeleton" style="width:48px;height:14px;"></span>`;
+
+      // High / Low
+      const hlCell = q
+        ? `<span style="font-size:12px; color:#666;">${fmtPrice(q.high)} / ${fmtPrice(q.low)}</span>`
+        : '—';
+
+      // Target cell
+      let targetCell = '—';
+      if (item.target_price) {
+        const tp = item.target_price;
+        const curr = q?.price;
+        if (curr) {
+          const pct = ((tp - curr) / curr * 100).toFixed(1);
+          const above = tp > curr;
+          const nearHit = Math.abs(tp - curr) / curr < 0.02; // within 2%
+          targetCell = `<span class="target-cell ${above ? 'target-above' : 'target-below'}">
+            ${fmtPrice(tp)}
+            <span style="font-size:11px; font-weight:500; margin-left:3px;">(${above ? '+' : ''}${pct}%)</span>
+            ${nearHit ? '<span class="target-hit">⚡ Near!</span>' : ''}
+          </span>`;
+        } else {
+          targetCell = `<span class="target-cell">${fmtPrice(tp)}</span>`;
+        }
+      }
+
+      html += `<tr id="row-${item.id}">
+        <td>
+          <div class="sym-badge">${item.symbol}</div>
+          ${item.notes ? `<div class="sym-notes" title="${esc(item.notes)}">${esc(item.notes)}</div>` : ''}
+        </td>
+        <td class="price-cell">${priceCell}</td>
+        <td>${chgCell}</td>
+        <td>${hlCell}</td>
+        <td>${targetCell}</td>
+        <td>
+          <div style="display:flex; gap:6px;">
+            <button class="wl-btn" onclick="openEdit(${item.id})">Edit</button>
+            <button class="wl-btn wl-btn-del" onclick="removeStock(${item.id}, '${item.symbol}')">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    html += `</tbody></table>`;
+    wrap.innerHTML = html;
+  }
+
+  // ── Render sidebar ─────────────────────────────────────────────────────────
+  function renderSidebar() {
+    const total    = watchlistData.length;
+    const targets  = watchlistData.filter(i => i.target_price).length;
+    const gainers  = watchlistData.filter(i => (quotesCache[i.symbol]?.change_pct ?? 0) > 0).length;
+    const losers   = watchlistData.filter(i => (quotesCache[i.symbol]?.change_pct ?? 0) < 0).length;
+
+    document.getElementById('statTotal').textContent   = total;
+    document.getElementById('statTargets').textContent = targets;
+    document.getElementById('statGainers').textContent = gainers;
+    document.getElementById('statLosers').textContent  = losers;
+
+    // Top movers
+    const withQuotes = watchlistData
+      .filter(i => quotesCache[i.symbol]?.change_pct !== undefined)
+      .map(i => ({ symbol: i.symbol, chg: quotesCache[i.symbol].change_pct, price: quotesCache[i.symbol].price }))
+      .sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg))
+      .slice(0, 5);
+
+    const moversEl = document.getElementById('moversPanel');
+    if (withQuotes.length) {
+      moversEl.innerHTML = withQuotes.map(m => `
+        <div class="mover-item">
+          <div>
+            <div class="mover-sym">${m.symbol}</div>
+            <div class="mover-sub">${fmtPrice(m.price)}</div>
+          </div>
+          <span class="${m.chg >= 0 ? 'chg-pos' : 'chg-neg'}">
+            ${m.chg >= 0 ? '▲' : '▼'} ${Math.abs(m.chg).toFixed(2)}%
+          </span>
+        </div>`).join('');
+    } else {
+      moversEl.innerHTML = `<div style="color:#ccc; font-size:13px; text-align:center; padding:16px 0;">Add stocks to see movers</div>`;
+    }
+
+    // Target alerts — items within 2% of target
+    const nearTargets = watchlistData.filter(i => {
+      if (!i.target_price) return false;
+      const q = quotesCache[i.symbol];
+      if (!q?.price) return false;
+      return Math.abs(i.target_price - q.price) / q.price < 0.05;
+    });
+
+    const alertsCard = document.getElementById('alertsCard');
+    if (nearTargets.length) {
+      alertsCard.style.display = 'block';
+      document.getElementById('alertsList').innerHTML = nearTargets.map(i => {
+        const q = quotesCache[i.symbol];
+        const above = i.target_price > q.price;
+        return `<div class="mover-item">
+          <div>
+            <div class="mover-sym">${i.symbol}</div>
+            <div class="mover-sub">Target: ${fmtPrice(i.target_price)}</div>
+          </div>
+          <span class="${above ? 'chg-pos' : 'chg-neg'}" style="font-size:12px;">
+            ${above ? '↑ approaching' : '↓ approaching'}
+          </span>
+        </div>`;
+      }).join('');
+    } else {
+      alertsCard.style.display = 'none';
+    }
+
+    // Rotate tip
+    document.getElementById('tipText').innerHTML = TIPS[Math.floor(Math.random() * TIPS.length)];
+  }
+
+  // ── Add stock ──────────────────────────────────────────────────────────────
+  async function addStock() {
+    const symbol = document.getElementById('addSym').value.trim().toUpperCase();
+    const target = parseFloat(document.getElementById('addTarget').value) || null;
+    const notes  = document.getElementById('addNotes').value.trim() || null;
+
+    if (!symbol) return toast('Enter a symbol', 'err');
+
+    try {
+      const res = await fetch('/watchlist/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ symbol, target_price: target, notes })
+      });
+      const data = await res.json();
+      if (!res.ok) return toast(data.detail || 'Could not add stock', 'err');
+
+      document.getElementById('addSym').value    = '';
+      document.getElementById('addTarget').value = '';
+      document.getElementById('addNotes').value  = '';
+
+      toast(`${symbol} added to watchlist ✓`, 'ok');
+      await loadWatchlist();
+    } catch(_) {
+      toast('Network error', 'err');
+    }
+  }
+
+  // ── Remove stock ───────────────────────────────────────────────────────────
+  async function removeStock(id, symbol) {
+    if (!confirm(`Remove ${symbol} from your watchlist?`)) return;
+    try {
+      await fetch(`/watchlist/${id}`, { method: 'DELETE', headers: { Authorization: tok() } });
+      delete quotesCache[symbol];
+      toast(`${symbol} removed`, '');
+      await loadWatchlist();
+    } catch(_) {
+      toast('Network error', 'err');
+    }
+  }
+
+  // ── Edit modal ─────────────────────────────────────────────────────────────
+  function openEdit(id) {
+    const item = watchlistData.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('editModalTitle').textContent = `Edit ${item.symbol}`;
+    document.getElementById('editId').value      = id;
+    document.getElementById('editTarget').value  = item.target_price || '';
+    document.getElementById('editNotes').value   = item.notes || '';
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+  }
+
+  async function saveEdit() {
+    const id     = parseInt(document.getElementById('editId').value);
+    const target = parseFloat(document.getElementById('editTarget').value) || null;
+    const notes  = document.getElementById('editNotes').value.trim() || null;
+
+    try {
+      const res = await fetch(`/watchlist/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ target_price: target, notes })
+      });
+      if (!res.ok) return toast('Save failed', 'err');
+      closeEdit();
+      toast('Saved ✓', 'ok');
+      await loadWatchlist();
+    } catch(_) {
+      toast('Network error', 'err');
+    }
+  }
+
+  document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEdit();
+  });
+
+  // ── Refresh ────────────────────────────────────────────────────────────────
+  async function refreshAll() {
+    const btn = document.getElementById('refreshBtn');
+    btn.textContent = '↻ Refreshing…';
+    btn.disabled = true;
+    await fetchAllQuotes();
+    const now = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    document.getElementById('lastRefresh').textContent = `Updated ${now}`;
+    btn.textContent = '↻ Refresh';
+    btn.disabled = false;
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function fmtPrice(p) {
+    if (p == null) return '—';
+    return `£${Number(p).toFixed(2)}`;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 2800);
+  }
+
+  // ── Auto-refresh every 30s ─────────────────────────────────────────────────
+  let autoRefreshTimer = setInterval(refreshAll, 30000);
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  window.addEventListener('load', loadWatchlist);
+</script>
+
+{% endblock %}

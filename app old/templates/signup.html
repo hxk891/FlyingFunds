@@ -1,0 +1,688 @@
+{% extends "base.html" %}
+{% block title %}Sign up | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  /* ── FlyingFunds warm palette ── */
+  :root {
+    --cream:   #faf7f2;
+    --warm:    #f5efe6;
+    --blush:   #f2e4d8;
+    --pink:    #e8c4b4;
+    --rose:    #c9837a;
+    --brown:   #8b5e52;
+    --dark:    #2d1f1a;
+    --sage:    #7a9e8e;
+    --sage-lt: #d4e6de;
+    --sky:     #7bafc4;
+    --sky-lt:  #d6eaf4;
+    --muted:   #a08c82;
+    --accent:  #c9837a;
+    --danger:  #b85050;
+    --success: #4a9470;
+    --bg:      #faf7f2;
+    --surface: #ffffff;
+    --border:  rgba(45,31,26,0.1);
+    --text:    #2d1f1a;
+  }
+  body { background: var(--cream) !important; color: var(--dark) !important; }
+  .card {
+    background: #fff !important;
+    border-color: rgba(45,31,26,0.1) !important;
+    box-shadow: 0 2px 12px rgba(45,31,26,0.06);
+  }
+  h1,h2,h3,h4 { color: var(--dark); font-family: 'DM Sans', sans-serif; }
+  .muted { color: var(--muted) !important; }
+  a:not([class]) { color: var(--brown); }
+  a:not([class]):hover { color: var(--dark); }
+  th { color: var(--muted) !important; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+  td { border-color: rgba(45,31,26,0.06) !important; }
+  tr:hover td { background: var(--warm) !important; }
+  .positive, .chg-pos { color: #4a9470 !important; }
+  .negative, .chg-neg { color: #b85050 !important; }
+</style>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .signup-wrap {
+    min-height: calc(100vh - 60px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .signup-left {
+    background: linear-gradient(160deg, #c9837a 0%, #8b5e52 100%);
+    color: #fff;
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signup-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 20%, rgba(129, 32, 77, 0.676) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 80% 80%, rgba(235, 106, 196, 0.807) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .signup-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .signup-tagline {
+    position: relative;
+    z-index: 1;
+  }
+
+  .signup-tagline h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 0 0 16px 0;
+    letter-spacing: -1px;
+  }
+
+  .signup-tagline p {
+    font-family: 'DM Sans', sans-serif;
+    color: rgba(255,255,255,0.6);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .feature-list li {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .feature-list li::before {
+    content: '✦';
+    color: #bfbfc8;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .signup-right {
+    background: var(--cream);
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .step-progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+
+  .step-dot {
+    height: 4px;
+    border-radius: 2px;
+    flex: 1;
+    background: #e5e5e5;
+    transition: background 0.3s ease;
+  }
+
+  .step-dot.active { background: var(--dark); }
+  .step-dot.done { background: #6366f1; }
+
+  .step-panel { display: none; }
+  .step-panel.visible { display: block; }
+
+  .step-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6366f1;
+    margin-bottom: 8px;
+  }
+
+  .step-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: #2d1f1a;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .step-desc {
+    font-family: 'DM Sans', sans-serif;
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 24px 0;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #444;
+    letter-spacing: 0.03em;
+  }
+
+  .field input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 12px 14px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    background: #fff;
+    color: #2d1f1a;
+    transition: border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  /* Card selector grid */
+  .card-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+  .sel-card {
+    border: 1.5px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 14px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .sel-card:hover { transform: translateY(-1px); border-color: #bbb; }
+  .sel-card.selected { border-color: #2d1f1a; background: var(--dark); color: #fff; }
+  .sel-card.selected .sel-card-desc { color: rgba(255,255,255,0.6); }
+
+  .sel-card-icon { font-size: 22px; margin-bottom: 8px; }
+  .sel-card-title { font-size: 14px; font-weight: 600; }
+  .sel-card-desc { font-size: 12px; color: #888; margin-top: 4px; line-height: 1.4; }
+
+  /* Avatar picker */
+  .avatar-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .avatar-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1.5px solid #e5e5e5;
+    background: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+
+  .avatar-btn:hover { transform: scale(1.1); }
+  .avatar-btn.selected { border-color: #2d1f1a; background: var(--dark); }
+
+  /* Tag pills for markets */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .tag-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1.5px solid #e5e5e5;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tag-pill:hover { border-color: #bbb; }
+  .tag-pill.selected { background: var(--dark); color: #fff; border-color: #2d1f1a; }
+
+  /* Review card */
+  .review-box {
+    background: #fff;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 14px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .review-row:last-child { border-bottom: none; }
+  .review-key { color: #888; }
+  .review-val { font-weight: 500; }
+
+  /* Error */
+  .err-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 24px;
+    background: var(--dark);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-left: auto;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 20px;
+    background: transparent;
+    color: #666;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: #aaa; }
+
+  .signup-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  .signup-footer a { color: var(--brown); text-decoration: none; font-weight: 500; }
+
+  @media (max-width: 800px) {
+    .signup-wrap { grid-template-columns: 1fr; }
+    .signup-left { display: none; }
+    .signup-right { padding: 32px 24px; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<div class="signup-wrap">
+
+  <!-- Left panel -->
+  <div class="signup-left">
+    <div class="signup-brand">✦ FlyingFunds</div>
+
+    <div class="signup-tagline">
+      <h2>Your portfolio,<br><em>intelligently</em><br>understood.</h2>
+      <p>Real-time analytics, insights, and risk metrics — built for investors who want more than just numbers.</p>
+      <ul class="feature-list">
+        <li>Live market data</li>
+        <li>Portfolio analysis & rebalancing</li>
+        <li>VaR, Sharpe ratio, max drawdown tracking</li>
+        <li>Personalised dashboard from day one</li>
+      </ul>
+    </div>
+
+    <div style="font-family:'DM Sans',sans-serif; font-size:12px; color:rgba(255,255,255,0.3);">
+      FlyingFunds · For educational use
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="signup-right">
+
+    <!-- Progress dots -->
+    <div class="step-progress" id="stepProgress">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
+      <div class="step-dot" id="dot5"></div>
+    </div>
+
+    <!-- Step 1: Credentials -->
+    <div class="step-panel visible" id="step1">
+      <div class="step-label">Step 1 of 5</div>
+      <h2 class="step-title">Create your account</h2>
+      <p class="step-desc">Start with your login details.</p>
+
+      <div class="field-group">
+        <div class="field">
+          <label>Email address</label>
+          <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="password" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <label>Confirm password</label>
+          <input id="password2" type="password" placeholder="Re-enter password" autocomplete="new-password" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Profile -->
+    <div class="step-panel" id="step2">
+      <div class="step-label">Step 2 of 5</div>
+      <h2 class="step-title">Make it yours</h2>
+      <p class="step-desc">Pick a username and avatar </p>
+
+      <div class="field-group">
+        <div class="field">
+          <label>Username</label>
+          <input id="username" placeholder="e.g. alex_invest" />
+        </div>
+        <div class="field">
+          <label>Choose an avatar</label>
+          <div class="avatar-row" id="avatarRow"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Investor type -->
+    <div class="step-panel" id="step3">
+      <div class="step-label">Step 3 of 5</div>
+      <h2 class="step-title">What describes you?</h2>
+      <p class="step-desc">This shapes your dashboard experience and suggestions.</p>
+
+      <div class="card-grid cols-3" id="typeGrid"></div>
+    </div>
+
+    <!-- Step 4: Experience -->
+    <div class="step-panel" id="step4">
+      <div class="step-label">Step 4 of 5</div>
+      <h2 class="step-title">Your experience level</h2>
+      <p class="step-desc">No judgement — helps us match the depth of insights.</p>
+
+      <div class="card-grid cols-3" id="levelGrid"></div>
+    </div>
+
+    <!-- Step 5: Markets + review -->
+    <div class="step-panel" id="step5">
+      <div class="step-label">Step 5 of 5</div>
+      <h2 class="step-title">Markets you care about</h2>
+      <p class="step-desc">Select as many as you like. Used to personalise your news feed and suggestions.</p>
+
+      <div class="tag-row" id="marketRow"></div>
+
+      <div class="review-box" id="reviewBox"></div>
+    </div>
+
+    <div class="err-box" id="errBox"></div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" id="backBtn" style="display:none;" onclick="prevStep()">Back</button>
+      <button class="btn-primary" id="nextBtn" onclick="nextStep()">Continue</button>
+    </div>
+
+    <div class="signup-footer">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const state = {
+    email: '', password: '', username: '',
+    avatar: '👤', user_type: '', level: '', markets: []
+  };
+  let step = 1;
+  const TOTAL = 5;
+
+  const avatars = ['👩🏻‍💻','🧑🏻‍💻','🧠','📈','💼','🦊','🐼','🐯','🦁','🐸','🚀','💎'];
+  const types = [
+    { key: 'student',  icon: '🎓', title: 'Student',  desc: 'Learning & building confidence' },
+    { key: 'personal', icon: '💰', title: 'Personal',  desc: 'Growing personal savings' },
+    { key: 'business', icon: '📊', title: 'Business',  desc: 'Managing company funds' }
+  ];
+  const levels = [
+    { key: 'beginner',     icon: '🌱', title: 'Beginner',     desc: 'Just starting out' },
+    { key: 'intermediate', icon: '📚', title: 'Intermediate', desc: 'I know the basics' },
+    { key: 'advanced',     icon: '⚡', title: 'Advanced',     desc: 'I want full depth' }
+  ];
+  const markets = ['US Stocks','UK Stocks','ETFs','Crypto','Commodities','Tech','Healthcare','Energy','Dividends','Bonds','Small Cap','High Growth'];
+
+  function $(id) { return document.getElementById(id); }
+  function showErr(msg) { const e = $('errBox'); e.style.display = 'block'; e.textContent = msg; }
+  function clearErr() { const e = $('errBox'); e.style.display = 'none'; }
+
+  function renderAvatars() {
+    $('avatarRow').innerHTML = avatars.map(a => `
+      <button type="button" class="avatar-btn${state.avatar===a?' selected':''}" onclick="selectAvatar('${a}')">${a}</button>
+    `).join('');
+  }
+  function selectAvatar(a) { state.avatar = a; renderAvatars(); }
+
+  function renderCards(containerId, items, stateKey) {
+    $(containerId).innerHTML = items.map(item => `
+      <button type="button" class="sel-card${state[stateKey]===item.key?' selected':''}" onclick="selectCard('${stateKey}','${item.key}','${containerId}')">
+        <div class="sel-card-icon">${item.icon}</div>
+        <div class="sel-card-title">${item.title}</div>
+        <div class="sel-card-desc">${item.desc}</div>
+      </button>
+    `).join('');
+  }
+  function selectCard(stateKey, val, containerId) {
+    state[stateKey] = val;
+    renderCards(containerId, stateKey==='user_type'?types:levels, stateKey);
+  }
+
+  function renderMarkets() {
+    $('marketRow').innerHTML = markets.map(m => `
+      <button type="button" class="tag-pill${state.markets.includes(m)?' selected':''}" onclick="toggleMarket('${m}')">${m}</button>
+    `).join('');
+  }
+  function toggleMarket(m) {
+    state.markets = state.markets.includes(m)
+      ? state.markets.filter(x => x!==m)
+      : [...state.markets, m];
+    renderMarkets();
+    renderReview();
+  }
+
+  function renderReview() {
+    if (step !== 5) return;
+    $('reviewBox').innerHTML = `
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#888;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;">Summary</div>
+      ${[
+        ['Email', state.email || '—'],
+        ['Username', state.username || '—'],
+        ['Avatar', state.avatar],
+        ['Investor type', state.user_type || '—'],
+        ['Experience', state.level || '—'],
+        ['Interests', state.markets.length ? state.markets.join(', ') : '—']
+      ].map(([k,v]) => `<div class="review-row"><span class="review-key">${k}</span><span class="review-val">${v}</span></div>`).join('')}
+    `;
+  }
+
+  function updateProgress() {
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = $('dot'+i);
+      d.className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+    }
+    $('backBtn').style.display = step === 1 ? 'none' : 'inline-block';
+    $('nextBtn').textContent = step === TOTAL ? 'Create account' : 'Continue';
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= TOTAL; i++) {
+      $('step'+i).className = 'step-panel' + (i===n ? ' visible' : '');
+    }
+    step = n;
+    updateProgress();
+    clearErr();
+    renderReview();
+  }
+
+  function readStep1() {
+    state.email = $('email').value.trim();
+    state.password = $('password').value;
+    const p2 = $('password2').value;
+    return { p2 };
+  }
+
+  function validateStep() {
+    if (step === 1) {
+      const { p2 } = readStep1();
+      if (!state.email.includes('@')) return showErr('Please enter a valid email.'), false;
+      if (state.password.length < 8) return showErr('Password must be at least 8 characters.'), false;
+      if (state.password !== p2) return showErr('Passwords do not match.'), false;
+    }
+    if (step === 2) {
+      state.username = $('username').value.trim();
+      if (state.username.length < 3) return showErr('Username must be at least 3 characters.'), false;
+    }
+    if (step === 3 && !state.user_type) return showErr('Please select an investor type.'), false;
+    if (step === 4 && !state.level) return showErr('Please select your experience level.'), false;
+    return true;
+  }
+
+  function nextStep() {
+    if (step === 1) readStep1();
+    if (!validateStep()) return;
+    if (step < TOTAL) { setStep(step + 1); return; }
+    submitSignup();
+  }
+
+  function prevStep() { if (step > 1) setStep(step - 1); }
+
+  async function submitSignup() {
+    clearErr();
+    $('nextBtn').disabled = true;
+    $('nextBtn').textContent = 'Creating account…';
+
+    try {
+      const reg = await fetch('/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: state.email,
+          password: state.password,
+          username: state.username,
+          avatar: state.avatar,
+          user_type: state.user_type,
+          level: state.level,
+          markets: state.markets
+        })
+      });
+
+      if (!reg.ok) {
+        const txt = await reg.text();
+        throw new Error(`Registration failed (${reg.status}): ${txt}`);
+      }
+
+      // Register endpoint returns token directly — no need for a second login call
+      const data = await reg.json();
+      localStorage.setItem('token', 'Bearer ' + data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user || {
+        email: state.email,
+        username: state.username,
+        avatar: state.avatar,
+        user_type: state.user_type,
+        level: state.level
+      }));
+
+      window.location.href = '/dashboard';
+    } catch (e) {
+      showErr(e.message);
+      $('nextBtn').disabled = false;
+      $('nextBtn').textContent = 'Create account';
+    }
+  }
+
+  window.addEventListener('load', () => {
+    renderAvatars();
+    renderCards('typeGrid', types, 'user_type');
+    renderCards('levelGrid', levels, 'level');
+    renderMarkets();
+    updateProgress();
+  });
+</script>
+
+{% endblock %}

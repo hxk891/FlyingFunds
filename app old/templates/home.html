@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}FlyingFunds — Invest Smarter{% endblock %}
+{% block content %}
+<style>
+  /* Full-bleed override */
+  .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+
+  /* ── Palette ── */
+  :root {
+    --cream:   #faf7f2;
+    --warm:    #f5efe6;
+    --blush:   #f2e4d8;
+    --pink:    #e8c4b4;
+    --rose:    #c9837a;
+    --brown:   #8b5e52;
+    --dark:    #2d1f1a;
+    --sage:    #7a9e8e;
+    --sage-lt: #d4e6de;
+    --sky:     #7bafc4;
+    --sky-lt:  #d6eaf4;
+    --muted:   #a08c82;
+  }
+
+  .ff-home {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    padding: 100px 24px 80px;
+    text-align: center;
+    background: var(--cream);
+  }
+
+  /* Soft blobs */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.55;
+    pointer-events: none;
+    animation: blobDrift 14s ease-in-out infinite alternate;
+  }
+  .blob-1 { width:520px;height:520px;background:#f0d9cc;top:-120px;left:-160px;animation-delay:0s; }
+  .blob-2 { width:380px;height:380px;background:#d6eaf4;bottom:-80px;right:-80px;animation-delay:-5s; }
+  .blob-3 { width:260px;height:260px;background:#d4e6de;top:45%;left:65%;animation-delay:-9s; }
+  .blob-4 { width:200px;height:200px;background:#f2ddd5;top:20%;right:10%;animation-delay:-3s; }
+  @keyframes blobDrift {
+    from { transform:translate(0,0) scale(1); }
+    to   { transform:translate(30px,20px) scale(1.06); }
+  }
+
+  .hero-inner { position:relative;z-index:2;max-width:820px; }
+
+  .hero-eyebrow {
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--brown);
+    background:rgba(139,94,82,0.08);
+    border:1px solid rgba(139,94,82,0.18);
+    padding:6px 16px;border-radius:40px;margin-bottom:32px;
+    animation:fadeUp 0.7s ease both;
+  }
+  .hero-eyebrow .dot {
+    width:6px;height:6px;border-radius:50%;background:var(--sage);
+    animation:pulseDot 2s infinite;
+  }
+  @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+
+  .hero-title {
+    font-family:'Instrument Serif',serif;
+    font-size:clamp(48px,8vw,96px);
+    font-weight:400;line-height:1.02;letter-spacing:-2px;
+    margin-bottom:28px;color:var(--dark);
+    animation:fadeUp 0.7s ease 0.08s both;
+  }
+  .hero-title em  { font-style:italic;color:var(--rose); }
+  .hero-title .ag { color:var(--sage); }
+
+  .hero-sub {
+    font-size:clamp(15px,2vw,19px);color:var(--muted);line-height:1.7;
+    max-width:520px;margin:0 auto 44px;
+    animation:fadeUp 0.7s ease 0.16s both;
+  }
+
+  .hero-cta {
+    display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+    animation:fadeUp 0.7s ease 0.24s both;
+  }
+  .btn-primary {
+    font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;
+    padding:14px 32px;background:var(--dark);color:#fff;
+    border:none;border-radius:40px;cursor:pointer;
+    text-decoration:none;display:inline-block;
+    transition:all 0.2s;
+    box-shadow:0 4px 16px rgba(45,31,26,0.18);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,31,26,0.25);}
+  .btn-ghost {
+    font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;
+    padding:14px 32px;background:transparent;color:var(--dark);
+    border:1.5px solid rgba(45,31,26,0.2);border-radius:40px;cursor:pointer;
+    text-decoration:none;display:inline-block;transition:all 0.2s;
+  }
+  .btn-ghost:hover{border-color:var(--dark);background:rgba(45,31,26,0.04);}
+
+  /* Ticker */
+  .ticker-strip {
+    position:relative;z-index:2;margin-top:64px;width:100%;overflow:hidden;
+    mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
+    -webkit-mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
+    animation:fadeUp 0.7s ease 0.4s both;
+  }
+  .ticker-track{display:flex;gap:12px;animation:tickerScroll 32s linear infinite;width:max-content;}
+  @keyframes tickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .ticker-item {
+    display:flex;align-items:center;gap:10px;white-space:nowrap;
+    font-size:13px;font-weight:500;padding:9px 20px;
+    background:#fff;border:1px solid rgba(45,31,26,0.08);
+    border-radius:40px;color:var(--muted);
+    box-shadow:0 2px 8px rgba(45,31,26,0.06);
+  }
+  .t-sym  {font-weight:700;color:var(--dark);}
+  .t-up   {color:#4a9470;font-weight:600;}
+  .t-down {color:#c0544a;font-weight:600;}
+
+  /* Scroll hint */
+  .scroll-hint {
+    position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+    z-index:2;display:flex;flex-direction:column;align-items:center;gap:8px;
+    font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;
+    animation:fadeUp 1s ease 1s both;
+  }
+  .scroll-arrow{
+    width:18px;height:18px;
+    border-right:2px solid var(--pink);border-bottom:2px solid var(--pink);
+    transform:rotate(45deg);animation:arrowBounce 2s infinite;
+  }
+  @keyframes arrowBounce{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(4px)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── STATS ── */
+  .stats-section{
+    background:#fff;border-top:1px solid rgba(45,31,26,0.07);
+    border-bottom:1px solid rgba(45,31,26,0.07);padding:60px 48px;
+  }
+  .stats-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(45,31,26,0.07);}
+  .stat-card{
+    padding:40px 28px;background:#fff;text-align:center;
+    transition:background 0.2s;
+  }
+  .stat-card:hover{background:var(--warm);}
+  .stat-num{
+    font-family:'Instrument Serif',serif;
+    font-size:52px;font-weight:400;line-height:1;margin-bottom:8px;
+    color:var(--dark);
+  }
+  .stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+
+  /* ── Scroll reveal ── */
+  .reveal{opacity:0;transform:translateY(30px);transition:opacity 0.75s ease,transform 0.75s ease;}
+  .reveal.visible{opacity:1;transform:none;}
+  .reveal-r{opacity:0;transform:translateX(30px);transition:opacity 0.75s ease,transform 0.75s ease;}
+  .reveal-r.visible{opacity:1;transform:none;}
+
+  /* ── SECTION WRAPPER ── */
+  .section{padding:100px 48px;max-width:1100px;margin:0 auto;}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px;}
+  .section-title{
+    font-family:'Instrument Serif',serif;
+    font-size:clamp(32px,4.5vw,58px);font-weight:400;line-height:1.1;
+    letter-spacing:-1px;color:var(--dark);margin-bottom:18px;
+  }
+  .section-title em{font-style:italic;color:var(--muted);}
+  .section-body{font-size:16px;color:var(--muted);line-height:1.75;max-width:560px;}
+
+  /* ── FEATURES ── */
+  .features-bg{background:var(--warm);}
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px;}
+  .feature-card{
+    padding:30px 26px;background:#fff;
+    border:1.5px solid rgba(45,31,26,0.08);border-radius:20px;
+    transition:all 0.25s;cursor:default;
+  }
+  .feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(45,31,26,0.1);border-color:var(--pink);}
+  .feature-icon{font-size:26px;margin-bottom:14px;display:block;}
+  .feature-title{font-family:'Instrument Serif',serif;font-size:19px;color:var(--dark);margin-bottom:8px;letter-spacing:-0.3px;}
+  .feature-desc{font-size:13px;color:var(--muted);line-height:1.65;}
+
+  /* ── HOW IT WORKS ── */
+  .hiw-bg{background:var(--cream);}
+  .hiw-wrap{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;}
+  .step-item{display:flex;gap:20px;padding:24px 0;border-bottom:1px solid rgba(45,31,26,0.08);transition:all 0.2s;}
+  .step-item:last-child{border-bottom:none;}
+  .step-item:hover .step-num{background:var(--dark);color:#fff;}
+  .step-num{
+    width:38px;height:38px;border-radius:12px;
+    border:1.5px solid rgba(45,31,26,0.18);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0;
+    transition:all 0.2s;
+  }
+  .step-title{font-size:15px;font-weight:600;color:var(--dark);margin-bottom:5px;}
+  .step-desc{font-size:13px;color:var(--muted);line-height:1.6;}
+
+  /* Visual card */
+  .hiw-visual{
+    background:#fff;border:1.5px solid rgba(45,31,26,0.09);border-radius:24px;
+    padding:32px;position:relative;overflow:hidden;
+    box-shadow:0 8px 40px rgba(45,31,26,0.08);
+  }
+  .hiw-visual::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(240,217,204,0.5),transparent 70%);
+    pointer-events:none;
+  }
+  .mini-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+  .mini-val{font-family:'Instrument Serif',serif;font-size:38px;color:var(--dark);letter-spacing:-1px;margin-bottom:4px;}
+  .mini-chg{font-size:13px;color:#4a9470;font-weight:600;margin-bottom:24px;}
+  .chart-bars{display:flex;align-items:flex-end;gap:4px;height:72px;margin-bottom:24px;}
+  .chart-bar{flex:1;border-radius:3px 3px 0 0;background:rgba(139,94,82,0.15);animation:barGrow 0.8s ease both;}
+  .chart-bar.hi{background:var(--rose);}
+  @keyframes barGrow{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1)}}
+  .mini-holding{
+    display:flex;align-items:center;gap:10px;padding:9px 12px;
+    background:var(--warm);border-radius:10px;margin-bottom:6px;font-size:12px;
+  }
+  .mh-sym{font-weight:700;color:var(--dark);width:44px;}
+  .mh-bar-w{flex:1;height:4px;background:rgba(45,31,26,0.1);border-radius:2px;}
+  .mh-bar{height:100%;border-radius:2px;animation:barGrow 0.8s ease both;}
+  .mh-pct{color:var(--muted);width:32px;text-align:right;}
+
+  /* ── CONCEPTS ── */
+  .concepts-bg{background:var(--blush);}
+  .concepts-header{text-align:center;margin-bottom:56px;}
+  .concepts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+  .concept-card{
+    padding:34px 30px;background:#fff;border-radius:20px;
+    border:1.5px solid rgba(45,31,26,0.08);
+    position:relative;overflow:hidden;transition:all 0.25s;
+  }
+  .concept-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(45,31,26,0.1);}
+  .concept-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity 0.25s;}
+  .concept-card:hover::before{opacity:1;}
+  .cc1::before{background:linear-gradient(90deg,var(--rose),var(--pink));}
+  .cc2::before{background:linear-gradient(90deg,var(--sage),var(--sky));}
+  .cc3::before{background:linear-gradient(90deg,#e8b96a,#d4956a);}
+  .cc4::before{background:linear-gradient(90deg,var(--sky),var(--sage));}
+  .ctag{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:14px;}
+  .ct-theory{background:rgba(201,131,122,0.12);color:var(--rose);}
+  .ct-risk  {background:rgba(122,158,142,0.12);color:var(--sage);}
+  .ct-mkt   {background:rgba(232,185,106,0.15);color:#b8822a;}
+  .ct-beh   {background:rgba(123,175,196,0.15);color:var(--sky);}
+  .concept-title{font-family:'Instrument Serif',serif;font-size:22px;color:var(--dark);margin-bottom:10px;letter-spacing:-0.3px;}
+  .concept-desc{font-size:13px;color:var(--muted);line-height:1.7;}
+  .concept-link{display:inline-flex;align-items:center;gap:5px;margin-top:18px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;transition:color 0.15s;}
+  .concept-link:hover{color:var(--dark);}
+
+  /* ── CTA ── */
+  .cta-section{
+    background:var(--dark);color:#fff;
+    padding:140px 48px;text-align:center;position:relative;overflow:hidden;
+  }
+  .cta-section::before{
+    content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);
+    width:700px;height:700px;
+    background:radial-gradient(circle,rgba(240,217,204,0.12),transparent 60%);
+    pointer-events:none;
+  }
+  .cta-title{font-family:'Instrument Serif',serif;font-size:clamp(40px,6vw,78px);font-weight:400;line-height:1.05;letter-spacing:-1.5px;margin-bottom:22px;position:relative;z-index:1;}
+  .cta-title em{font-style:italic;color:var(--pink);}
+  .cta-desc{font-size:17px;color:rgba(255,255,255,0.55);max-width:460px;margin:0 auto 44px;line-height:1.7;position:relative;z-index:1;}
+  .cta-btns{display:flex;gap:12px;justify-content:center;position:relative;z-index:1;flex-wrap:wrap;}
+  .btn-cta-p{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px 32px;background:#fff;color:var(--dark);border:none;border-radius:40px;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;}
+  .btn-cta-p:hover{background:var(--warm);transform:translateY(-2px);}
+  .btn-cta-g{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;padding:14px 32px;background:transparent;color:rgba(255,255,255,0.7);border:1.5px solid rgba(255,255,255,0.2);border-radius:40px;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;}
+  .btn-cta-g:hover{border-color:rgba(255,255,255,0.5);color:#fff;}
+
+  /* ── Responsive ── */
+  @media(max-width:900px){
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+    .features-grid{grid-template-columns:1fr;}
+    .hiw-wrap{grid-template-columns:1fr;}
+    .concepts-grid{grid-template-columns:1fr;}
+    .section{padding:72px 24px;}
+    .stats-section{padding:48px 24px;}
+    .cta-section{padding:100px 24px;}
+  }
+</style>
+
+<div class="ff-home">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+
+    <div class="hero-inner">
+      <div class="hero-eyebrow"><span class="dot"></span>Live market data · Real-time analytics</div>
+      <h1 class="hero-title">
+        Invest with<br><em>clarity</em> &amp; <span class="ag">confidence</span>
+      </h1>
+      <p class="hero-sub">FlyingFunds brings portfolio management, risk analytics, and financial education together — so you understand every move you make.</p>
+      <div class="hero-cta">
+        <a href="/signup" class="btn-primary">Start for free →</a>
+        <a href="/about"  class="btn-ghost">Learn more</a>
+      </div>
+    </div>
+
+    <div class="ticker-strip">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+
+    <div class="scroll-hint"><span>Scroll</span><div class="scroll-arrow"></div></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card reveal">
+        <div class="stat-num" data-count="12">0</div>
+        <div class="stat-label">Risk metrics tracked</div>
+      </div>
+      <div class="stat-card reveal" style="transition-delay:.1s">
+        <div class="stat-num" data-count="10">0</div>
+        <div class="stat-label">Virtual £k to practise</div>
+      </div>
+      <div class="stat-card reveal" style="transition-delay:.2s">
+        <div class="stat-num" data-count="30">0</div>
+        <div class="stat-label">Data points per stock</div>
+      </div>
+      <div class="stat-card reveal" style="transition-delay:.3s">
+        <div class="stat-num" data-count="24">0</div>
+        <div class="stat-label">Hour live data</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <div class="features-bg">
+    <div class="section">
+      <div class="reveal">
+        <div class="section-label" style="color:var(--rose);">What you get</div>
+        <h2 class="section-title">Everything to manage<br><em>money wisely</em></h2>
+        <p class="section-body">Built for beginners who want to learn, and experienced investors who want clarity.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal" style="transition-delay:.05s"><span class="feature-icon">📊</span><div class="feature-title">Portfolio Analytics</div><div class="feature-desc">Track holdings, performance over time, and your asset allocation across all portfolios in one clear view.</div></div>
+        <div class="feature-card reveal" style="transition-delay:.1s"><span class="feature-icon">⚡</span><div class="feature-title">Live Market Data</div><div class="feature-desc">Real-time quotes powered by Finnhub. Search any stock, add it to your watchlist, and track price movements.</div></div>
+        <div class="feature-card reveal" style="transition-delay:.15s"><span class="feature-icon">🛡</span><div class="feature-title">Risk Metrics</div><div class="feature-desc">Understand your exposure with Sharpe ratio, Value at Risk, max drawdown, and annualised volatility.</div></div>
+        <div class="feature-card reveal" style="transition-delay:.2s"><span class="feature-icon">🎓</span><div class="feature-title">Learn as You Go</div><div class="feature-desc">Inline explainers connect your real numbers to finance theory — CAPM, Markowitz, behavioural biases and more.</div></div>
+        <div class="feature-card reveal" style="transition-delay:.25s"><span class="feature-icon">📓</span><div class="feature-title">Investment Diary</div><div class="feature-desc">Log trade notes, mood, confidence, and upcoming events. Build a record of your investment thinking over time.</div></div>
+        <div class="feature-card reveal" style="transition-delay:.3s"><span class="feature-icon">💸</span><div class="feature-title">Paper Trading</div><div class="feature-desc">Practise with £10,000 of virtual cash. Buy and sell real stocks risk-free and track your simulated P&amp;L.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="hiw-bg">
+    <div class="section">
+      <div class="hiw-wrap">
+        <div>
+          <div class="reveal">
+            <div class="section-label" style="color:var(--sage);">How it works</div>
+            <h2 class="section-title">Up and running<br><em>in minutes</em></h2>
+            <p class="section-body">No spreadsheets, no complexity. Just your portfolio, clearly laid out.</p>
+          </div>
+          <div style="margin-top:40px;">
+            <div class="step-item reveal" style="transition-delay:.05s"><div class="step-num">01</div><div><div class="step-title">Create your account</div><div class="step-desc">Sign up in seconds. Choose your investor type and experience level to personalise your experience.</div></div></div>
+            <div class="step-item reveal" style="transition-delay:.1s"><div class="step-num">02</div><div><div class="step-title">Build your portfolio</div><div class="step-desc">Add holdings — symbol, quantity, average buy price. Analytics start immediately.</div></div></div>
+            <div class="step-item reveal" style="transition-delay:.15s"><div class="step-num">03</div><div><div class="step-title">Understand your risk</div><div class="step-desc">See your Sharpe ratio, VaR, drawdown and allocation charts. Know what your numbers mean.</div></div></div>
+            <div class="step-item reveal" style="transition-delay:.2s"><div class="step-num">04</div><div><div class="step-title">Learn &amp; grow</div><div class="step-desc">Use paper trading, the diary, and the learn section to develop your strategy over time.</div></div></div>
+          </div>
+        </div>
+
+        <div class="hiw-visual reveal-r">
+          <div style="position:relative;z-index:1;">
+            <div class="mini-label">Portfolio value</div>
+            <div class="mini-val">£24,381</div>
+            <div class="mini-chg">▲ +12.4% all time</div>
+            <div class="chart-bars" id="miniChartBars"></div>
+            <div id="miniHoldings"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCEPTS -->
+  <div class="concepts-bg">
+    <div class="section">
+      <div class="concepts-header reveal">
+        <div class="section-label" style="color:var(--sky);">Financial literacy</div>
+        <h2 class="section-title">Know what you own,<br><em>and why it matters</em></h2>
+        <p class="section-body" style="margin:0 auto;text-align:center;">FlyingFunds teaches you the theory behind the numbers — so you invest with understanding, not guesswork.</p>
+      </div>
+      <div class="concepts-grid">
+        <div class="concept-card cc1 reveal" style="transition-delay:.05s"><span class="ctag ct-theory">Portfolio Theory</span><div class="concept-title">Modern Portfolio Theory & CAPM</div><div class="concept-desc">Markowitz showed that combining assets reduces risk without sacrificing return. The CAPM explains how systematic risk (beta) drives expected returns.</div><a href="/learn" class="concept-link">Explore in Learn →</a></div>
+        <div class="concept-card cc2 reveal" style="transition-delay:.1s"><span class="ctag ct-risk">Risk Metrics</span><div class="concept-title">Sharpe, VaR & Max Drawdown</div><div class="concept-desc">The Sharpe ratio measures return per unit of risk. Value at Risk estimates potential losses at a given confidence level. Max drawdown shows the worst peak-to-trough decline.</div><a href="/dashboard" class="concept-link">See your metrics →</a></div>
+        <div class="concept-card cc3 reveal" style="transition-delay:.15s"><span class="ctag ct-mkt">Market Efficiency</span><div class="concept-title">Efficient Markets & Anomalies</div><div class="concept-desc">The EMH suggests prices reflect all available information — yet momentum, value, and size effects persist. Understanding anomalies helps evaluate active vs passive strategies.</div><a href="/learn" class="concept-link">Explore in Learn →</a></div>
+        <div class="concept-card cc4 reveal" style="transition-delay:.2s"><span class="ctag ct-beh">Behavioural Finance</span><div class="concept-title">Biases That Move Markets</div><div class="concept-desc">Overconfidence, loss aversion, and herding drive irrational price movements. Recognising these biases in yourself is the first step to better decision-making.</div><a href="/learn" class="concept-link">Explore in Learn →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2 class="cta-title reveal">Ready to invest<br><em>smarter?</em></h2>
+    <p class="cta-desc reveal" style="transition-delay:.1s">Join FlyingFunds and start understanding your money — not just tracking it.</p>
+    <div class="cta-btns reveal" style="transition-delay:.2s">
+      <a href="/signup" class="btn-cta-p">Create free account →</a>
+      <a href="/login"  class="btn-cta-g">Sign in</a>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Ticker
+  const TICKERS = [
+    {sym:'AAPL',price:'189.30',chg:'+1.24%',up:true},{sym:'MSFT',price:'378.85',chg:'+0.87%',up:true},
+    {sym:'TSLA',price:'245.60',chg:'-2.14%',up:false},{sym:'NVDA',price:'495.20',chg:'+3.41%',up:true},
+    {sym:'AMZN',price:'178.40',chg:'+0.53%',up:true},{sym:'GOOGL',price:'140.92',chg:'-0.31%',up:false},
+    {sym:'META',price:'502.10',chg:'+2.08%',up:true},{sym:'JPM',price:'196.45',chg:'+0.62%',up:true},
+    {sym:'V',price:'276.30',chg:'+0.44%',up:true},{sym:'WMT',price:'167.85',chg:'+1.05%',up:true},
+  ];
+  const track = document.getElementById('tickerTrack');
+  track.innerHTML = [...TICKERS,...TICKERS].map(t=>`
+    <div class="ticker-item">
+      <span class="t-sym">${t.sym}</span>
+      <span>$${t.price}</span>
+      <span class="${t.up?'t-up':'t-down'}">${t.chg}</span>
+    </div>`).join('');
+
+  // Mini chart
+  const BARS = [28,40,35,50,44,58,52,67,60,74,65,80,70,86,78];
+  document.getElementById('miniChartBars').innerHTML = BARS.map((h,i)=>
+    `<div class="chart-bar${i===BARS.length-1?' hi':''}" style="height:${h}%;animation-delay:${i*0.04}s;"></div>`
+  ).join('');
+
+  const HOLDS = [{sym:'AAPL',pct:38,c:'#c9837a'},{sym:'MSFT',pct:28,c:'#7a9e8e'},{sym:'NVDA',pct:21,c:'#7bafc4'},{sym:'TSLA',pct:13,c:'#d4a574'}];
+  document.getElementById('miniHoldings').innerHTML = HOLDS.map(h=>
+    `<div class="mini-holding"><span class="mh-sym">${h.sym}</span><div class="mh-bar-w"><div class="mh-bar" style="width:${h.pct}%;background:${h.c};"></div></div><span class="mh-pct">${h.pct}%</span></div>`
+  ).join('');
+
+  // Scroll reveal
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
+  },{threshold:0.12});
+  document.querySelectorAll('.reveal,.reveal-r').forEach(el=>obs.observe(el));
+
+  // Counter
+  let counted = false;
+  const cobs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting && !counted){
+        counted = true;
+        document.querySelectorAll('[data-count]').forEach(el=>{
+          const t = parseInt(el.dataset.count), s = el.dataset.suffix||'';
+          let n=0; const step=t/40;
+          const timer=setInterval(()=>{n=Math.min(n+step,t);el.textContent=Math.round(n)+s;if(n>=t)clearInterval(timer);},28);
+        });
+      }
+    });
+  },{threshold:0.4});
+  const firstStat = document.querySelector('[data-count]');
+  if(firstStat) cobs.observe(firstStat.closest('.stats-section')||firstStat);
+
+  // Mouse parallax on blobs
+  document.addEventListener('mousemove',e=>{
+    const x=(e.clientX/window.innerWidth-0.5)*18,y=(e.clientY/window.innerHeight-0.5)*18;
+    document.querySelectorAll('.blob').forEach((b,i)=>{
+      const f=(i+1)*0.35;
+      b.style.transform=`translate(${x*f}px,${y*f}px)`;
+    });
+  });
+</script>
+{% endblock %}

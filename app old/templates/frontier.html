@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+{% block title %}Efficient Frontier | FlyingFunds{% endblock %}
+{% block content %}
+<style>
+  .container { max-width:none!important; padding-top:72px!important; padding-bottom:40px!important; }
+
+  .ef-page    { max-width:1100px; margin:0 auto; padding:0 24px; }
+
+  .ef-hero { margin-bottom:28px; }
+  .ef-hero h1 {
+    font-family:'Instrument Serif',serif; font-size:clamp(28px,4vw,42px);
+    font-weight:400; color:var(--dark,#2d1f1a); letter-spacing:-1px;
+    margin-bottom:6px; line-height:1.1;
+  }
+  .ef-hero p { font-size:14px; color:#a08c82; font-family:'DM Sans',sans-serif; max-width:600px; line-height:1.7; }
+
+  .ef-controls {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;
+  }
+  .ef-sel {
+    font-family:'DM Sans',sans-serif; font-size:13px; padding:7px 12px;
+    border:1.5px solid rgba(45,31,26,0.15); border-radius:20px;
+    background:#fff; color:#2d1f1a; outline:none; cursor:pointer;
+  }
+  .ef-btn {
+    font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500;
+    padding:7px 16px; border-radius:20px; border:1.5px solid rgba(45,31,26,0.12);
+    background:#fff; color:#2d1f1a; cursor:pointer; transition:all 0.15s;
+  }
+  .ef-btn:hover  { border-color:#c9837a; background:rgba(201,131,122,0.06); }
+  .ef-btn.active { background:#2d1f1a; color:#fff; border-color:#2d1f1a; }
+  .ef-badge {
+    font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;
+    font-family:'DM Sans',sans-serif;
+  }
+  .badge-sim  { background:#f5efe6; color:#8b5e52; }
+  .badge-real { background:#d4e6de; color:#0f6e56; }
+
+  /* Layout */
+  .ef-layout { display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start; }
+  @media(max-width:900px){ .ef-layout { grid-template-columns:1fr; } }
+
+  /* Chart card */
+  .ef-chart-card {
+    background:#fff; border:1px solid #e5e5e5; border-radius:16px; padding:20px;
+  }
+  #efChart { height:420px; }
+
+  /* Sidebar */
+  .ef-sidebar { display:flex; flex-direction:column; gap:14px; }
+
+  .ef-stat-card {
+    background:#fff; border:1px solid #e5e5e5; border-radius:14px; padding:16px 18px;
+  }
+  .ef-stat-title {
+    font-family:'DM Sans',sans-serif; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.08em; color:#a08c82; margin-bottom:12px;
+  }
+  .ef-stat-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 0; border-bottom:1px solid #f5f5f5; font-family:'DM Sans',sans-serif;
+  }
+  .ef-stat-row:last-child { border-bottom:none; }
+  .ef-stat-label { font-size:12px; color:#888; }
+  .ef-stat-val   { font-size:13px; font-weight:600; color:#2d1f1a; }
+
+  /* Weights bar */
+  .wt-row  { margin-bottom:8px; }
+  .wt-top  { display:flex; justify-content:space-between; margin-bottom:3px; font-family:'DM Sans',sans-serif; }
+  .wt-sym  { font-size:12px; font-weight:600; color:#2d1f1a; }
+  .wt-pct  { font-size:12px; color:#888; }
+  .wt-bar  { height:6px; border-radius:3px; background:#e5e5e5; overflow:hidden; }
+  .wt-fill { height:100%; border-radius:3px; transition:width 0.4s ease; }
+
+  /* Current vs Optimal comparison */
+  .cmp-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+  .cmp-cell {
+    background:#f9f9f9; border-radius:10px; padding:10px 12px;
+    font-family:'DM Sans',sans-serif; text-align:center;
+  }
+  .cmp-lbl { font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
+  .cmp-val { font-size:15px; font-weight:600; color:#2d1f1a; }
+  .cmp-sub { font-size:10px; color:#aaa; margin-top:2px; }
+
+  /* Insight card */
+  .ef-insight {
+    background:linear-gradient(135deg,#f5efe6,#faf7f2);
+    border:1.5px solid rgba(201,131,122,0.15);
+    border-radius:14px; padding:14px 16px;
+    font-family:'DM Sans',sans-serif; font-size:13px;
+    color:#2d1f1a; line-height:1.65;
+  }
+  .ef-insight strong { font-weight:600; }
+
+  /* Loading / empty states */
+  .ef-loading {
+    display:flex; align-items:center; justify-content:center;
+    height:420px; flex-direction:column; gap:12px;
+    font-family:'DM Sans',sans-serif; color:#a08c82; font-size:14px;
+  }
+  .spin {
+    width:32px; height:32px; border:3px solid #f5efe6;
+    border-top-color:#c9837a; border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+
+<div class="ef-page">
+
+  <!-- Hero -->
+  <div class="ef-hero">
+    <h1>Efficient Frontier</h1>
+    <p>
+      Based on Harry Markowitz's 1952 Portfolio Theory — 3,000 simulated random
+      portfolios plotted by risk vs return. Your current portfolio is shown in red.
+      The optimal portfolios (max Sharpe, min volatility) are highlighted.
+    </p>
+  </div>
+
+  <!-- Controls -->
+  <div class="ef-controls">
+    <select class="ef-sel" id="efPortfolioSel" onchange="loadFrontier()">
+      <option value="">Loading portfolios…</option>
+    </select>
+    <button class="ef-btn active" id="colourModeSharpe" onclick="setColourMode('sharpe',this)">Colour by Sharpe</button>
+    <button class="ef-btn"        id="colourModeVol"    onclick="setColourMode('vol',this)">Colour by Volatility</button>
+    <span id="efBadge" class="ef-badge badge-sim" style="display:none;"></span>
+    <span id="efStatus" style="font-size:12px;color:#a08c82;font-family:'DM Sans',sans-serif;"></span>
+  </div>
+
+  <!-- Main layout -->
+  <div class="ef-layout">
+
+    <!-- Chart -->
+    <div class="ef-chart-card">
+      <div id="efChart">
+        <div class="ef-loading">
+          <div class="spin"></div>
+          Select a portfolio to generate the frontier
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="ef-sidebar">
+
+      <!-- Current portfolio stats -->
+      <div class="ef-stat-card">
+        <div class="ef-stat-title">Your current portfolio</div>
+        <div id="currentStats">
+          <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;">Load a portfolio to see stats</div>
+        </div>
+      </div>
+
+      <!-- Comparison: current vs optimal -->
+      <div class="ef-stat-card">
+        <div class="ef-stat-title">Current vs optimal</div>
+        <div id="comparisonGrid">
+          <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;">—</div>
+        </div>
+      </div>
+
+      <!-- Optimal weights -->
+      <div class="ef-stat-card">
+        <div class="ef-stat-title" id="weightsTitle">Max Sharpe weights</div>
+        <div id="optimalWeights">
+          <div style="font-size:13px;color:#aaa;font-family:'DM Sans',sans-serif;">—</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:12px;">
+          <button class="ef-btn active" id="wtBtnSharpe" onclick="showWeights('sharpe',this)" style="font-size:11px;padding:5px 12px;">Max Sharpe</button>
+          <button class="ef-btn"        id="wtBtnMinVol" onclick="showWeights('minvol',this)"  style="font-size:11px;padding:5px 12px;">Min Volatility</button>
+        </div>
+      </div>
+
+      <!-- Halo insight -->
+      <div class="ef-insight" id="efInsight" style="display:none;"></div>
+
+    </div>
+  </div>
+
+  <!-- Theory note -->
+  <div style="margin-top:24px;padding:16px 20px;background:#fff;border:1px solid #e5e5e5;border-radius:14px;">
+    <div style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#a08c82;margin-bottom:8px;">How this works</div>
+    <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#555;line-height:1.7;margin:0;">
+      Each dot represents a randomly generated portfolio using your holdings, with weights that sum to 100%.
+      The <strong style="color:#c9837a;">frontier</strong> is the upper-left edge of the cloud — portfolios that
+      maximise return for their level of risk. Any portfolio below-right of this curve is suboptimal.
+      <strong style="color:#7a9e8e;">Max Sharpe</strong> (★) maximises return per unit of risk.
+      <strong style="color:#7bafc4;">Min Volatility</strong> (◆) minimises total risk.
+      Your portfolio (●) shows where you currently sit relative to these theoretical optima.
+      <em style="color:#a08c82;">
+        <%= synthetic_note %>
+        If showing simulated data, upload a historical price CSV in Settings for real correlations.
+      </em>
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function tok() { return localStorage.getItem('token') || ''; }
+
+  let _efData       = null;
+  let _colourMode   = 'sharpe';
+  let _weightsMode  = 'sharpe';
+
+  // ── Load portfolios into selector ─────────────────────────────────────────
+  async function initSelector() {
+    try {
+      const r = await fetch('/portfolios/', { headers:{ Authorization: tok() } });
+      if (!r.ok) { window.location.href = '/login'; return; }
+      const ps = await r.json();
+      const sel = document.getElementById('efPortfolioSel');
+      if (!ps.length) {
+        sel.innerHTML = '<option>No portfolios found</option>';
+        return;
+      }
+      sel.innerHTML = ps.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      loadFrontier();
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Fetch and render frontier ─────────────────────────────────────────────
+  async function loadFrontier() {
+    const sel = document.getElementById('efPortfolioSel');
+    const id  = sel.value;
+    if (!id) return;
+
+    document.getElementById('efChart').innerHTML = `
+      <div class="ef-loading"><div class="spin"></div>Running Monte Carlo simulation…</div>`;
+    document.getElementById('efStatus').textContent = '';
+    document.getElementById('efBadge').style.display = 'none';
+
+    try {
+      const r = await fetch(`/analytics/portfolio/${id}/frontier?n_portfolios=3000`, {
+        headers:{ Authorization: tok() }
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        document.getElementById('efChart').innerHTML = `
+          <div class="ef-loading" style="color:#c9837a;">
+            <span style="font-size:28px;">📊</span>
+            ${err.detail || 'Could not generate frontier'}
+          </div>`;
+        return;
+      }
+
+      _efData = await r.json();
+      renderFrontier(_efData);
+
+    } catch(e) {
+      console.error(e);
+      document.getElementById('efChart').innerHTML = `
+        <div class="ef-loading" style="color:#c9837a;">Error loading data</div>`;
+    }
+  }
+
+  // ── Render the Plotly chart ───────────────────────────────────────────────
+  function renderFrontier(data) {
+    const sims    = data.simulations;
+    const current = data.current;
+    const optimal = data.optimal;
+
+    // Colour scale
+    const colVals = sims.map(p => _colourMode === 'sharpe' ? p.sharpe : p.vol);
+    const minC = Math.min(...colVals), maxC = Math.max(...colVals);
+    const norm = v => (v - minC) / (maxC - minC || 1);
+
+    // Colour interpolation: blue → teal → green (Sharpe) or green → amber → red (Vol)
+    function getColor(v) {
+      const t = norm(v);
+      if (_colourMode === 'sharpe') {
+        // low = muted blue, high = sage green
+        const r = Math.round(120 + (122-120)*t);
+        const g = Math.round(175 + (158-175)*t);
+        const bb= Math.round(196 + (142-196)*t);
+        return `rgba(${r},${g},${bb},0.65)`;
+      } else {
+        // low vol = sage, high vol = rose
+        const r = Math.round(122 + (201-122)*t);
+        const g = Math.round(158 + (131-158)*t);
+        const b = Math.round(142 + (122-142)*t);
+        return `rgba(${r},${g},${b},0.65)`;
+      }
+    }
+
+    // Hover text for simulated points
+    const hoverTexts = sims.map(p => {
+      const wEntries = Object.entries(p.weights)
+        .sort((a,b) => b[1]-a[1])
+        .slice(0,3)
+        .map(([s,w]) => `${s}: ${(w*100).toFixed(1)}%`)
+        .join(', ');
+      return `Return: ${(p.return*100).toFixed(1)}%<br>Volatility: ${(p.vol*100).toFixed(1)}%<br>Sharpe: ${p.sharpe.toFixed(2)}<br>${wEntries}`;
+    });
+
+    // Main scatter: simulated portfolios
+    const traceCloud = {
+      type: 'scatter', mode: 'markers',
+      name: 'Simulated portfolios',
+      x: sims.map(p => p.vol * 100),
+      y: sims.map(p => p.return * 100),
+      text: hoverTexts,
+      hovertemplate: '%{text}<extra></extra>',
+      marker: {
+        size: 4,
+        color: colVals,
+        colorscale: _colourMode === 'sharpe'
+          ? [[0,'#7bafc4'],[0.5,'#7a9e8e'],[1,'#4a9470']]
+          : [[0,'#7a9e8e'],[0.5,'#d97706'],[1,'#c9837a']],
+        opacity: 0.7,
+        showscale: true,
+        colorbar: {
+          title: { text: _colourMode === 'sharpe' ? 'Sharpe ratio' : 'Volatility', font:{ family:'DM Sans', size:11, color:'#a08c82' } },
+          thickness: 12, len: 0.6,
+          tickfont: { family:'DM Sans', size:10, color:'#a08c82' },
+        },
+      },
+    };
+
+    // Max Sharpe point
+    const ms = optimal.max_sharpe;
+    const traceMaxSharpe = {
+      type:'scatter', mode:'markers+text',
+      name: 'Max Sharpe ★',
+      x: [ms.vol * 100], y: [ms.return * 100],
+      text: ['★'], textposition:'top center',
+      textfont: { size:16, color:'#4a9470', family:'DM Sans' },
+      hovertemplate: `<b>Max Sharpe</b><br>Return: ${(ms.return*100).toFixed(1)}%<br>Vol: ${(ms.vol*100).toFixed(1)}%<br>Sharpe: ${ms.sharpe.toFixed(2)}<extra></extra>`,
+      marker: { size:14, color:'#4a9470', symbol:'star', line:{ color:'#fff', width:1.5 } },
+    };
+
+    // Min Vol point
+    const mv = optimal.min_vol;
+    const traceMinVol = {
+      type:'scatter', mode:'markers+text',
+      name: 'Min Volatility ◆',
+      x: [mv.vol * 100], y: [mv.return * 100],
+      text: ['◆'], textposition:'top center',
+      textfont: { size:14, color:'#7bafc4', family:'DM Sans' },
+      hovertemplate: `<b>Min Volatility</b><br>Return: ${(mv.return*100).toFixed(1)}%<br>Vol: ${(mv.vol*100).toFixed(1)}%<br>Sharpe: ${mv.sharpe.toFixed(2)}<extra></extra>`,
+      marker: { size:14, color:'#7bafc4', symbol:'diamond', line:{ color:'#fff', width:1.5 } },
+    };
+
+    // Current portfolio point
+    const cp = current;
+    const traceCurrent = {
+      type:'scatter', mode:'markers+text',
+      name: 'Your portfolio ●',
+      x: [cp.vol * 100], y: [cp.return * 100],
+      text: ['●'], textposition:'top center',
+      textfont: { size:16, color:'#c9837a', family:'DM Sans' },
+      hovertemplate: `<b>Your portfolio</b><br>Return: ${(cp.return*100).toFixed(1)}%<br>Vol: ${(cp.vol*100).toFixed(1)}%<br>Sharpe: ${cp.sharpe.toFixed(2)}<extra></extra>`,
+      marker: { size:16, color:'#c9837a', symbol:'circle', line:{ color:'#fff', width:2 } },
+    };
+
+    const layout = {
+      margin: { t:20, l:55, r:80, b:50 },
+      paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+      xaxis: {
+        title:{ text:'Annualised volatility (%)', font:{ family:'DM Sans', size:12, color:'#a08c82' } },
+        showgrid:true, gridcolor:'rgba(45,31,26,0.05)',
+        tickfont:{ family:'DM Sans', size:11, color:'#a08c82' }, ticksuffix:'%',
+        zeroline:false,
+      },
+      yaxis: {
+        title:{ text:'Annualised return (%)', font:{ family:'DM Sans', size:12, color:'#a08c82' } },
+        showgrid:true, gridcolor:'rgba(45,31,26,0.05)',
+        tickfont:{ family:'DM Sans', size:11, color:'#a08c82' }, ticksuffix:'%',
+        zeroline:true, zerolinecolor:'rgba(45,31,26,0.1)',
+      },
+      legend:{ font:{ family:'DM Sans', size:11, color:'#2d1f1a' }, bgcolor:'rgba(255,255,255,0.85)', bordercolor:'rgba(45,31,26,0.08)', borderwidth:1 },
+      hovermode:'closest',
+    };
+
+    document.getElementById('efChart').innerHTML = '<div id="efPlot" style="height:420px;"></div>';
+    Plotly.newPlot('efPlot', [traceCloud, traceMaxSharpe, traceMinVol, traceCurrent], layout, { displayModeBar:false, responsive:true });
+
+    // Badge
+    const badge = document.getElementById('efBadge');
+    badge.style.display = 'inline-block';
+    if (data.synthetic) {
+      badge.className = 'ef-badge badge-sim';
+      badge.textContent = '⚠ Simulated data';
+    } else {
+      badge.className = 'ef-badge badge-real';
+      badge.textContent = '✓ Real price data';
+    }
+
+    // Update sidebar
+    updateSidebar(data);
+  }
+
+  // ── Sidebar ───────────────────────────────────────────────────────────────
+  function updateSidebar(data) {
+    const cp = data.current;
+    const ms = data.optimal.max_sharpe;
+    const mv = data.optimal.min_vol;
+
+    // Current stats
+    document.getElementById('currentStats').innerHTML = `
+      <div class="ef-stat-row"><span class="ef-stat-label">Annualised return</span><span class="ef-stat-val" style="color:${cp.return>=0?'#4a9470':'#c9837a'};">${(cp.return*100).toFixed(1)}%</span></div>
+      <div class="ef-stat-row"><span class="ef-stat-label">Annualised volatility</span><span class="ef-stat-val">${(cp.vol*100).toFixed(1)}%</span></div>
+      <div class="ef-stat-row"><span class="ef-stat-label">Sharpe ratio</span><span class="ef-stat-val">${cp.sharpe.toFixed(2)}</span></div>
+      <div class="ef-stat-row"><span class="ef-stat-label">Holdings</span><span class="ef-stat-val">${data.symbols.length}</span></div>`;
+
+    // Comparison grid
+    const sharpeGap = ms.sharpe - cp.sharpe;
+    const volGap    = cp.vol    - mv.vol;
+    document.getElementById('comparisonGrid').innerHTML = `
+      <div class="cmp-grid">
+        <div class="cmp-cell">
+          <div class="cmp-lbl">Your Sharpe</div>
+          <div class="cmp-val">${cp.sharpe.toFixed(2)}</div>
+          <div class="cmp-sub">current</div>
+        </div>
+        <div class="cmp-cell" style="background:#f0fdf4;">
+          <div class="cmp-lbl">Max Sharpe</div>
+          <div class="cmp-val" style="color:#4a9470;">${ms.sharpe.toFixed(2)}</div>
+          <div class="cmp-sub" style="color:#4a9470;">+${sharpeGap.toFixed(2)}</div>
+        </div>
+        <div class="cmp-cell" style="background:#eff6ff;">
+          <div class="cmp-lbl">Min Vol</div>
+          <div class="cmp-val" style="color:#7bafc4;">${(mv.vol*100).toFixed(1)}%</div>
+          <div class="cmp-sub" style="color:#7bafc4;">−${(volGap*100).toFixed(1)}pp</div>
+        </div>
+      </div>`;
+
+    // Weights
+    showWeights(_weightsMode);
+
+    // Halo insight
+    generateInsight(data);
+  }
+
+  function showWeights(mode, btn) {
+    _weightsMode = mode;
+    document.querySelectorAll('[id^=wtBtn]').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    if (!_efData) return;
+
+    const target = mode === 'sharpe' ? _efData.optimal.max_sharpe : _efData.optimal.min_vol;
+    const weights = Object.entries(target.weights).sort((a,b) => b[1]-a[1]);
+    const title   = mode === 'sharpe' ? 'Max Sharpe weights' : 'Min Volatility weights';
+
+    document.getElementById('weightsTitle').textContent = title;
+
+    const colors = ['#c9837a','#7a9e8e','#7bafc4','#8b5e52','#a08c82','#65a30d','#d97706'];
+    document.getElementById('optimalWeights').innerHTML = weights.map(([sym, w], i) => `
+      <div class="wt-row">
+        <div class="wt-top">
+          <span class="wt-sym">${sym}</span>
+          <span class="wt-pct">${(w*100).toFixed(1)}%</span>
+        </div>
+        <div class="wt-bar">
+          <div class="wt-fill" style="width:${(w*100).toFixed(1)}%;background:${colors[i%colors.length]};"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  function generateInsight(data) {
+    const cp = data.current;
+    const ms = data.optimal.max_sharpe;
+    const mv = data.optimal.min_vol;
+    const el = document.getElementById('efInsight');
+
+    const sharpeGap  = ms.sharpe - cp.sharpe;
+    const retGap     = (ms.return - cp.return) * 100;
+    const volGap     = (cp.vol - mv.vol) * 100;
+    const topMSHolding = Object.entries(ms.weights).sort((a,b)=>b[1]-a[1])[0];
+    const topCurr      = Object.entries(cp.weights).sort((a,b)=>b[1]-a[1])[0];
+
+    let text = '';
+
+    if (cp.sharpe >= ms.sharpe * 0.95) {
+      text = `<strong>Excellent positioning.</strong> Your portfolio is very close to the theoretical maximum Sharpe ratio. You are extracting near-optimal risk-adjusted returns from these assets.`;
+    } else if (sharpeGap > 0.5) {
+      text = `<strong>Significant room to improve.</strong> The max Sharpe portfolio (Sharpe ${ms.sharpe.toFixed(2)}) is ${sharpeGap.toFixed(2)} points above yours (${cp.sharpe.toFixed(2)}). The key difference: ${topMSHolding[0]} is weighted ${(topMSHolding[1]*100).toFixed(0)}% in the optimal portfolio vs ${((cp.weights[topMSHolding[0]]||0)*100).toFixed(0)}% currently. This suggests ${topMSHolding[0]} has a better return-per-unit-of-risk profile than your current heaviest holding (${topCurr[0]} at ${(topCurr[1]*100).toFixed(0)}%).`;
+    } else {
+      text = `<strong>Reasonable positioning.</strong> Your Sharpe ratio is ${sharpeGap.toFixed(2)} below the theoretical maximum. ${volGap > 5 ? `You could also reduce volatility by ${volGap.toFixed(1)} percentage points by moving toward the minimum volatility portfolio.` : 'Your volatility is already close to the minimum achievable with these assets.'}`;
+    }
+
+    if (data.synthetic) {
+      text += ` <em style="color:#a08c82;">Note: based on simulated returns — upload real price data for accurate frontier analysis.</em>`;
+    }
+
+    el.style.display = 'block';
+    el.innerHTML = '💡 ' + text;
+  }
+
+  function setColourMode(mode, btn) {
+    _colourMode = mode;
+    document.querySelectorAll('.ef-btn[id^=colourMode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (_efData) renderFrontier(_efData);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  window.addEventListener('load', initSelector);
+</script>
+{% endblock %}

@@ -1,0 +1,1217 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | FlyingFunds{% endblock %}
+{% block content %}
+<script src="/static/js/insights.js"></script>
+<style>
+  /* ── FlyingFunds warm palette ── */
+  :root {
+    --cream:#faf7f2;--warm:#f5efe6;--blush:#f2e4d8;--pink:#e8c4b4;
+    --rose:#c9837a;--brown:#8b5e52;--dark:#2d1f1a;--sage:#7a9e8e;
+    --sage-lt:#d4e6de;--sky:#7bafc4;--sky-lt:#d6eaf4;--muted:#a08c82;
+    --accent:#c9837a;--danger:#b85050;--success:#4a9470;
+    --bg:#faf7f2;--surface:#ffffff;--border:rgba(45,31,26,0.1);--text:#2d1f1a;
+  }
+  body{background:var(--cream)!important;color:var(--dark)!important;}
+  .card,.icard,.s-card{background:#fff!important;border-color:rgba(45,31,26,0.1)!important;box-shadow:0 2px 12px rgba(45,31,26,0.06);}
+  h1,h2,h3,h4{color:var(--dark);}
+  .muted{color:var(--muted)!important;}
+  th{color:var(--muted)!important;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;}
+  td{border-color:rgba(45,31,26,0.06)!important;}
+  tr:hover td{background:var(--warm)!important;}
+  .positive,.chg-pos{color:#4a9470!important;}
+  .negative,.chg-neg{color:#b85050!important;}
+</style>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .dash-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .dash-greeting {
+    font-family: 'DM Serif Display', serif;
+    font-size: 34px;
+    font-weight: 400;
+    color: #d1bcb2;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .dash-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin: 4px 0 0 0;
+  }
+
+  .dash-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    background: #2d1f1a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.82; color: #fff; }
+
+  .btn-outline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 16px;
+    background: #fff;
+    color: #444;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.2s;
+  }
+  .btn-outline:hover { border-color: #aaa; color: #2d1f1a; }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+
+  .kpi-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: #2d1f1a;
+    letter-spacing: -0.5px;
+  }
+
+  .kpi-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .positive { color: #16a34a; }
+  .negative { color: #dc2626; }
+
+  /* Two-col grid */
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* Section cards */
+  .s-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+
+  .s-card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #2d1f1a;
+    margin: 0 0 4px 0;
+  }
+
+  .s-card-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 14px 0;
+  }
+
+  /* Portfolio row */
+  .portfolio-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .portfolio-row:last-child { border-bottom: none; }
+
+  .portfolio-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2d1f1a;
+  }
+  .portfolio-meta {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  /* Insight badge */
+  .insight-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+  .pill-bullish { background: #d1fae5; color: #065f46; }
+  .pill-bearish { background: #fee2e2; color: #991b1b; }
+  .pill-neutral { background: #f3f4f6; color: #374151; }
+
+  /* Market table */
+  .mkt-table { width: 100%; border-collapse: collapse; }
+  .mkt-table th {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #888;
+    text-align: left;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .mkt-table td {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid #f7f7f7;
+    color: #2d1f1a;
+  }
+  .mkt-table tr:last-child td { border-bottom: none; }
+
+  /* Quick-add suggestion card */
+  .suggest-card {
+    background: linear-gradient(135deg, #2d1f1a 0%, #6b3d35 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .suggest-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    margin: 0 0 6px 0;
+  }
+  .suggest-card p {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin: 0 0 14px 0;
+  }
+
+  .suggest-item {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .suggest-item:last-child { margin-bottom: 0; }
+
+  /* Notification bell */
+  .notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .notif-text { font-size: 13px; color: #333; line-height: 1.4; }
+  .notif-time { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  /* Profile banner */
+  .profile-banner {
+    background: #2d1f1a;
+    border-radius: 14px;
+    padding: 20px 24px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .profile-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .profile-info h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 4px 0;
+  }
+
+  .profile-info p {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+  }
+
+  .profile-badges {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85);
+  }
+
+  @media (max-width: 900px) {
+    .kpi-strip { grid-template-columns: repeat(2,1fr); }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .profile-badges { display: none; }
+  }
+
+  @media (max-width: 560px) {
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<!-- Profile banner -->
+<div class="profile-banner" id="profileBanner">
+  <div class="profile-avatar" id="bannerAvatar">👤</div>
+  <div class="profile-info">
+    <h2 id="bannerName">Welcome back</h2>
+    <p id="bannerSub">Loading your profile…</p>
+  </div>
+  <div class="profile-badges" id="bannerBadges"></div>
+</div>
+
+<!-- KPI strip -->
+<div class="kpi-strip" id="kpiStrip">
+  <div class="kpi-card">
+    <div class="kpi-label">Total invested</div>
+    <div class="kpi-value" id="kpiInvested">—</div>
+    <div class="kpi-sub" id="kpiInvestedSub">across all portfolios</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Market value</div>
+    <div class="kpi-value" id="kpiMktVal">—</div>
+    <div class="kpi-sub" id="kpiMktValSub">loading live prices…</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Total P&L</div>
+    <div class="kpi-value" id="kpiPnl">—</div>
+    <div class="kpi-sub" id="kpiPnlSub">unrealised</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Portfolios</div>
+    <div class="kpi-value" id="kpiPortfolios">—</div>
+    <div class="kpi-sub">active portfolios</div>
+  </div>
+</div>
+
+<!-- ── Portfolio value chart with toggle ── -->
+<div class="s-card" id="dashPVCard" style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h3 class="s-card-title" style="margin:0 0 2px;">Portfolio value</h3>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a08c82;" id="dashPVMeta">—</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <!-- Portfolio selector -->
+      <select id="dashPVPortfolioSel" onchange="dashSwitchPortfolio()"
+        style="font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 10px;border:1.5px solid rgba(45,31,26,0.15);border-radius:20px;background:#fff;color:#2d1f1a;outline:none;cursor:pointer;max-width:160px;">
+      </select>
+      <!-- Range buttons -->
+      <div style="display:flex;gap:4px;">
+        <button class="dash-pv-range active" data-days="30"  onclick="dashSetRange(30)">1M</button>
+        <button class="dash-pv-range"        data-days="90"  onclick="dashSetRange(90)">3M</button>
+        <button class="dash-pv-range"        data-days="180" onclick="dashSetRange(180)">6M</button>
+        <button class="dash-pv-range"        data-days="365" onclick="dashSetRange(365)">1Y</button>
+        <button class="dash-pv-range"        data-days="0"   onclick="dashSetRange(0)">ALL</button>
+      </div>
+    </div>
+  </div>
+  <!-- Mode toggle -->
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button class="dash-mode-btn active" data-mode="value"    onclick="dashSetMode('value')">Value</button>
+    <button class="dash-mode-btn"        data-mode="returns"  onclick="dashSetMode('returns')">Returns</button>
+    <button class="dash-mode-btn"        data-mode="drawdown" onclick="dashSetMode('drawdown')">Drawdown</button>
+  </div>
+  <!-- KPI row -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;" id="dashPVKpis"></div>
+  <div id="dashPVChart" style="height:240px;"></div>
+</div>
+
+<style>
+  .dash-pv-range, .dash-mode-btn {
+    font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;
+    padding:4px 11px;border-radius:20px;border:1.5px solid rgba(45,31,26,0.15);
+    background:#fff;color:#a08c82;cursor:pointer;transition:all 0.15s;
+  }
+  .dash-pv-range:hover, .dash-mode-btn:hover { border-color:var(--rose);color:#2d1f1a; }
+  .dash-pv-range.active, .dash-mode-btn.active { background:#2d1f1a;color:#fff;border-color:#2d1f1a; }
+  .dash-pv-kpi { background:#f5efe6;border-radius:10px;padding:10px 12px; }
+  .dash-pv-kpi-lbl { font-size:10px;font-weight:700;color:#a08c82;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px; }
+  .dash-pv-kpi-val { font-family:'Instrument Serif',serif;font-size:18px;color:#2d1f1a;letter-spacing:-0.3px; }
+</style>
+
+<div class="grid2">
+
+  <!-- Portfolios list -->
+  <div class="s-card">
+    <h3 class="s-card-title">Your portfolios</h3>
+    <p class="s-card-desc">Click to open dashboard</p>
+    <div id="portfolioRows"><p class="s-card-desc">Loading…</p></div>
+    <div style="margin-top:12px;">
+      <a href="/portfolios-ui" class="btn-outline">View all</a>
+    </div>
+  </div>
+
+  <!-- AI suggestions -->
+  <div class="suggest-card">
+    <h3> Insights</h3>
+    <p>Ready to analyse your portfolio and suggest improvements.</p>
+    <div id="aiSnippet">
+      <div class="suggest-item">📊 Run portfolio analysis to get risk metrics</div>
+      <div class="suggest-item">⚖️ Check rebalancing recommendations</div>
+      <div class="suggest-item">📰 Review news sentiment for your holdings</div>
+    </div>
+    <div style="margin-top:14px;">
+      <a href="/ai-insights" class="btn-primary" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);">
+        Open Insights →
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<div class="grid2">
+
+  <!-- Live market snapshot -->
+  <div class="s-card">
+    <h3 class="s-card-title">Live market</h3>
+    <p class="s-card-desc">Your holdings' latest prices</p>
+    <table class="mkt-table">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Price</th>
+          <th>Day %</th>
+        </tr>
+      </thead>
+      <tbody id="mktBody">
+        <tr><td colspan="3" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#888;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Notifications -->
+  <div class="s-card">
+    <h3 class="s-card-title">Notifications</h3>
+    <p class="s-card-desc">Recent alerts and updates</p>
+    <div id="notifList"></div>
+  </div>
+
+</div>
+
+
+<!-- Smart alerts bar -->
+<div id="smartAlertsBar" style="display:none;margin-bottom:12px;"></div>
+
+<!-- ══════════════════════════ PORTFOLIO INTELLIGENCE ═══════════════════════ -->
+<div class="s-card" style="margin-top:16px;margin-bottom:16px;" id="intelSection">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+    <span style="font-size:18px;">🤖</span>
+    <h3 class="s-card-title" style="margin:0;font-family:'Instrument Serif',serif;font-size:19px;font-weight:400;letter-spacing:-0.3px;">Portfolio Intelligence</h3>
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--rose,#c9837a);background:rgba(201,131,122,0.1);border:1px solid rgba(201,131,122,0.2);padding:3px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;">Powered by Halo</span>
+    <span id="intelPortfolioLabel" style="margin-left:auto;font-size:12px;color:#888;font-family:'DM Sans',sans-serif;"></span>
+    <span id="intelLoader" style="display:none;font-size:12px;color:#a08c82;font-family:'DM Sans',sans-serif;">Updating…</span>
+  </div>
+
+  <!-- Row 1: Health Score + Summary (uses existing .grid2 CSS class) -->
+  <div class="grid2" style="margin-bottom:14px;">
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="kpi-label" style="margin-bottom:10px;">Health score</div>
+      <div id="healthScoreContainer" style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Loading…</div>
+    </div>
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="kpi-label" style="margin-bottom:10px;">What does this mean?</div>
+      <div id="portfolioSummaryText" style="font-size:13px;color:#555;font-family:'DM Sans',sans-serif;line-height:1.7;">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Behavioural Insights + What-If -->
+  <div class="grid2" style="margin-bottom:14px;">
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="kpi-label" style="margin-bottom:10px;">Behavioural insights</div>
+      <div id="behaviouralInsightsContainer" style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Loading…</div>
+    </div>
+    <div style="background:var(--warm,#f5efe6);border-radius:12px;padding:16px 18px;">
+      <div class="kpi-label" style="margin-bottom:10px;">What-if engine</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="scenarioBtns">
+        <button class="intel-scenario-btn" onclick="runScenario('market_drop_10',this)">📉 −10%</button>
+        <button class="intel-scenario-btn" onclick="runScenario('market_drop_20',this)">📉 −20%</button>
+        <button class="intel-scenario-btn" onclick="runScenario('market_drop_30',this)">📉 −30%</button>
+        <button class="intel-scenario-btn" onclick="runScenario('rebalance_equal',this)">⚖️ Rebalance</button>
+        <button class="intel-scenario-btn" onclick="runScenario('add_5pct_cash',this)">💰 +5%</button>
+      </div>
+      <div id="whatIfResult" style="font-size:13px;color:#888;font-family:'DM Sans',sans-serif;">Select a scenario above.</div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+
+.intel-scenario-btn
+
+<!-- Quick links bar -->
+<div class="grid3">
+  <a href="/market" class="s-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">📈</span>
+    <div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#2d1f1a;">Market</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Live quotes & charts</div>
+    </div>
+  </a>
+
+  <a href="/news" class="s-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">📰</span>
+    <div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#2d1f1a;">News</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Market headlines</div>
+    </div>
+  </a>
+
+  <a href="/settings" class="s-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">⚙️</span>
+    <div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#2d1f1a;">Settings</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Profile & preferences</div>
+    </div>
+  </a>
+
+, .halo-q-btn {
+    font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;
+    padding:5px 11px;border-radius:20px;cursor:pointer;transition:all 0.15s;
+    border:1.5px solid rgba(45,31,26,0.12);background:#fff;color:#2d1f1a;
+  }
+  .intel-scenario-btn:hover,.halo-q-btn:hover {
+    border-color:var(--rose,#c9837a);background:rgba(201,131,122,0.06);
+  }
+  .intel-scenario-btn.active { background:#2d1f1a;color:#fff;border-color:#2d1f1a; }
+
+  /* Intelligence section — make it use full available width */
+  #intelSection {
+    padding: 20px 22px;
+  }
+  #intelSection .grid2 {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  /* On narrower viewports collapse to single column */
+  @media (max-width: 820px) {
+    #intelSection .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  function tok() { return localStorage.getItem('token') || ''; }
+  function getUser() {
+    try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
+  }
+
+  const typeLabels = { student: '🎓 Student', personal: '💰 Personal', business: '📊 Business' };
+  const levelLabels = { beginner: '🌱 Beginner', intermediate: '📚 Intermediate', advanced: '⚡ Advanced' };
+
+  function renderBanner(user) {
+    document.getElementById('bannerAvatar').textContent = user.avatar || '👤';
+    const name = user.username || user.email?.split('@')[0] || 'there';
+    document.getElementById('bannerName').textContent = `Hey, ${name} 👋`;
+
+    const now = new Date();
+    const h = now.getHours();
+    const timeLabel = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('bannerSub').textContent = `${timeLabel} · ${now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}`;
+
+    const badges = [];
+    if (user.user_type && typeLabels[user.user_type]) badges.push(typeLabels[user.user_type]);
+    if (user.level && levelLabels[user.level]) badges.push(levelLabels[user.level]);
+    if (user.markets?.length) badges.push(`${user.markets.length} interests`);
+
+    document.getElementById('bannerBadges').innerHTML = badges.map(b => `<span class="badge">${b}</span>`).join('');
+  }
+
+  async function loadPortfolios() {
+    try {
+      const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+      if (!res.ok) return;
+      const portfolios = await res.json();
+
+      document.getElementById('kpiPortfolios').textContent = portfolios.length;
+
+      if (!portfolios.length) {
+        document.getElementById('portfolioRows').innerHTML = `
+          <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#888;">No portfolios yet.</p>
+        `;
+        return;
+      }
+
+      document.getElementById('portfolioRows').innerHTML = portfolios.slice(0,5).map(p => `
+        <a href="/dashboard/${p.id}" style="text-decoration:none;">
+          <div class="portfolio-row">
+            <div>
+              <div class="portfolio-name">${p.name}</div>
+              <div class="portfolio-meta">Portfolio #${p.id}</div>
+            </div>
+            <span style="color:#888;font-size:18px;">›</span>
+          </div>
+        </a>
+      `).join('');
+
+      // Load market data for first portfolio's holdings
+      loadFirstPortfolioMarket(portfolios[0].id);
+      loadKpis(portfolios);
+      // Build portfolio selector and load chart for first
+      initDashPVChart(portfolios);
+    } catch (e) { console.error(e); }
+  }
+
+  async function loadKpis(portfolios) {
+    let totalInvested = 0;
+    for (const p of portfolios.slice(0,3)) {
+      try {
+        const res = await fetch(`/analytics/portfolio/${p.id}`, { headers: { Authorization: tok() } });
+        if (res.ok) {
+          const d = await res.json();
+          totalInvested += d.total_invested || 0;
+          // Feed intelligence layer for first portfolio (async, non-blocking)
+          if (p === portfolios[0]) {
+            fetchAndUpdateIntel(p.id, p.name);
+          }
+        }
+      } catch {}
+    }
+    document.getElementById('kpiInvested').textContent = '£' + totalInvested.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  async function loadFirstPortfolioMarket(portfolioId) {
+    try {
+      const res = await fetch(`/portfolios/${portfolioId}`, { headers: { Authorization: tok() } });
+      if (!res.ok) return;
+      const p = await res.json();
+      const symbols = p.holdings?.map(h => h.symbol) || [];
+
+      if (!symbols.length) {
+        document.getElementById('mktBody').innerHTML = '<tr><td colspan="3" style="font-family:DM Sans,sans-serif;font-size:13px;color:#888;">No holdings found.</td></tr>';
+        return;
+      }
+
+      let marketValue = 0;
+      let totalCost = 0;
+      const rows = [];
+
+      for (const h of p.holdings) {
+        try {
+          const qr = await fetch(`/market/public/quote/${h.symbol}`);
+          if (!qr.ok) continue;
+          const q = await qr.json();
+          const price = q.price || 0;
+          const val = price * h.quantity;
+          const cost = h.avg_buy_price * h.quantity;
+          marketValue += val;
+          totalCost += cost;
+
+          const pct = Number(q.change_pct || 0);
+          const color = pct >= 0 ? '#16a34a' : '#dc2626';
+          rows.push(`<tr>
+            <td><strong>${h.symbol}</strong></td>
+            <td>£${Number(price).toFixed(2)}</td>
+            <td style="color:${color};font-weight:500;">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</td>
+          </tr>`);
+        } catch {}
+      }
+
+      document.getElementById('mktBody').innerHTML = rows.join('') || '<tr><td colspan="3" style="color:#888;font-size:13px;font-family:DM Sans,sans-serif;">No data</td></tr>';
+
+      if (marketValue > 0) {
+        document.getElementById('kpiMktVal').textContent = '£' + marketValue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpiMktValSub').textContent = 'market value';
+
+        const pnl = marketValue - totalCost;
+        const pnlPct = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+        const pnlEl = document.getElementById('kpiPnl');
+        pnlEl.textContent = (pnl >= 0 ? '+' : '') + '£' + Math.abs(pnl).toFixed(2);
+        pnlEl.className = 'kpi-value ' + (pnl >= 0 ? 'positive' : 'negative');
+        document.getElementById('kpiPnlSub').textContent = (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '% vs cost';
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  function renderNotifications(user) {
+    const notifs = [];
+
+    // Personalised based on user profile
+    const level = user.level || '';
+    if (level === 'beginner') notifs.push({ icon: '💡', text: 'Tip: Upload a price CSV to see your portfolio value over time.', time: 'Now' });
+    if (level === 'advanced') notifs.push({ icon: '📊', text: 'Your risk metrics are available — check VaR and Sharpe in the dashboard.', time: 'Now' });
+    if (user.markets?.includes('Dividends')) notifs.push({ icon: '💰', text: 'Log dividends in the trading panel to track income separately.', time: 'Today' });
+    if (user.markets?.includes('ETFs')) notifs.push({ icon: '📈', text: 'ETF holdings can be tracked like regular stocks using their ticker symbols.', time: 'Today' });
+
+    notifs.push({ icon: '🤖', text: 'Insights are ready — FlyingFunds can analyse your portfolio now.', time: 'Always on' });
+    notifs.push({ icon: '🔔', text: 'Configure email alerts in Settings → Notifications.', time: 'Reminder' });
+
+    document.getElementById('notifList').innerHTML = notifs.slice(0,5).map(n => `
+      <div class="notif-item">
+        <div class="notif-icon">${n.icon}</div>
+        <div>
+          <div class="notif-text">${n.text}</div>
+          <div class="notif-time">${n.time}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.addEventListener('load', async () => {
+    if (!tok()) {
+      window.location.href = '/login';
+      return;
+    }
+
+    // Refresh user from API — render banner with fresh data
+    let user = getUser();
+    // Render immediately with whatever we have stored (avoids blank name flash)
+    if (user && (user.username || user.email)) renderBanner(user);
+
+    try {
+      const res = await fetch('/users/me', { headers: { Authorization: tok() } });
+      if (res.ok) {
+        const apiUser = await res.json();
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        user = { ...stored, ...apiUser };
+        localStorage.setItem('user', JSON.stringify(user));
+        // Re-render with fresh API data (ensures username/avatar are up to date)
+        renderBanner(user);
+      }
+    } catch {}
+
+    renderNotifications(user);
+    loadPortfolios();
+  });
+
+  // ── Dashboard portfolio value chart ──────────────────────────────────────
+  let dashPVAllPortfolios = [];
+  let dashPVCurrentId     = null;
+  let dashPVCache         = {};   // keyed by portfolio id
+  let dashPVRangeDays     = 30;
+  let dashPVMode          = 'value';
+
+  function dashSetRange(days) {
+    dashPVRangeDays = days;
+    document.querySelectorAll('.dash-pv-range').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.days) === days));
+    if (dashPVCurrentId && dashPVCache[dashPVCurrentId])
+      renderDashPVChart(dashPVCache[dashPVCurrentId]);
+  }
+
+  function dashSetMode(mode) {
+    dashPVMode = mode;
+    document.querySelectorAll('.dash-mode-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === mode));
+    if (dashPVCurrentId && dashPVCache[dashPVCurrentId])
+      renderDashPVChart(dashPVCache[dashPVCurrentId]);
+  }
+
+  async function dashSwitchPortfolio() {
+    const sel   = document.getElementById('dashPVPortfolioSel');
+    const id    = parseInt(sel.value);
+    const port  = dashPVAllPortfolios?.find(p => p.id === id);
+    const pName = port?.name || 'Portfolio';
+
+    dashPVCurrentId = id;
+
+    // 1. Update chart immediately (cache or fresh fetch)
+    if (dashPVCache[id]) {
+      renderDashPVChart(dashPVCache[id]);
+    } else {
+      fetchDashPVData(id);
+    }
+
+    // 2. Update intelligence section — fetch analytics + risk in parallel
+    await fetchAndUpdateIntel(id, pName);
+  }
+
+  // Fetch both analytics endpoints and merge into intelligence layer
+  async function fetchAndUpdateIntel(portfolioId, portfolioName) {
+    const loader = document.getElementById('intelLoader');
+    if (loader) loader.style.display = 'inline';
+    const lbl = document.getElementById('intelPortfolioLabel');
+    if (lbl) lbl.textContent = portfolioName || '';
+
+    try {
+      // Fire both requests in parallel — don't wait for one before starting the other
+      const [analyticsRes, riskRes, tsRes] = await Promise.all([
+        fetch(`/analytics/portfolio/${portfolioId}`,             { headers: { Authorization: tok() } }),
+        fetch(`/analytics/portfolio/${portfolioId}/risk`,        { headers: { Authorization: tok() } }),
+        fetch(`/analytics/portfolio/${portfolioId}/timeseries`,  { headers: { Authorization: tok() } }),
+      ]);
+
+      // Base analytics (holdings, weights, total_invested)
+      const base = analyticsRes.ok ? await analyticsRes.json() : {};
+
+      // Risk metrics (sharpe, var, cvar, drawdown, volatility, annualised_return)
+      const risk = riskRes.ok ? await riskRes.json() : {};
+
+      // Timeseries (for cumulative return context)
+      const ts   = tsRes.ok   ? await tsRes.json()   : {};
+
+      // Merge everything into one object for the intelligence layer
+      const merged = {
+        ...base,
+        // Risk metrics live inside risk.metrics
+        sharpe_ratio:          risk.metrics?.sharpe_ratio,
+        var:                   risk.metrics?.var,
+        cvar:                  risk.metrics?.cvar,
+        max_drawdown:          risk.metrics?.max_drawdown,
+        annualised_volatility: risk.metrics?.annualised_volatility,
+        annualised_return:     risk.metrics?.annualised_return,
+        cumulative_return:     risk.metrics?.cumulative_return,
+        n_days:                risk.metrics?.n_days,
+        // Attach timeseries for richer context
+        _series:               ts.series        || [],
+        _daily_returns:        ts.daily_returns  || [],
+        _synthetic:            ts.synthetic      || false,
+      };
+
+      updateIntelligenceLayer(merged, portfolioName, [], portfolioId);
+
+    } catch(e) { console.error('Intel update failed:', e); }
+    finally    { if (loader) loader.style.display = 'none'; }
+  }
+
+  function initDashPVChart(portfolios) {
+    dashPVAllPortfolios = portfolios;
+    const sel = document.getElementById('dashPVPortfolioSel');
+    sel.innerHTML = portfolios.map(p =>
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    dashPVCurrentId = portfolios[0].id;
+    fetchDashPVData(portfolios[0].id);
+  }
+
+  async function fetchDashPVData(portfolioId) {
+    // Always show the card
+    document.getElementById('dashPVCard').style.display = 'block';
+    document.getElementById('dashPVMeta').textContent = 'Loading…';
+    try {
+      const res = await fetch(`/analytics/portfolio/${portfolioId}/timeseries`, {
+        headers: { Authorization: tok() }
+      });
+      if (!res.ok) { showDashPVNoData(); return; }
+      const data = await res.json();
+      if (!data.series || !data.series.length) { showDashPVNoData(); return; }
+      dashPVCache[portfolioId] = data;
+      renderDashPVChart(data);
+    } catch(e) { showDashPVNoData(); console.error(e); }
+  }
+
+  function showDashPVNoData() {
+    document.getElementById('dashPVMeta').textContent = 'No price data available';
+    document.getElementById('dashPVKpis').innerHTML = '';
+    document.getElementById('dashPVChart').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#a08c82;font-family:'DM Sans',sans-serif;font-size:13px;text-align:center;gap:8px;padding:24px;">
+        <div style="font-size:32px;">📊</div>
+        <div style="font-weight:600;color:#2d1f1a;margin-bottom:4px;">Chart unavailable</div>
+        <div>Could not load price data for your holdings.<br>
+        Check that your symbols are valid US tickers, or upload a price CSV in
+        <a href="/settings" style="color:#8b5e52;font-weight:600;">Settings → Data & Export</a>.</div>
+      </div>`;
+  }
+
+  function renderDashPVChart(data) {
+    let series  = [...(data.series || [])];
+    let returns = [...(data.daily_returns || [])];
+
+    if (dashPVRangeDays > 0 && series.length) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - dashPVRangeDays);
+      series  = series.filter(p => new Date(p.date) >= cutoff);
+      returns = returns.filter(r => new Date(r.date) >= cutoff);
+    }
+
+    if (!series.length) {
+      document.getElementById('dashPVMeta').textContent = 'No data for this range';
+      return;
+    }
+
+    const first     = series[0].value;
+    const last      = series[series.length-1].value;
+    const change    = last - first;
+    const changePct = ((change / first) * 100).toFixed(2);
+    const isUp      = change >= 0;
+    const lineColor = isUp ? '#7a9e8e' : '#c9837a';
+    const fillColor = isUp ? 'rgba(122,158,142,0.1)' : 'rgba(201,131,122,0.1)';
+
+    const synthBadge = data.synthetic
+      ? ' <span style="font-size:11px;background:#f5efe6;color:#8b5e52;padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px;">Estimated · no live data found</span>'
+      : '';
+    document.getElementById('dashPVMeta').innerHTML =
+      `<span style="font-weight:600;color:${isUp?'#4a9470':'#b85050'};">${isUp?'▲':'▼'} ${Math.abs(changePct)}%</span>
+       <span style="color:#a08c82;margin-left:8px;">vs period start</span>${synthBadge}`;
+
+    // KPIs
+    const maxVal = Math.max(...series.map(s=>s.value));
+    const minVal = Math.min(...series.map(s=>s.value));
+    const ann_vol = returns.length > 1
+      ? (Math.sqrt(returns.reduce((s,r)=>s+Math.pow(r.return,2),0)/returns.length)*Math.sqrt(252)*100).toFixed(1)
+      : '—';
+
+    document.getElementById('dashPVKpis').innerHTML = `
+      <div class="dash-pv-kpi"><div class="dash-pv-kpi-lbl">Current</div><div class="dash-pv-kpi-val">£${Number(last).toLocaleString('en-GB',{minimumFractionDigits:0})}</div></div>
+      <div class="dash-pv-kpi"><div class="dash-pv-kpi-lbl">Change</div><div class="dash-pv-kpi-val" style="color:${isUp?'#4a9470':'#b85050'};">${isUp?'+':''}${changePct}%</div></div>
+      <div class="dash-pv-kpi"><div class="dash-pv-kpi-lbl">Peak</div><div class="dash-pv-kpi-val">£${Number(maxVal).toLocaleString('en-GB',{minimumFractionDigits:0})}</div></div>
+      <div class="dash-pv-kpi"><div class="dash-pv-kpi-lbl">Volatility</div><div class="dash-pv-kpi-val" id="kpiVol">${ann_vol}%</div></div>`;
+    if (_intel.metrics?.annualised_volatility && window.FlyingFundsInsights)
+      setTimeout(() => window.FlyingFundsInsights.attachMetricTooltip('kpiVol','volatility',_intel.metrics.annualised_volatility), 60);
+
+    // Build chart data based on mode
+    let trace;
+    if (dashPVMode === 'value') {
+      trace = {
+        type:'scatter', mode:'lines',
+        x: series.map(p=>p.date), y: series.map(p=>Number(p.value)),
+        line: { color: lineColor, width: 2.5, shape: 'spline' },
+        fill: 'tozeroy', fillcolor: fillColor,
+        hovertemplate: '<b>%{x}</b><br>£%{y:,.2f}<extra></extra>',
+      };
+    } else if (dashPVMode === 'returns') {
+      trace = {
+        type:'bar',
+        x: returns.map(r=>r.date),
+        y: returns.map(r=>Number(r.return)*100),
+        marker: { color: returns.map(r => r.return >= 0 ? '#4a9470' : '#b85050'), opacity: 0.8 },
+        hovertemplate: '<b>%{x}</b><br>%{y:.2f}%<extra></extra>',
+      };
+    } else {
+      // Drawdown
+      let equity = 1, peak = 1;
+      const dd = returns.map(r => {
+        equity *= (1 + Number(r.return));
+        peak = Math.max(peak, equity);
+        return ((equity / peak) - 1) * 100;
+      });
+      trace = {
+        type:'scatter', mode:'lines',
+        x: returns.map(r=>r.date), y: dd,
+        line: { color: '#c9837a', width: 2, shape: 'spline' },
+        fill: 'tozeroy', fillcolor: 'rgba(201,131,122,0.12)',
+        hovertemplate: '<b>%{x}</b><br>%{y:.2f}%<extra></extra>',
+      };
+    }
+
+    const yTickPrefix = dashPVMode === 'value' ? '£' : '';
+    const yTickSuffix = dashPVMode !== 'value' ? '%' : '';
+
+    Plotly.react('dashPVChart', [trace], {
+      margin: { t: 4, l: 50, r: 12, b: 36 },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      xaxis: { showgrid: false, tickfont: { family:'DM Sans', size:11, color:'#a08c82' } },
+      yaxis: { showgrid: true, gridcolor: 'rgba(45,31,26,0.06)', tickfont: { family:'DM Sans', size:11, color:'#a08c82' }, tickprefix: yTickPrefix, ticksuffix: yTickSuffix },
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  // ── Smart alerts ─────────────────────────────────────────────────────────
+  let _prevAlertState = {};
+
+  function checkSmartAlerts(currentMetrics, prevMetrics, holdings) {
+    const alerts = [];
+    if (!currentMetrics) return;
+
+    // Helper
+    const pct = v => (Number(v) * 100).toFixed(1) + '%';
+    const f2  = v => Number(v).toFixed(2);
+
+    // 1. Sharpe deterioration
+    if (currentMetrics.sharpe_ratio !== undefined && prevMetrics?.sharpe_ratio !== undefined) {
+      const delta = Number(currentMetrics.sharpe_ratio) - Number(prevMetrics.sharpe_ratio);
+      if (delta < -0.2) alerts.push({ type:'warn', icon:'📉', text:`Sharpe ratio dropped ${Math.abs(delta).toFixed(2)} points — risk-adjusted performance has weakened since last check.` });
+      else if (delta > 0.2) alerts.push({ type:'good', icon:'📈', text:`Sharpe ratio improved by ${delta.toFixed(2)} — risk-adjusted returns are strengthening.` });
+    }
+
+    // 2. Volatility spike
+    if (currentMetrics.annualised_volatility !== undefined && prevMetrics?.annualised_volatility !== undefined) {
+      const cur  = Number(currentMetrics.annualised_volatility);
+      const prev = Number(prevMetrics.annualised_volatility);
+      const chg  = ((cur - prev) / prev) * 100;
+      if (chg > 20) alerts.push({ type:'warn', icon:'⚡', text:`Portfolio volatility increased ${chg.toFixed(0)}% — from ${pct(prev)}/yr to ${pct(cur)}/yr. Review recent additions for high-beta holdings.` });
+    }
+
+    // 3. Drawdown worsened
+    if (currentMetrics.max_drawdown !== undefined && prevMetrics?.max_drawdown !== undefined) {
+      const cur  = Math.abs(Number(currentMetrics.max_drawdown));
+      const prev = Math.abs(Number(prevMetrics.max_drawdown));
+      if (cur > prev + 0.05) alerts.push({ type:'warn', icon:'🔻', text:`Max drawdown worsened from ${(prev*100).toFixed(1)}% to ${(cur*100).toFixed(1)}% — your portfolio's worst historical decline has deepened.` });
+    }
+
+    // 4. Concentration risk appeared/worsened
+    if (holdings?.length > 0) {
+      const maxW = Math.max(...holdings.map(h => Number(h.weight)||0));
+      const topH = holdings.find(h => Number(h.weight) === maxW);
+      if (maxW > 0.45) alerts.push({ type:'warn', icon:'🎯', text:`${topH?.symbol||'Top holding'} now represents ${pct(maxW)} of your portfolio — above safe concentration limits. Consider rebalancing.` });
+    }
+
+    // 5. Negative return alert
+    if (currentMetrics.annualised_return !== undefined) {
+      const ret = Number(currentMetrics.annualised_return);
+      if (ret < -0.1) alerts.push({ type:'bad', icon:'🚨', text:`Portfolio annualised return is ${pct(currentMetrics.annualised_return)}/yr — you are losing value. Review your holdings for deteriorating fundamentals.` });
+    }
+
+    // 6. Good news
+    if (currentMetrics.sharpe_ratio !== undefined && Number(currentMetrics.sharpe_ratio) > 1.2) {
+      alerts.push({ type:'good', icon:'✨', text:`Strong Sharpe ratio of ${f2(currentMetrics.sharpe_ratio)} — your portfolio is delivering excellent risk-adjusted returns.` });
+    }
+
+    renderSmartAlerts(alerts);
+  }
+
+  function renderSmartAlerts(alerts) {
+    const bar = document.getElementById('smartAlertsBar');
+    if (!bar) return;
+
+    if (!alerts.length) {
+      bar.style.display = 'none';
+      bar.innerHTML = '';
+      return;
+    }
+
+    const pal = { good:'#16a34a', warn:'#d97706', bad:'#dc2626', info:'#0284c7' };
+    const bg  = { good:'#f0fdf4', warn:'#fffbeb', bad:'#fef2f2', info:'#eff6ff' };
+
+    bar.style.display = 'block';
+    bar.innerHTML = alerts.map(a => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin-bottom:8px;
+        background:${bg[a.type]||'#f9f9f9'};border-radius:12px;
+        border-left:3px solid ${pal[a.type]||'#ccc'};">
+        <span style="font-size:16px;flex-shrink:0;">${a.icon}</span>
+        <span style="font-size:13px;font-family:'DM Sans',sans-serif;color:#2d1f1a;line-height:1.55;">${a.text}</span>
+        <button onclick="this.parentElement.remove()" style="margin-left:auto;flex-shrink:0;
+          background:none;border:none;font-size:16px;color:#aaa;cursor:pointer;padding:0;line-height:1;">✕</button>
+      </div>`).join('');
+  }
+
+  // ── Intelligence layer ────────────────────────────────────────────────────
+  // State — updated whenever portfolio changes
+  let _intel = { metrics: null, holdings: [], name: '', trades: [], portfolioId: null };
+  // Track last active scenario so it persists across portfolio switches
+  let _activeScenario = null;
+
+  // Called whenever a portfolio's analytics data loads (initial load + switch)
+  function updateIntelligenceLayer(analyticsData, portfolioName, trades, portfolioId) {
+    if (!window.FlyingFundsInsights) return;
+    const INS = window.FlyingFundsInsights;
+
+    // Update state
+    _intel.metrics     = analyticsData;
+    _intel.holdings    = analyticsData.holdings || [];
+    _intel.name        = portfolioName || 'Your portfolio';
+    _intel.trades      = trades || [];
+    _intel.portfolioId = portfolioId;
+
+    // Show which portfolio is driving the intelligence section
+    const lbl = document.getElementById('intelPortfolioLabel');
+    if (lbl) lbl.textContent = portfolioName || '';
+
+    // 1. Health score
+    const health = INS.computeHealthScore(_intel.metrics, _intel.holdings);
+    INS.renderHealthScore('healthScoreContainer', health);
+
+    // 2. Plain-English summary
+    const summary = INS.generatePortfolioSummary(_intel.metrics, _intel.holdings, health, _intel.name);
+    const summaryEl = document.getElementById('portfolioSummaryText');
+    if (summaryEl) {
+      summaryEl.innerHTML = summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    // 3. Behavioural insights
+    const insights = INS.analyseBehaviour(_intel.trades, _intel.holdings, _intel.metrics);
+    INS.renderBehaviouralInsights('behaviouralInsightsContainer', insights);
+
+    // 4. Re-run last active scenario (keeps what-if panel consistent on switch)
+    if (_activeScenario) {
+      const btn = document.querySelector(`.intel-scenario-btn[data-active="${_activeScenario}"]`);
+      _runScenarioInternal(_activeScenario);
+    } else {
+      document.getElementById('whatIfResult').innerHTML =
+        '<span style="font-size:13px;color:#888;font-family:DM Sans,sans-serif;">Select a scenario above.</span>';
+    }
+
+    // 5. Smart alerts — compare new metrics to previous state
+    checkSmartAlerts(_intel.metrics, _prevAlertState, _intel.holdings);
+    _prevAlertState = { ..._intel.metrics };
+
+    // 6. Attach explainable metric tooltips to any elements that exist on this page
+    const tooltipMap = {
+      'kpiSharpe':    ['sharpe',            analyticsData.sharpe_ratio],
+      'kpiVar':       ['var',               analyticsData.var],
+      'kpiCvar':      ['cvar',              analyticsData.cvar],
+      'kpiDrawdown':  ['drawdown',          analyticsData.max_drawdown],
+      'kpiVol':       ['volatility',        analyticsData.annualised_volatility],
+      'kpiAnnReturn': ['annualised_return', analyticsData.annualised_return],
+    };
+    Object.entries(tooltipMap).forEach(([id, [key, val]]) => {
+      if (val !== undefined) INS.attachMetricTooltip(id, key, val);
+    });
+  }
+
+  // Internal scenario runner — no button state management
+  function _runScenarioInternal(scenario) {
+    if (!window.FlyingFundsInsights || !_intel.metrics) return;
+    const result = window.FlyingFundsInsights.computeWhatIf(scenario, _intel.metrics, _intel.holdings);
+    window.FlyingFundsInsights.renderWhatIf('whatIfResult', result);
+  }
+
+  // Public scenario runner — called by buttons, manages active state
+  function runScenario(scenario, btnEl) {
+    // Update active button highlight
+    document.querySelectorAll('.intel-scenario-btn').forEach(b => {
+      b.classList.remove('active');
+      b.removeAttribute('data-active');
+    });
+    if (btnEl) {
+      btnEl.classList.add('active');
+      btnEl.setAttribute('data-active', scenario);
+    }
+    _activeScenario = scenario;
+
+    if (!_intel.metrics) {
+      document.getElementById('whatIfResult').innerHTML =
+        '<span style="font-size:13px;color:#888;font-family:DM Sans,sans-serif;">Select a portfolio first to run scenarios.</span>';
+      return;
+    }
+    _runScenarioInternal(scenario);
+  }
+
+  // Ask Halo a question with live portfolio context injected
+  function askHaloPortfolio(question) {
+    const responseEl = document.getElementById('haloPortfolioResponse');
+    const textEl     = document.getElementById('haloPortfolioText');
+    if (!responseEl || !textEl) return;
+
+    responseEl.style.display = 'block';
+    textEl.innerHTML = '<span style="color:#888;">Halo is thinking…</span>';
+
+    setTimeout(() => {
+      if (typeof haloRespond !== 'function') {
+        textEl.textContent = 'Halo is not loaded yet — refresh the page.';
+        return;
+      }
+
+      // Inject live metrics into the question so Halo gives contextual answers
+      let ctx = question;
+      if (_intel.metrics) {
+        const m = _intel.metrics;
+        const parts = [];
+        if (m.sharpe_ratio   !== undefined) parts.push(`Sharpe ratio: ${Number(m.sharpe_ratio).toFixed(2)}`);
+        if (m.var            !== undefined) parts.push(`VaR 95%: ${(Math.abs(Number(m.var))*100).toFixed(1)}%`);
+        if (m.cvar           !== undefined) parts.push(`CVaR 95%: ${(Math.abs(Number(m.cvar))*100).toFixed(1)}%`);
+        if (m.max_drawdown   !== undefined) parts.push(`max drawdown: ${(Math.abs(Number(m.max_drawdown))*100).toFixed(1)}%`);
+        if (m.annualised_volatility !== undefined) parts.push(`annualised volatility: ${(Number(m.annualised_volatility)*100).toFixed(1)}%`);
+        if (m.annualised_return     !== undefined) parts.push(`annualised return: ${(Number(m.annualised_return)*100).toFixed(1)}%`);
+        if (_intel.holdings.length) parts.push(`${_intel.holdings.length} holdings`);
+        if (parts.length) ctx += ` (My portfolio metrics: ${parts.join(', ')})`;
+      }
+
+      const reply = haloRespond(ctx, []);
+      textEl.innerHTML = reply
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    }, 400);
+  }
+
+  // Intelligence updates handled inside dashSwitchPortfolio above
+
+
+</script>
+
+{% endblock %}
