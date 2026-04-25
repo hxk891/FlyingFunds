@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+{% block title %}Login | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .signup-wrap {
+    min-height: calc(100vh - 60px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .signup-left {
+    background: #0a0a0a;
+    color: #fff;
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signup-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 20%, rgba(99,102,241,0.25) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 80% 80%, rgba(16,185,129,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .signup-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .signup-tagline {
+    position: relative;
+    z-index: 1;
+  }
+
+  .signup-tagline h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 0 0 16px 0;
+    letter-spacing: -1px;
+  }
+
+  .signup-tagline p {
+    font-family: 'DM Sans', sans-serif;
+    color: rgba(255,255,255,0.6);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .feature-list li {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .feature-list li::before {
+    content: '✦';
+    color: #6366f1;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .signup-right {
+    background: #fafaf9;
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+  }
+
+  .login-panel { display: none; }
+  .login-panel.visible { display: block; }
+
+  .step-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6366f1;
+    margin-bottom: 8px;
+  }
+
+  .step-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: #0a0a0a;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .step-desc {
+    font-family: 'DM Sans', sans-serif;
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 28px 0;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #444;
+    letter-spacing: 0.03em;
+  }
+
+  .field input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 12px 14px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 10px;
+    background: #fff;
+    color: #0a0a0a;
+    transition: border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  .field input.code-input {
+    letter-spacing: 0.3em;
+    font-size: 22px;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .forgot-link {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #6366f1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: right;
+    display: block;
+    margin: -6px 0 18px auto;
+    font-weight: 500;
+  }
+  .forgot-link:hover { text-decoration: underline; }
+
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 24px;
+    background: #0a0a0a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .back-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .back-btn:hover { color: #111; }
+
+  .err-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .ok-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .signup-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    margin-top: 20px;
+    text-align: center;
+  }
+  .signup-footer a { color: #6366f1; text-decoration: none; font-weight: 500; }
+  .signup-footer a:hover { text-decoration: underline; }
+
+  .totp-hint {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 800px) {
+    .signup-wrap { grid-template-columns: 1fr; }
+    .signup-left { display: none; }
+    .signup-right { padding: 32px 24px; }
+  }
+</style>
+
+<div class="signup-wrap">
+
+  <!-- Left panel — matches signup exactly -->
+  <div class="signup-left">
+    <div class="signup-brand">✦ FlyingFunds</div>
+
+    <div class="signup-tagline">
+      <h2>Welcome<br><em>back.</em></h2>
+      <p>Your portfolio is waiting. Sign in to check your performance, risk metrics, and AI insights.</p>
+      <ul class="feature-list">
+        <li>Live market data from Finnhub</li>
+        <li>Claude AI portfolio analysis & rebalancing</li>
+        <li>VaR, Sharpe ratio, max drawdown tracking</li>
+        <li>Personalised dashboard from day one</li>
+      </ul>
+    </div>
+
+    <div style="font-family:'DM Sans',sans-serif; font-size:12px; color:rgba(255,255,255,0.3);">
+      FlyingFunds · For educational use
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="signup-right">
+
+    <!-- ── Panel: Login ───────────────────────────────── -->
+    <div class="login-panel visible" id="panel-login">
+      <div class="step-label">Welcome back</div>
+      <h2 class="step-title">Sign in</h2>
+      <p class="step-desc">Use your email address or username to log in.</p>
+
+      <div class="field">
+        <label>Email or username</label>
+        <input id="identifier" placeholder="you@email.com or username"
+               onkeydown="if(event.key==='Enter') doLogin()"
+               autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="password" type="password" placeholder="Your password"
+               onkeydown="if(event.key==='Enter') doLogin()"
+               autocomplete="current-password" />
+      </div>
+
+      <button class="forgot-link" onclick="showPanel('panel-forgot')">Forgot password?</button>
+
+      <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign in</button>
+      <div class="err-box" id="login-err"></div>
+
+      <div class="signup-footer">
+        Don't have an account? <a href="/signup">Sign up</a>
+      </div>
+    </div>
+
+    <!-- ── Panel: 2FA ─────────────────────────────────── -->
+    <div class="login-panel" id="panel-2fa">
+      <button class="back-btn" onclick="showPanel('panel-login')">← Back</button>
+      <div class="step-label">Security check</div>
+      <h2 class="step-title">Two-factor<br>authentication</h2>
+      <p class="step-desc">Open your authenticator app and enter the 6-digit code.</p>
+
+      <div class="field">
+        <label>Authenticator code</label>
+        <input id="totp-code" class="code-input" placeholder="000000" maxlength="6"
+               inputmode="numeric" onkeydown="if(event.key==='Enter') do2FA()"
+               autocomplete="one-time-code" />
+      </div>
+
+      <button class="btn-primary" onclick="do2FA()">Verify</button>
+      <div class="err-box" id="tfa-err"></div>
+      <p class="totp-hint">Lost access to your app? Contact support.</p>
+    </div>
+
+    <!-- ── Panel: Forgot password ─────────────────────── -->
+    <div class="login-panel" id="panel-forgot">
+      <button class="back-btn" onclick="showPanel('panel-login')">← Back</button>
+      <div class="step-label">Account recovery</div>
+      <h2 class="step-title">Reset your<br>password</h2>
+      <p class="step-desc">Enter your email and we'll send you a reset link valid for 1 hour.</p>
+
+      <div class="field">
+        <label>Email address</label>
+        <input id="forgot-email" type="email" placeholder="you@email.com"
+               onkeydown="if(event.key==='Enter') doForgot()" />
+      </div>
+
+      <button class="btn-primary" onclick="doForgot()">Send reset link</button>
+      <div class="err-box" id="forgot-err"></div>
+      <div class="ok-box"  id="forgot-ok"></div>
+    </div>
+
+    <!-- ── Panel: Reset password ──────────────────────── -->
+    <div class="login-panel" id="panel-reset">
+      <div class="step-label">Almost there</div>
+      <h2 class="step-title">Choose a new<br>password</h2>
+      <p class="step-desc">Pick something strong — at least 8 characters.</p>
+
+      <div class="field">
+        <label>New password</label>
+        <input id="new-pw" type="password" placeholder="At least 8 characters"
+               autocomplete="new-password" />
+      </div>
+      <div class="field">
+        <label>Confirm new password</label>
+        <input id="new-pw2" type="password" placeholder="Repeat password"
+               onkeydown="if(event.key==='Enter') doReset()"
+               autocomplete="new-password" />
+      </div>
+
+      <button class="btn-primary" onclick="doReset()">Set new password</button>
+      <div class="err-box" id="reset-err"></div>
+      <div class="ok-box"  id="reset-ok"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let tempToken = null;
+
+  function showPanel(id) {
+    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('visible'));
+    document.getElementById(id).classList.add('visible');
+  }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+    const okId = id.replace('-err', '-ok');
+    const okEl = document.getElementById(okId);
+    if (okEl) okEl.style.display = 'none';
+  }
+
+  function showOk(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+    const errEl = document.getElementById(id.replace('-ok', '-err'));
+    if (errEl) errEl.style.display = 'none';
+  }
+
+  function clearMsg(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  }
+
+  async function doLogin() {
+    const identifier = document.getElementById('identifier').value.trim();
+    const password   = document.getElementById('password').value;
+    const btn        = document.getElementById('loginBtn');
+
+    if (!identifier || !password) return showErr('login-err', 'Please fill in all fields.');
+    clearMsg('login-err');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    try {
+      const res  = await fetch('/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok) return showErr('login-err', data.detail || 'Invalid credentials.');
+
+      if (data.requires_2fa) {
+        tempToken = data.temp_token;
+        document.getElementById('totp-code').value = '';
+        showPanel('panel-2fa');
+        setTimeout(() => document.getElementById('totp-code').focus(), 100);
+        return;
+      }
+
+      finishLogin(data);
+    } catch (e) {
+      showErr('login-err', 'Network error — is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  }
+
+  async function do2FA() {
+    const code = document.getElementById('totp-code').value.trim();
+    if (code.length !== 6) return showErr('tfa-err', 'Enter the 6-digit code.');
+    clearMsg('tfa-err');
+
+    try {
+      const res  = await fetch('/users/login/2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ temp_token: tempToken, totp_code: code })
+      });
+      const data = await res.json();
+      if (!res.ok) return showErr('tfa-err', data.detail || 'Invalid code.');
+      finishLogin(data);
+    } catch (e) {
+      showErr('tfa-err', 'Network error.');
+    }
+  }
+
+  function finishLogin(data) {
+    localStorage.setItem('token', `Bearer ${data.access_token}`);
+    if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/dashboard';
+  }
+
+  async function doForgot() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) return showErr('forgot-err', 'Enter your email address.');
+    clearMsg('forgot-err');
+
+    try {
+      const res  = await fetch('/users/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      showOk('forgot-ok', data.message || 'Check your inbox for a reset link.');
+    } catch (e) {
+      showErr('forgot-err', 'Network error.');
+    }
+  }
+
+  async function doReset() {
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (!token) return showErr('reset-err', 'Missing reset token — use the link from your email.');
+
+    const pw  = document.getElementById('new-pw').value;
+    const pw2 = document.getElementById('new-pw2').value;
+
+    if (!pw) return showErr('reset-err', 'Enter a new password.');
+    if (pw.length < 8) return showErr('reset-err', 'Password must be at least 8 characters.');
+    if (pw !== pw2) return showErr('reset-err', 'Passwords do not match.');
+    clearMsg('reset-err');
+
+    try {
+      const res  = await fetch('/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: pw })
+      });
+      const data = await res.json();
+      if (!res.ok) return showErr('reset-err', data.detail || 'Reset failed.');
+      showOk('reset-ok', 'Password updated! Redirecting to login…');
+      setTimeout(() => window.location.href = '/login', 2000);
+    } catch (e) {
+      showErr('reset-err', 'Network error.');
+    }
+  }
+
+  window.addEventListener('load', () => {
+    if (new URLSearchParams(window.location.search).get('token')) {
+      showPanel('panel-reset');
+    } else {
+      document.getElementById('identifier').focus();
+    }
+  });
+</script>
+
+{% endblock %}

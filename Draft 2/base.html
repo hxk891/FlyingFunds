@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}FlyingFunds{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    body { font-family: system-ui; margin: 0; background: #fafafa; color:#111; }
+    nav { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#fff; border-bottom:1px solid #e5e5e5; position:sticky; top:0; z-index:10; }
+    .nav-links { display:flex; gap:14px; align-items:center; }
+    a { text-decoration:none; color:#111; padding:8px 10px; border-radius:10px; }
+    a:hover { background:#f1f1f1; }
+    .container { max-width: 1050px; margin: 0 auto; padding: 18px; }
+    .card { background:#fff; border:1px solid #e5e5e5; border-radius:14px; padding:16px; margin: 12px 0; }
+    .muted { color:#666; }
+    button { padding:10px 14px; border-radius:10px; border:1px solid #ddd; cursor:pointer; background:#fff; }
+    input, textarea, select { width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; }
+    .pill { border:1px solid #ddd; border-radius:999px; padding:6px 10px; background:#fff; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" style="font-weight:800;">FlyingFunds</a>
+
+    <div class="nav-links">
+      <a href="/market">Market</a>
+      <a href="/portfolios-ui">Portfolios</a>
+      <a href="/ai-insights">🤖 AI Insights</a>
+      <a href="/news">News</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+      <a href="/invest">Invest</a>
+
+      <span id="authArea"></span>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script>
+    // ---------- AUTH HELPERS (single source of truth) ----------
+    function getToken() {
+      // should be stored as: "Bearer eyJ..."
+      return localStorage.getItem("token") || "";
+    }
+  
+    function authFetch(url, opts = {}) {
+      const token = getToken();
+      const headers = new Headers(opts.headers || {});
+      if (token) headers.set("Authorization", token);
+      // keep any existing headers (Content-Type etc.)
+      opts.headers = headers;
+      return fetch(url, opts);
+    }
+  
+    function getUser() {
+      try { return JSON.parse(localStorage.getItem("user") || "null"); }
+      catch { return null; }
+    }
+  
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+    }
+  
+    // ---------- NAVBAR AUTH UI ----------
+    function renderAuthArea(){
+      const el = document.getElementById("authArea");
+      const token = getToken();
+      const user = getUser();
+  
+      if(!token){
+        el.innerHTML = `
+          <a href="/login" class="pill" style="display:flex; align-items:center; gap:8px;">
+            <span style="width:28px;height:28px;border-radius:999px;border:1px solid #ddd;display:inline-flex;align-items:center;justify-content:center;">👤</span>
+            <span>Login</span>
+          </a>
+          <a href="/signup" class="pill">Sign up</a>
+        `;
+        return;
+      }
+  
+      const avatar = user?.avatar || "👤";
+      const name = user?.username || user?.email || "My account";
+  
+      el.innerHTML = `
+        <div style="position:relative;">
+          <button id="profileBtn" class="pill" style="display:flex; align-items:center; gap:8px;">
+            <span style="width:28px;height:28px;border-radius:999px;border:1px solid #ddd;display:inline-flex;align-items:center;justify-content:center;">${avatar}</span>
+            <span style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</span>
+          </button>
+  
+          <div id="profileMenu" style="display:none; position:absolute; right:0; top:44px; min-width:220px; border:1px solid #eee; background:white; border-radius:12px; padding:8px; box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+            <a href="/dashboard" style="display:block; padding:10px; border-radius:10px;">Dashboard</a>
+            <a href="/portfolios-ui" style="display:block; padding:10px; border-radius:10px;">Portfolios</a>
+            <a href="/settings" style="display:block; padding:10px; border-radius:10px;">Settings</a>
+            <button onclick="logout()" style="width:100%; text-align:left; padding:10px; border:0; background:transparent; cursor:pointer; border-radius:10px;">Logout</button>
+          </div>
+        </div>
+      `;
+  
+      const btn = document.getElementById("profileBtn");
+      const menu = document.getElementById("profileMenu");
+  
+      btn.addEventListener("click", () => {
+        menu.style.display = (menu.style.display === "none") ? "block" : "none";
+      });
+  
+      window.addEventListener("click", (e) => {
+        if (!e.target.closest("#profileBtn") && !e.target.closest("#profileMenu")) {
+          menu.style.display = "none";
+        }
+      });
+    }
+  
+    renderAuthArea();
+  </script>
+</body>
+</html>

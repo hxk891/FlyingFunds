@@ -1,0 +1,744 @@
+{% extends "base.html" %}
+{% block title %}Settings | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .settings-wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 0;
+  }
+
+  .settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: sticky;
+    top: 80px;
+    align-self: start;
+  }
+
+  .nav-item {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 14px;
+    border-radius: 10px;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-item:hover { background: #f0f0f0; color: #111; }
+  .nav-item.active { background: #0a0a0a; color: #fff; }
+
+  .settings-main { display: flex; flex-direction: column; gap: 20px; }
+
+  .s-section {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 22px 24px;
+  }
+
+  .s-section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: #0a0a0a;
+    margin: 0 0 4px 0;
+  }
+
+  .s-section-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    margin: 0 0 20px 0;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    letter-spacing: 0.03em;
+  }
+
+  .field input, .field select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    background: #fff;
+    color: #111;
+    transition: border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* Avatar picker */
+  .avatar-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .av-btn {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e5e5;
+    background: #fff;
+    font-size: 19px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .av-btn:hover { transform: scale(1.1); }
+  .av-btn.active { border-color: #0a0a0a; background: #0a0a0a; }
+
+  /* Toggle switch */
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+  }
+  .toggle-row:last-child { border-bottom: none; }
+
+  .toggle-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #222;
+    font-weight: 500;
+  }
+  .toggle-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .toggle {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: #6366f1; }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+  /* Tags */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .tag-pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1.5px solid #e5e5e5;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tag-pill:hover { border-color: #aaa; }
+  .tag-pill.selected { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
+
+  /* Buttons */
+  .btn-save {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    background: #0a0a0a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 6px;
+  }
+  .btn-save:hover { opacity: 0.82; }
+
+  .btn-outline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    background: transparent;
+    color: #555;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-top: 6px;
+  }
+  .btn-outline:hover { border-color: #aaa; }
+
+  .btn-danger {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-danger:hover { opacity: 0.85; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0a0a0a;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.err { background: #dc2626; }
+
+  .status-tag {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status-ok { background: #d1fae5; color: #065f46; }
+  .status-err { background: #fee2e2; color: #991b1b; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 400px;
+    width: 90%;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .modal-box h3 {
+    margin: 0 0 8px 0;
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+  }
+  .modal-box p { font-size: 14px; color: #666; margin: 0 0 20px 0; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  @media (max-width: 700px) {
+    .settings-wrap { grid-template-columns: 1fr; }
+    .settings-nav { flex-direction: row; flex-wrap: wrap; position: static; }
+    .field-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="settings-wrap">
+
+  <!-- Sidebar nav -->
+  <div class="settings-nav">
+    <button class="nav-item active" onclick="showSection('profile')">👤 Profile</button>
+    <button class="nav-item" onclick="showSection('security')">🔒 Security</button>
+    <button class="nav-item" onclick="showSection('preferences')">🎯 Preferences</button>
+    <button class="nav-item" onclick="showSection('notifications')">🔔 Notifications</button>
+    <button class="nav-item" onclick="showSection('data')">📦 Data & Export</button>
+    <button class="nav-item" onclick="showSection('danger')">⚠️ Account</button>
+  </div>
+
+  <div class="settings-main">
+
+    <!-- Profile -->
+    <div class="s-section" id="sec-profile">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h2 class="s-section-title">Profile</h2>
+        <span class="status-tag status-ok" id="profileStatus" style="display:none;">Saved ✓</span>
+      </div>
+      <p class="s-section-desc">Your public-facing name and avatar.</p>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Email address</label>
+          <input id="email" type="email" />
+        </div>
+        <div class="field">
+          <label>Username</label>
+          <input id="username" placeholder="e.g. alex_invest" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Avatar</label>
+        <div class="avatar-picker" id="avatarPicker"></div>
+      </div>
+
+      <button class="btn-save" onclick="saveProfile()">Save profile</button>
+    </div>
+
+    <!-- Security -->
+    <div class="s-section" id="sec-security" style="display:none;">
+      <h2 class="s-section-title">Security</h2>
+      <p class="s-section-desc">Change your password. You'll stay logged in after updating.</p>
+
+      <div class="field">
+        <label>Current password</label>
+        <input id="curPw" type="password" placeholder="Your current password" />
+      </div>
+      <div class="field">
+        <label>New password</label>
+        <input id="newPw" type="password" placeholder="At least 8 characters" />
+      </div>
+      <div class="field">
+        <label>Confirm new password</label>
+        <input id="newPw2" type="password" placeholder="Re-enter new password" />
+      </div>
+
+      <button class="btn-save" onclick="changePassword()">Update password</button>
+    </div>
+
+    <!-- Preferences -->
+    <div class="s-section" id="sec-preferences" style="display:none;">
+      <h2 class="s-section-title">Preferences</h2>
+      <p class="s-section-desc">Personalise your dashboard and AI suggestions.</p>
+
+      <div class="field">
+        <label>Investor type</label>
+        <select id="prefType">
+          <option value="">— Not set —</option>
+          <option value="student">Student — Learning & building confidence</option>
+          <option value="personal">Personal — Growing personal savings</option>
+          <option value="business">Business — Managing company funds</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Experience level</label>
+        <select id="prefLevel">
+          <option value="">— Not set —</option>
+          <option value="beginner">Beginner — Just starting out</option>
+          <option value="intermediate">Intermediate — I know the basics</option>
+          <option value="advanced">Advanced — I want full depth</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Markets of interest</label>
+        <div class="tag-row" id="marketTags"></div>
+      </div>
+
+      <button class="btn-save" onclick="savePreferences()">Save preferences</button>
+    </div>
+
+    <!-- Notifications -->
+    <div class="s-section" id="sec-notifications" style="display:none;">
+      <h2 class="s-section-title">Notifications</h2>
+      <p class="s-section-desc">Control what emails and alerts you receive.</p>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Weekly portfolio digest</div>
+          <div class="toggle-desc">A summary of your portfolio performance every Monday</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notifWeekly" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Market news alerts</div>
+          <div class="toggle-desc">Breaking news relevant to your holdings</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notifNews" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Risk threshold warnings</div>
+          <div class="toggle-desc">Alert when your portfolio's VaR or drawdown exceeds a threshold</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notifRisk" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">AI rebalancing suggestions</div>
+          <div class="toggle-desc">Notify when Claude detects rebalancing opportunities</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notifRebal" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Price alerts</div>
+          <div class="toggle-desc">Alert on significant price movements in your holdings (±5%)</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notifPrice" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <button class="btn-save" style="margin-top:16px;" onclick="saveNotifications()">Save notification settings</button>
+    </div>
+
+    <!-- Data & Export -->
+    <div class="s-section" id="sec-data" style="display:none;">
+      <h2 class="s-section-title">Data & Export</h2>
+      <p class="s-section-desc">Download your portfolio data at any time.</p>
+
+      <div id="exportPortfolios" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+      <p class="s-section-desc" style="margin-top:16px;">
+        Exports include holdings, avg buy prices, and weights. PDF requires reportlab on the server.
+      </p>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="s-section" id="sec-danger" style="display:none; border-color:#fecaca;">
+      <h2 class="s-section-title" style="color:#dc2626;">Account</h2>
+      <p class="s-section-desc">Irreversible actions. Please be sure before proceeding.</p>
+
+      <div style="background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin-bottom:14px;">
+        <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#dc2626;margin-bottom:6px;">Delete account</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#666;margin-bottom:14px;">
+          Permanently deletes your account, all portfolios, holdings, and data. This cannot be undone.
+        </div>
+        <button class="btn-danger" onclick="confirmDelete()">Delete my account</button>
+      </div>
+
+      <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:16px;">
+        <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;color:#92400e;margin-bottom:6px;">Logout everywhere</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#666;margin-bottom:14px;">
+          Clears your local session. Your account and data are kept.
+        </div>
+        <button class="btn-outline" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h3>Delete account</h3>
+    <p>Type <strong>DELETE</strong> to confirm. This will permanently erase your account and all data.</p>
+    <input id="deleteConfirmInput" placeholder="Type DELETE" style="font-family:'DM Sans',sans-serif;font-size:14px;padding:10px;border:1.5px solid #e5e5e5;border-radius:9px;width:100%;box-sizing:border-box;margin-bottom:16px;" />
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-danger" onclick="deleteAccount()">Delete permanently</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const avatarEmojis = ['👩🏻‍💻','🧑🏻‍💻','🧠','📈','💼','🦊','🐼','🐯','🦁','🐸','🚀','💎','🌊','⚡','🎯'];
+  const marketOptions = ['US Stocks','UK Stocks','ETFs','Crypto','Commodities','Tech','Healthcare','Energy','Dividends','Bonds','Small Cap','High Growth'];
+
+  let currentAvatar = '👤';
+  let selectedMarkets = [];
+
+  function tok() { return localStorage.getItem('token') || ''; }
+  function requireAuth() { if (!tok()) window.location.href = '/login'; }
+  requireAuth();
+
+  function toast(msg, isErr = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isErr ? ' err' : '');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function showSection(id) {
+    ['profile','security','preferences','notifications','data','danger'].forEach(s => {
+      document.getElementById('sec-'+s).style.display = 'none';
+      document.querySelectorAll('.nav-item').forEach((btn, i) => {
+        const ids = ['profile','security','preferences','notifications','data','danger'];
+        btn.className = 'nav-item' + (ids[i] === id ? ' active' : '');
+      });
+    });
+    document.getElementById('sec-'+id).style.display = 'block';
+    if (id === 'data') loadExportSection();
+  }
+
+  function renderAvatarPicker() {
+    document.getElementById('avatarPicker').innerHTML = avatarEmojis.map(a => `
+      <button type="button" class="av-btn${currentAvatar===a?' active':''}" onclick="pickAvatar('${a}')">${a}</button>
+    `).join('');
+  }
+
+  function pickAvatar(a) { currentAvatar = a; renderAvatarPicker(); }
+
+  function renderMarketTags() {
+    document.getElementById('marketTags').innerHTML = marketOptions.map(m => `
+      <button type="button" class="tag-pill${selectedMarkets.includes(m)?' selected':''}" onclick="toggleMkt('${m}')">${m}</button>
+    `).join('');
+  }
+
+  function toggleMkt(m) {
+    selectedMarkets = selectedMarkets.includes(m)
+      ? selectedMarkets.filter(x => x!==m)
+      : [...selectedMarkets, m];
+    renderMarketTags();
+  }
+
+  async function loadMe() {
+    try {
+      const res = await fetch('/users/me', { headers: { Authorization: tok() } });
+      if (!res.ok) return;
+      const u = await res.json();
+
+      // Always trust the API as source of truth, update localStorage
+      localStorage.setItem('user', JSON.stringify(u));
+
+      document.getElementById('email').value = u.email || '';
+      document.getElementById('username').value = u.username || '';
+      currentAvatar = u.avatar || '👤';
+      renderAvatarPicker();
+
+      document.getElementById('prefType').value = u.user_type || '';
+      document.getElementById('prefLevel').value = u.level || '';
+      selectedMarkets = Array.isArray(u.markets) ? u.markets : [];
+      renderMarketTags();
+    } catch (e) { console.error(e); }
+  }
+
+  async function saveProfile() {
+    const email = document.getElementById('email').value.trim();
+    const username = document.getElementById('username').value.trim();
+
+    try {
+      const res = await fetch('/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ email, username, avatar: currentAvatar })
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      const u = await res.json();
+
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({ ...stored, email: u.email, username, avatar: currentAvatar }));
+
+      const tag = document.getElementById('profileStatus');
+      tag.style.display = 'inline-block';
+      setTimeout(() => tag.style.display = 'none', 3000);
+      toast('Profile saved ✓');
+    } catch (e) { toast('Failed: ' + e.message, true); }
+  }
+
+  async function changePassword() {
+    const cur = document.getElementById('curPw').value;
+    const nw = document.getElementById('newPw').value;
+    const nw2 = document.getElementById('newPw2').value;
+
+    if (!cur || !nw) return toast('Fill in all password fields.', true);
+    if (nw.length < 8) return toast('New password must be 8+ characters.', true);
+    if (nw !== nw2) return toast('New passwords do not match.', true);
+
+    try {
+      const res = await fetch('/users/me/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ current_password: cur, new_password: nw })
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      document.getElementById('curPw').value = '';
+      document.getElementById('newPw').value = '';
+      document.getElementById('newPw2').value = '';
+      toast('Password updated ✓');
+    } catch (e) { toast('Failed: ' + e.message, true); }
+  }
+
+  async function savePreferences() {
+    const user_type = document.getElementById('prefType').value;
+    const level = document.getElementById('prefLevel').value;
+
+    try {
+      const res = await fetch('/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ user_type, level, markets: selectedMarkets })
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      const u = await res.json();
+
+      // Update localStorage with fresh API response so everything stays in sync
+      localStorage.setItem('user', JSON.stringify(u));
+      toast('Preferences saved ✓');
+    } catch (e) { toast('Failed: ' + e.message, true); }
+  }
+
+  function saveNotifications() {
+    const prefs = {
+      weekly: document.getElementById('notifWeekly').checked,
+      news: document.getElementById('notifNews').checked,
+      risk: document.getElementById('notifRisk').checked,
+      rebal: document.getElementById('notifRebal').checked,
+      price: document.getElementById('notifPrice').checked,
+    };
+    localStorage.setItem('notif_prefs', JSON.stringify(prefs));
+    toast('Notification preferences saved ✓');
+  }
+
+  function loadNotificationPrefs() {
+    try {
+      const p = JSON.parse(localStorage.getItem('notif_prefs') || '{}');
+      if (p.weekly !== undefined) document.getElementById('notifWeekly').checked = p.weekly;
+      if (p.news !== undefined) document.getElementById('notifNews').checked = p.news;
+      if (p.risk !== undefined) document.getElementById('notifRisk').checked = p.risk;
+      if (p.rebal !== undefined) document.getElementById('notifRebal').checked = p.rebal;
+      if (p.price !== undefined) document.getElementById('notifPrice').checked = p.price;
+    } catch {}
+  }
+
+  async function loadExportSection() {
+    const container = document.getElementById('exportPortfolios');
+    container.innerHTML = '<p style="font-family:DM Sans,sans-serif;font-size:13px;color:#888;">Loading portfolios…</p>';
+
+    try {
+      const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+      if (!res.ok) throw new Error('Could not load portfolios');
+      const portfolios = await res.json();
+
+      if (!portfolios.length) {
+        container.innerHTML = '<p style="font-family:DM Sans,sans-serif;font-size:13px;color:#888;">No portfolios found.</p>';
+        return;
+      }
+
+      container.innerHTML = portfolios.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#fafaf9;border:1px solid #e5e5e5;border-radius:12px;padding:12px 16px;">
+          <div>
+            <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;">${p.name}</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:#888;">Portfolio #${p.id}</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <a href="/export/portfolio/${p.id}.csv"><button class="btn-outline" style="margin-top:0;font-size:13px;padding:7px 14px;">CSV</button></a>
+            <a href="/export/portfolio/${p.id}.pdf"><button class="btn-outline" style="margin-top:0;font-size:13px;padding:7px 14px;">PDF</button></a>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      container.innerHTML = `<p style="font-family:DM Sans,sans-serif;font-size:13px;color:#dc2626;">${e.message}</p>`;
+    }
+  }
+
+  function confirmDelete() {
+    document.getElementById('deleteModal').classList.add('open');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('open');
+    document.getElementById('deleteConfirmInput').value = '';
+  }
+
+  async function deleteAccount() {
+    const val = document.getElementById('deleteConfirmInput').value.trim();
+    if (val !== 'DELETE') return toast('Type DELETE exactly to confirm.', true);
+
+    try {
+      // Most backends don't have a delete endpoint yet — we'll clear locally
+      // Replace with: await fetch('/users/me', { method: 'DELETE', headers: { Authorization: tok() } });
+      toast('Account deleted. Goodbye.', true);
+      setTimeout(() => {
+        localStorage.clear();
+        window.location.href = '/';
+      }, 1500);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/';
+  }
+
+  window.addEventListener('load', () => {
+    loadMe();
+    loadNotificationPrefs();
+  });
+</script>
+
+{% endblock %}

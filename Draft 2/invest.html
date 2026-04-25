@@ -1,0 +1,1048 @@
+{% extends "base.html" %}
+{% block title %}Invest | FlyingFunds{% endblock %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: #0a0a0a;
+    letter-spacing: -0.5px;
+    margin: 0;
+  }
+
+  .page-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin: 4px 0 0 0;
+  }
+
+  /* Balance bar */
+  .balance-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #0a0a0a;
+    color: #fff;
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .balance-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .balance-amount {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+  }
+
+  .balance-deposit-btn {
+    margin-left: auto;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .balance-deposit-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* Grid layout */
+  .invest-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .invest-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .icard {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+
+  .icard-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #0a0a0a;
+    margin: 0 0 16px 0;
+  }
+
+  /* Tabs */
+  .tab-row {
+    display: flex;
+    background: #f3f3f3;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 18px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: #fff;
+    color: #0a0a0a;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Form fields */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .field label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    letter-spacing: 0.02em;
+  }
+
+  .field input, .field select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    background: #fff;
+    color: #111;
+    transition: border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  .price-preview {
+    background: #f8f8f8;
+    border: 1px solid #e5e5e5;
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 14px;
+    min-height: 38px;
+  }
+
+  .price-preview strong { color: #0a0a0a; font-size: 15px; }
+
+  /* Buttons */
+  .btn-buy {
+    width: 100%;
+    padding: 11px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-buy:hover { opacity: 0.88; }
+
+  .btn-sell {
+    width: 100%;
+    padding: 11px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-sell:hover { opacity: 0.88; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 11px;
+    background: #0a0a0a;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Quote strip */
+  .quote-strip {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    background: #fafaf9;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .quote-item { display: flex; flex-direction: column; gap: 2px; }
+  .quote-key { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+  .quote-val { font-size: 15px; font-weight: 600; color: #0a0a0a; }
+  .quote-val.up { color: #16a34a; }
+  .quote-val.down { color: #dc2626; }
+
+  /* P&L table */
+  .pnl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .pnl-table th {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .pnl-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #f7f7f7;
+    color: #222;
+  }
+
+  .pnl-table tr:last-child td { border-bottom: none; }
+
+  .badge-up {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-down {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-neutral {
+    background: #f3f3f3;
+    color: #555;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  /* History */
+  .history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+  .history-row:last-child { border-bottom: none; }
+
+  .trade-side-buy {
+    background: #d1fae5;
+    color: #065f46;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .trade-side-sell {
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0a0a0a;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.err { background: #dc2626; }
+  .toast.ok { background: #16a34a; }
+
+  /* Deposit modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 360px;
+    width: 90%;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 6px 0;
+  }
+  .modal-desc { font-size: 13px; color: #666; margin: 0 0 18px 0; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .btn-outline {
+    padding: 9px 18px;
+    background: transparent;
+    color: #555;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn-outline:hover { border-color: #aaa; }
+
+  .empty-state {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #aaa;
+    text-align: center;
+    padding: 24px 0;
+  }
+</style>
+
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Invest</h1>
+    <p class="page-sub">Paper trade at live prices, or log manual entries.</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <label for="portfolioSelect" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#666;">Portfolio:</label>
+    <select id="portfolioSelect" onchange="onPortfolioChange()"
+      style="font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 12px;border:1.5px solid #e5e5e5;border-radius:9px;background:#fff;">
+      <option value="">Loading…</option>
+    </select>
+    <button id="createPortfolioBtn" onclick="openCreatePortfolio()" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 14px;background:#6366f1;color:#fff;border:none;border-radius:9px;cursor:pointer;">
+      + New portfolio
+    </button>
+  </div>
+</div>
+
+<!-- No portfolio banner -->
+<div id="noPortfolioBanner" style="display:none;align-items:center;gap:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:16px 20px;margin-bottom:20px;">
+  <span style="font-size:24px;">📂</span>
+  <div style="font-family:'DM Sans',sans-serif;">
+    <div style="font-weight:600;font-size:14px;color:#1e40af;margin-bottom:2px;">No portfolios yet</div>
+    <div style="font-size:13px;color:#3b82f6;">Create a portfolio to start tracking your investments.</div>
+  </div>
+  <button onclick="openCreatePortfolio()" style="margin-left:auto;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;cursor:pointer;white-space:nowrap;">
+    Create portfolio
+  </button>
+</div>
+
+<!-- Cash balance bar -->
+<div class="balance-bar">
+  <div>
+    <div class="balance-label">Virtual cash balance</div>
+    <div class="balance-amount" id="balanceDisplay">£—</div>
+  </div>
+  <button class="balance-deposit-btn" onclick="openDeposit()">+ Add funds</button>
+</div>
+
+<div class="invest-grid">
+
+  <!-- LEFT: Trade panel -->
+  <div>
+    <div class="icard">
+      <h2 class="icard-title">Trade</h2>
+
+      <!-- Symbol search -->
+      <div class="field">
+        <label>Stock symbol</label>
+        <input id="tradeSymbol" placeholder="e.g. AAPL, TSLA, MSFT"
+               oninput="clearQuote()"
+               onkeydown="if(event.key==='Enter') fetchQuoteForTrade()" />
+      </div>
+      <button class="btn-primary" onclick="fetchQuoteForTrade()" style="margin-bottom:14px;">
+        Get quote
+      </button>
+
+      <!-- Live quote strip -->
+      <div class="quote-strip" id="quoteStrip" style="display:none;">
+        <div class="quote-item">
+          <span class="quote-key">Price</span>
+          <span class="quote-val" id="qPrice">—</span>
+        </div>
+        <div class="quote-item">
+          <span class="quote-key">Change</span>
+          <span class="quote-val" id="qChange">—</span>
+        </div>
+        <div class="quote-item">
+          <span class="quote-key">High</span>
+          <span class="quote-val" id="qHigh">—</span>
+        </div>
+        <div class="quote-item">
+          <span class="quote-key">Low</span>
+          <span class="quote-val" id="qLow">—</span>
+        </div>
+      </div>
+
+      <!-- Trade type tabs -->
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('paper')">Paper trade</button>
+        <button class="tab-btn" onclick="switchTab('manual')">Manual entry</button>
+      </div>
+
+      <!-- Paper trade tab -->
+      <div class="tab-panel active" id="tab-paper">
+        <div class="tab-row" style="margin-bottom:14px;">
+          <button class="tab-btn active" id="buySellTab-buy" onclick="switchBuySell('buy')">Buy</button>
+          <button class="tab-btn" id="buySellTab-sell" onclick="switchBuySell('sell')">Sell</button>
+        </div>
+
+        <div class="field">
+          <label>Quantity (shares)</label>
+          <input id="paperQty" type="number" min="0.0001" step="0.0001" placeholder="e.g. 10"
+                 oninput="updatePaperTotal()" />
+        </div>
+
+        <div class="price-preview" id="paperTotal">
+          Enter a quantity to see total cost
+        </div>
+
+        <button class="btn-buy" id="paperBtn" onclick="executePaperTrade()">Buy</button>
+      </div>
+
+      <!-- Manual entry tab -->
+      <div class="tab-panel" id="tab-manual">
+        <div class="field">
+          <label>Side</label>
+          <select id="manualSide">
+            <option value="BUY">Buy</option>
+            <option value="SELL">Sell</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Quantity (shares)</label>
+          <input id="manualQty" type="number" min="0.0001" step="0.0001" placeholder="e.g. 5" />
+        </div>
+        <div class="field">
+          <label>Price per share (£)</label>
+          <input id="manualPrice" type="number" min="0.01" step="0.01" placeholder="e.g. 182.50" />
+        </div>
+        <button class="btn-primary" onclick="executeManualTrade()">Log trade</button>
+      </div>
+
+    </div>
+
+    <!-- P&L summary card -->
+    <div class="icard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 class="icard-title" style="margin:0;">P&amp;L</h2>
+        <button onclick="loadPnl()" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6366f1;background:none;border:none;cursor:pointer;">↻ Refresh</button>
+      </div>
+
+      <div id="pnlSummary" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#aaa;text-align:center;padding:12px 0;">
+        Select a portfolio to see P&L
+      </div>
+
+      <table class="pnl-table" id="pnlTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Avg cost</th>
+            <th>Live price</th>
+            <th>Market value</th>
+            <th>P&amp;L</th>
+          </tr>
+        </thead>
+        <tbody id="pnlBody"></tbody>
+      </table>
+
+      <div id="pnlTotals" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;font-family:'DM Sans',sans-serif;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="color:#888;">Total invested</span>
+          <span id="totalInvested" style="font-weight:600;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="color:#888;">Current value</span>
+          <span id="totalCurrent" style="font-weight:600;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:#888;">Total P&amp;L</span>
+          <span id="totalPnl" style="font-weight:700;font-size:15px;">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Chart + History -->
+  <div>
+
+    <!-- Price chart -->
+    <div class="icard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h2 class="icard-title" style="margin:0;" id="chartTitle">Price chart</h2>
+        <div style="display:flex;gap:6px;">
+          <button onclick="loadChart(30)"  class="range-btn" data-days="30">1M</button>
+          <button onclick="loadChart(90)"  class="range-btn" data-days="90">3M</button>
+          <button onclick="loadChart(180)" class="range-btn" data-days="180">6M</button>
+          <button onclick="loadChart(365)" class="range-btn" data-days="365" id="defaultRange">1Y</button>
+        </div>
+      </div>
+      <div id="priceChart" style="height:280px;"></div>
+      <p id="chartMsg" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#aaa;margin-top:8px;text-align:center;"></p>
+    </div>
+
+    <!-- Transaction history -->
+    <div class="icard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 class="icard-title" style="margin:0;">Transaction history</h2>
+        <button onclick="loadHistory()" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6366f1;background:none;border:none;cursor:pointer;">↻ Refresh</button>
+      </div>
+      <div id="historyContainer">
+        <div class="empty-state">Select a portfolio to see transactions</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Deposit modal -->
+<div class="modal-overlay" id="depositModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Add virtual funds</h3>
+    <p class="modal-desc">Add paper money to your balance. This is for simulation only — no real money involved.</p>
+    <div class="field">
+      <label>Amount (£)</label>
+      <input id="depositAmount" type="number" min="1" step="100" placeholder="e.g. 5000"
+             onkeydown="if(event.key==='Enter') confirmDeposit()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeDeposit()">Cancel</button>
+      <button class="btn-primary" style="width:auto;margin-top:0;" onclick="confirmDeposit()">Add funds</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create portfolio modal -->
+<div class="modal-overlay" id="createPortfolioModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Create a portfolio</h3>
+    <p class="modal-desc">Give your portfolio a name — you can create multiple to track different strategies.</p>
+    <div class="field">
+      <label>Portfolio name</label>
+      <input id="newPortfolioName" placeholder="e.g. Growth Portfolio, ISA, Tech Plays"
+             onkeydown="if(event.key==='Enter') createPortfolio()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeCreatePortfolio()">Cancel</button>
+      <button class="btn-primary" style="width:auto;margin-top:0;" onclick="createPortfolio()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<style>
+  .range-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 7px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .range-btn:hover, .range-btn.active { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
+</style>
+
+<script>
+  const tok = () => localStorage.getItem('token') || '';
+  if (!tok()) window.location.href = '/login';
+
+  let currentPortfolioId = null;
+  let currentSymbol = null;
+  let currentPrice = null;
+  let paperSide = 'buy';
+  let currentTab = 'paper';
+  let currentChartDays = 365;
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // ── Load portfolios ───────────────────────────────────────────────────────
+  async function loadPortfolios() {
+    const res = await fetch('/portfolios/', { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const portfolios = await res.json();
+    const sel = document.getElementById('portfolioSelect');
+    const createBtn = document.getElementById('createPortfolioBtn');
+    const banner = document.getElementById('noPortfolioBanner');
+
+    if (!portfolios.length) {
+      sel.style.display = 'none';
+      createBtn.style.display = 'inline-block';
+      banner.style.display = 'flex';
+      return;
+    }
+
+    sel.style.display = 'inline-block';
+    createBtn.style.display = 'none';
+    banner.style.display = 'none';
+    sel.innerHTML = portfolios.map(p =>
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    currentPortfolioId = portfolios[0].id;
+    onPortfolioChange();
+  }
+
+  function openCreatePortfolio() {
+    document.getElementById('createPortfolioModal').classList.add('open');
+    setTimeout(() => document.getElementById('newPortfolioName').focus(), 100);
+  }
+
+  function closeCreatePortfolio() {
+    document.getElementById('createPortfolioModal').classList.remove('open');
+    document.getElementById('newPortfolioName').value = '';
+  }
+
+  async function createPortfolio() {
+    const name = document.getElementById('newPortfolioName').value.trim();
+    if (!name) return toast('Enter a portfolio name', 'err');
+
+    const res = await fetch('/portfolios/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ name })
+    });
+
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Could not create portfolio', 'err');
+
+    toast(`Portfolio "${data.name}" created!`, 'ok');
+    closeCreatePortfolio();
+    loadPortfolios();
+  }
+
+  function onPortfolioChange() {
+    currentPortfolioId = parseInt(document.getElementById('portfolioSelect').value);
+    if (currentPortfolioId) {
+      loadPnl();
+      loadHistory();
+    }
+  }
+
+  // ── Balance ───────────────────────────────────────────────────────────────
+  async function loadBalance() {
+    const res = await fetch('/trading/balance', { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('balanceDisplay').textContent = '£' + Number(data.balance || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ── Deposit ───────────────────────────────────────────────────────────────
+  function openDeposit() { document.getElementById('depositModal').classList.add('open'); document.getElementById('depositAmount').focus(); }
+  function closeDeposit() { document.getElementById('depositModal').classList.remove('open'); }
+
+  async function confirmDeposit() {
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+    if (!amount || amount <= 0) return toast('Enter a valid amount', 'err');
+
+    const res = await fetch('/trading/deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ amount })
+    });
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Deposit failed', 'err');
+
+    closeDeposit();
+    document.getElementById('depositAmount').value = '';
+    document.getElementById('balanceDisplay').textContent = '£' + Number(data.balance || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    toast(`£${amount.toLocaleString()} added to balance`, 'ok');
+  }
+
+  // ── Quote ─────────────────────────────────────────────────────────────────
+  async function fetchQuoteForTrade() {
+    const sym = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+    if (!sym) return toast('Enter a stock symbol', 'err');
+
+    currentSymbol = sym;
+    const res = await fetch(`/market/public/quote/${sym}`);
+    if (!res.ok) return toast(`Could not find quote for ${sym}`, 'err');
+
+    const q = await res.json();
+    if (!q.price) return toast(`No price available for ${sym}`, 'err');
+
+    currentPrice = q.price;
+
+    const strip = document.getElementById('quoteStrip');
+    strip.style.display = 'flex';
+    document.getElementById('qPrice').textContent = '£' + Number(q.price).toFixed(2);
+
+    const chg = Number(q.change_pct);
+    const chgEl = document.getElementById('qChange');
+    chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    chgEl.className = 'quote-val ' + (chg >= 0 ? 'up' : 'down');
+
+    document.getElementById('qHigh').textContent = '£' + Number(q.high).toFixed(2);
+    document.getElementById('qLow').textContent  = '£' + Number(q.low).toFixed(2);
+
+    updatePaperTotal();
+    loadChart(currentChartDays);
+
+    document.getElementById('chartTitle').textContent = `${sym} — price chart`;
+  }
+
+  function clearQuote() {
+    currentSymbol = null;
+    currentPrice = null;
+    document.getElementById('quoteStrip').style.display = 'none';
+    document.getElementById('paperTotal').textContent = 'Enter a quantity to see total cost';
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-row .tab-btn').forEach((b, i) => {
+      b.className = 'tab-btn' + ((i === 0 && tab === 'paper') || (i === 1 && tab === 'manual') ? ' active' : '');
+    });
+    document.getElementById('tab-paper').className  = 'tab-panel' + (tab === 'paper'  ? ' active' : '');
+    document.getElementById('tab-manual').className = 'tab-panel' + (tab === 'manual' ? ' active' : '');
+  }
+
+  function switchBuySell(side) {
+    paperSide = side;
+    document.getElementById('buySellTab-buy').className  = 'tab-btn' + (side === 'buy'  ? ' active' : '');
+    document.getElementById('buySellTab-sell').className = 'tab-btn' + (side === 'sell' ? ' active' : '');
+    document.getElementById('paperBtn').textContent = side === 'buy' ? 'Buy' : 'Sell';
+    document.getElementById('paperBtn').className = side === 'buy' ? 'btn-buy' : 'btn-sell';
+    updatePaperTotal();
+  }
+
+  function updatePaperTotal() {
+    const qty = parseFloat(document.getElementById('paperQty').value);
+    const el  = document.getElementById('paperTotal');
+    if (!currentPrice || !qty || qty <= 0) {
+      el.textContent = 'Enter a quantity to see total cost';
+      return;
+    }
+    const total = qty * currentPrice;
+    const label = paperSide === 'buy' ? 'Total cost' : 'Proceeds';
+    el.innerHTML = `${label}: <strong>£${total.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> @ £${currentPrice.toFixed(2)} × ${qty} shares`;
+  }
+
+  // ── Paper trade ───────────────────────────────────────────────────────────
+  async function executePaperTrade() {
+    if (!currentPortfolioId) return toast('Select a portfolio first', 'err');
+
+    const qty = parseFloat(document.getElementById('paperQty').value);
+    if (!qty || qty <= 0) return toast('Enter a valid quantity', 'err');
+
+    // Auto-fetch quote if user typed a symbol but didn't click "Get quote"
+    if (!currentSymbol) {
+      const sym = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+      if (!sym) return toast('Enter a stock symbol first', 'err');
+      await fetchQuoteForTrade();
+      if (!currentSymbol) return; // fetchQuoteForTrade already shows error
+    }
+
+    const btn = document.getElementById('paperBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    try {
+      const endpoint = paperSide === 'buy' ? '/trading/buy' : '/trading/sell';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: tok() },
+        body: JSON.stringify({ portfolio_id: currentPortfolioId, symbol: currentSymbol, quantity: qty })
+      });
+
+      const data = await res.json();
+      if (!res.ok) return toast(data.detail || 'Trade failed', 'err');
+
+      const action = paperSide === 'buy' ? 'Bought' : 'Sold';
+      toast(`${action} ${qty} × ${currentSymbol} @ £${Number(data.price).toFixed(2)}`, 'ok');
+      document.getElementById('paperQty').value = '';
+      updatePaperTotal();
+
+      // Update balance immediately from response
+      document.getElementById('balanceDisplay').textContent =
+        '£' + Number(data.balance || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      loadPnl();
+      loadHistory();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = paperSide === 'buy' ? 'Buy' : 'Sell';
+    }
+  }
+
+  // ── Manual trade ──────────────────────────────────────────────────────────
+  async function executeManualTrade() {
+    if (!currentPortfolioId) return toast('Select a portfolio', 'err');
+
+    const symbol = document.getElementById('tradeSymbol').value.trim().toUpperCase();
+    const side   = document.getElementById('manualSide').value;
+    const qty    = parseFloat(document.getElementById('manualQty').value);
+    const price  = parseFloat(document.getElementById('manualPrice').value);
+
+    if (!symbol) return toast('Enter a stock symbol', 'err');
+    if (!qty || qty <= 0) return toast('Enter a valid quantity', 'err');
+    if (!price || price <= 0) return toast('Enter a valid price', 'err');
+
+    const res = await fetch('/trading/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: tok() },
+      body: JSON.stringify({ portfolio_id: currentPortfolioId, symbol, side, quantity: qty, price })
+    });
+
+    const data = await res.json();
+    if (!res.ok) return toast(data.detail || 'Trade failed', 'err');
+
+    toast(`Logged ${side} ${qty} × ${symbol} @ £${price}`, 'ok');
+    document.getElementById('manualQty').value = '';
+    document.getElementById('manualPrice').value = '';
+    loadPnl();
+    loadHistory();
+  }
+
+  // ── P&L ───────────────────────────────────────────────────────────────────
+  async function loadPnl() {
+    if (!currentPortfolioId) return;
+
+    const res = await fetch(`/trading/pnl/${currentPortfolioId}`, { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const summary = document.getElementById('pnlSummary');
+    const table   = document.getElementById('pnlTable');
+    const totals  = document.getElementById('pnlTotals');
+    const body    = document.getElementById('pnlBody');
+
+    if (!data.holdings.length) {
+      summary.style.display = 'block';
+      summary.textContent = 'No holdings in this portfolio yet.';
+      table.style.display = 'none';
+      totals.style.display = 'none';
+      return;
+    }
+
+    summary.style.display = 'none';
+    table.style.display = 'table';
+    totals.style.display = 'block';
+
+    body.innerHTML = data.holdings.map(h => {
+      const isUp     = h.pnl !== null && h.pnl >= 0;
+      const pnlClass = h.pnl === null ? 'badge-neutral' : isUp ? 'badge-up' : 'badge-down';
+      const pnlText  = h.pnl === null
+        ? '—'
+        : `${isUp ? '+' : '-'}£${Math.abs(h.pnl).toFixed(2)} (${Number(h.pnl_pct).toFixed(2)}%)`;
+      const liveColor = h.live_price === null ? '#888' : h.live_price >= h.avg_buy_price ? '#16a34a' : '#dc2626';
+      return `
+        <tr>
+          <td>
+            <strong style="font-size:14px;">${h.symbol}</strong>
+            <div style="color:#aaa;font-size:11px;margin-top:2px;">${Number(h.quantity).toFixed(4)} shares</div>
+          </td>
+          <td>£${Number(h.avg_buy_price).toFixed(2)}</td>
+          <td style="color:${liveColor};font-weight:600;">${h.live_price !== null ? '£' + Number(h.live_price).toFixed(2) : '—'}</td>
+          <td>£${h.value !== null ? Number(h.value).toFixed(2) : '—'}</td>
+          <td><span class="${pnlClass}">${pnlText}</span></td>
+        </tr>`;
+    }).join('');
+
+    const totalPnlEl = document.getElementById('totalPnl');
+    document.getElementById('totalInvested').textContent = '£' + Number(data.total_cost || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 });
+    document.getElementById('totalCurrent').textContent  = '£' + Number(data.total_value || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 });
+    const tpnl = data.total_pnl || 0;
+    const tpct = data.total_pnl_pct || 0;
+    totalPnlEl.textContent = `${tpnl >= 0 ? '+' : '-'}£${Math.abs(tpnl).toFixed(2)} (${tpct >= 0 ? '+' : ''}${Number(tpct).toFixed(2)}%)`;
+    totalPnlEl.style.color = tpnl >= 0 ? '#16a34a' : '#dc2626';
+  }
+
+  // ── Chart ─────────────────────────────────────────────────────────────────
+  async function loadChart(days) {
+    if (!currentSymbol) return;
+    currentChartDays = days;
+
+    document.querySelectorAll('.range-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.days) === days);
+    });
+
+    const msg = document.getElementById('chartMsg');
+    msg.textContent = 'Loading chart…';
+
+    const res = await fetch(`/market/public/candles/${currentSymbol}?resolution=D&limit=${days}`);
+    if (!res.ok) { msg.textContent = 'Chart data unavailable'; return; }
+
+    const data = await res.json();
+    if (!data.timestamps || !data.timestamps.length) { msg.textContent = 'No chart data'; return; }
+
+    msg.textContent = '';
+    const dates  = data.timestamps.map(ts => new Date(ts * 1000).toLocaleDateString('en-GB'));
+    const prices = data.prices;
+
+    Plotly.newPlot('priceChart', [{
+      type: 'scatter',
+      mode: 'lines',
+      x: dates,
+      y: prices,
+      line: { color: '#6366f1', width: 2 },
+      fill: 'tozeroy',
+      fillcolor: 'rgba(99,102,241,0.06)',
+    }], {
+      margin: { t: 8, l: 50, r: 16, b: 40 },
+      xaxis: { showgrid: false, tickfont: { family: 'DM Sans', size: 11, color: '#aaa' } },
+      yaxis: { tickprefix: '£', showgrid: true, gridcolor: '#f0f0f0', tickfont: { family: 'DM Sans', size: 11, color: '#aaa' } },
+      plot_bgcolor: '#fff',
+      paper_bgcolor: '#fff',
+    }, { responsive: true, displayModeBar: false });
+  }
+
+  // ── History ───────────────────────────────────────────────────────────────
+  async function loadHistory() {
+    if (!currentPortfolioId) return;
+
+    const res = await fetch(`/trading/history/${currentPortfolioId}`, { headers: { Authorization: tok() } });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const container = document.getElementById('historyContainer');
+
+    if (!data.trades.length) {
+      container.innerHTML = '<div class="empty-state">No transactions yet — make your first trade above.</div>';
+      return;
+    }
+
+    container.innerHTML = data.trades.map(t => `
+      <div class="history-row">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="${t.side === 'BUY' ? 'trade-side-buy' : 'trade-side-sell'}">${t.side}</span>
+          <div>
+            <div style="font-weight:600;">${t.symbol}</div>
+            <div style="color:#aaa;font-size:12px;">${t.quantity} shares @ £${t.price.toFixed(2)}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:600;">£${t.total.toLocaleString('en-GB', { minimumFractionDigits: 2 })}</div>
+          <div style="color:#aaa;font-size:12px;">${t.ts ? new Date(t.ts).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    loadPortfolios();
+    loadBalance();
+    // Set default active range button
+    document.getElementById('defaultRange').classList.add('active');
+  });
+</script>
+
+{% endblock %}
