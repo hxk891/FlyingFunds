@@ -1,0 +1,616 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}FlyingFunds{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream:#faf7f2; --warm:#f5efe6; --blush:#f2e4d8;
+      --pink:#e8c4b4;  --rose:#c9837a; --brown:#8b5e52;
+      --dark:#2d1f1a;  --sage:#7a9e8e; --sage-lt:#d4e6de;
+      --sky:#7bafc4;   --sky-lt:#d6eaf4; --muted:#a08c82;
+      --accent:#c9837a; --danger:#b85050; --success:#4a9470;
+      --bg:#faf7f2; --surface:#ffffff;
+      --border:rgba(45,31,26,0.1); --text:#2d1f1a;
+      --nav-h:56px; --side-w:52px;
+    }
+    html, body { height: 100%; }
+    body { font-family:'DM Sans',system-ui,sans-serif; background:var(--cream); color:var(--dark); overflow-x:hidden; }
+
+    /* floating navi bar */
+    .floatnav {
+      position:fixed; top:16px; left:50%; transform:translateX(-50%);
+      z-index:300; display:flex; align-items:center; gap:4px;
+      background:rgba(255,255,255,0.82); backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
+      border:1px solid rgba(0,0,0,0.08); border-radius:40px;
+      padding:5px 6px 5px 14px;
+      box-shadow:0 4px 24px rgba(0,0,0,0.08),0 1px 4px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.9);
+      transition:box-shadow 0.3s; white-space:nowrap;
+    }
+    .floatnav.scrolled { box-shadow:0 8px 32px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.9); }
+    .fn-logo { font-family:'Instrument Serif',serif; font-size:16px; color:var(--dark); text-decoration:none; letter-spacing:-0.3px; margin-right:6px; flex-shrink:0; }
+    .fn-div  { width:1px; height:16px; background:rgba(0,0,0,0.1); margin:0 4px; flex-shrink:0; }
+    .fn-links { display:flex; align-items:center; gap:1px; }
+    .fn-links a { font-size:13px; font-weight:500; color:#555; text-decoration:none; padding:6px 13px; border-radius:30px; transition:all 0.15s; }
+    .fn-links a:hover { background:rgba(0,0,0,0.05); color:var(--dark); }
+    .fn-links a.active { background:rgba(0,0,0,0.06); color:var(--dark); font-weight:600; }
+    .fn-right { display:flex; align-items:center; gap:6px; margin-left:4px; }
+    .fn-signin { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; padding:7px 16px; background:var(--dark); color:#fff; border:none; border-radius:30px; cursor:pointer; text-decoration:none; transition:opacity 0.15s; flex-shrink:0; }
+    .fn-signin:hover { opacity:0.82; }
+    .fn-signup { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:7px 13px; color:#666; text-decoration:none; border-radius:30px; transition:all 0.15s; }
+    .fn-signup:hover { background:rgba(0,0,0,0.05); color:var(--dark); }
+    .fn-user-menu { position:relative; }
+    .fn-user-btn { display:flex; align-items:center; gap:7px; padding:4px 10px 4px 5px; background:var(--dark); border:none; border-radius:30px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; color:#fff; transition:opacity 0.15s; }
+    .fn-user-btn:hover { opacity:0.85; }
+    .fn-avatar { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.15); color:#fff; font-size:13px; display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.3); }
+    .fn-chevron { font-size:9px; opacity:0.6; transition:transform 0.2s; }
+    .fn-user-menu.open .fn-chevron { transform:rotate(180deg); }
+    .fn-dropdown { display:none; position:absolute; top:calc(100% + 10px); right:0; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:6px; min-width:200px; box-shadow:0 12px 40px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06); z-index:400; }
+    .fn-user-menu.open .fn-dropdown { display:block; }
+    .fn-dd-header { padding:10px 12px 12px; border-bottom:1px solid #f0f0f0; margin-bottom:4px; }
+    .fn-dd-name  { font-size:13px; font-weight:600; color:var(--dark); margin-bottom:1px; }
+    .fn-dd-email { font-size:11px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fn-dd-item { display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:10px; font-size:13px; color:#333; text-decoration:none; cursor:pointer; border:none; background:none; width:100%; text-align:left; font-family:'DM Sans',sans-serif; transition:background 0.12s; }
+    .fn-dd-item:hover { background:#f5f5f5; }
+    .fn-dd-item.danger { color:var(--danger); }
+    .fn-dd-item.danger:hover { background:#fef2f2; }
+    .fn-dd-sep { height:1px; background:#f0f0f0; margin:4px 0; }
+
+    /* side bar*/
+    .iconsidebar {
+      position:fixed; top:50%; left:16px; transform:translateY(-50%);
+      z-index:200; display:none; flex-direction:column; align-items:center; gap:4px;
+      background:rgba(255,255,255,0.85); backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
+      border:1px solid rgba(0,0,0,0.07); border-radius:20px; padding:10px 8px;
+      box-shadow:0 4px 24px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .is-link { position:relative; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; text-decoration:none; color:#666; transition:all 0.15s; cursor:pointer; border:none; background:none; font-family:'DM Sans',sans-serif; }
+    .is-link:hover { background:rgba(0,0,0,0.06); color:var(--dark); }
+    .is-link.active { background:var(--dark); color:#fff; }
+    .is-link.danger:hover { background:#fef2f2; color:var(--danger); }
+    .is-link::after { content:attr(data-tip); position:absolute; left:calc(100% + 10px); top:50%; transform:translateY(-50%) translateX(-4px); background:var(--dark); color:#fff; font-size:11px; font-weight:600; padding:5px 10px; border-radius:8px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.15s,transform 0.15s; font-family:'DM Sans',sans-serif; }
+    .is-link:hover::after { opacity:1; transform:translateY(-50%) translateX(0); }
+    .is-div { width:20px; height:1px; background:rgba(0,0,0,0.08); margin:4px 0; }
+
+    /* page*/
+    .page-body { min-height:100vh; }
+    .container { max-width:1100px; margin:0 auto; padding:80px 24px 32px; }
+    .card { background:#fff; border:1px solid #e5e5e5; border-radius:14px; padding:16px; margin:12px 0; }
+    .muted { color:#666; }
+    button { font-family:'DM Sans',sans-serif; padding:8px 14px; border-radius:10px; border:1px solid #ddd; cursor:pointer; background:#fff; }
+    input, textarea, select { font-family:'DM Sans',sans-serif; width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box; }
+
+    /* AI chat bubble*/
+    #haloai-bubble {
+      position:fixed; bottom:28px; right:28px; z-index:999;
+      display:none; /* shown when logged in */
+    }
+
+    /* Trigger button */
+    #haloai-btn {
+      width:56px; height:56px; border-radius:50%;
+      background:linear-gradient(135deg, var(--rose), var(--brown));
+      border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 20px rgba(201,131,122,0.45);
+      transition:transform 0.2s, box-shadow 0.2s;
+      position:relative;
+    }
+    #haloai-btn:hover { transform:scale(1.08); box-shadow:0 8px 28px rgba(201,131,122,0.5); }
+    #haloai-btn svg { width:26px; height:26px; fill:#fff; }
+    .haloai-unread {
+      position:absolute; top:-2px; right:-2px;
+      width:14px; height:14px; border-radius:50%;
+      background:#4a9470; border:2px solid var(--cream);
+      display:none;
+    }
+    .haloai-unread.show { display:block; }
+
+    /* Tooltip on first load */
+    #haloai-tooltip {
+      position:absolute; bottom:calc(100% + 10px); right:0;
+      background:var(--dark); color:#fff; font-family:'DM Sans',sans-serif;
+      font-size:12px; font-weight:500; padding:8px 14px; border-radius:12px;
+      white-space:nowrap; pointer-events:none;
+      box-shadow:0 4px 16px rgba(45,31,26,0.2);
+      animation:tooltipFade 4s ease forwards;
+    }
+    #haloai-tooltip::after { content:''; position:absolute; top:100%; right:16px; border:6px solid transparent; border-top-color:var(--dark); }
+    @keyframes tooltipFade { 0%,60%{opacity:1} 100%{opacity:0} }
+
+    /* Chat panel */
+    #haloai-panel {
+      position:absolute; bottom:68px; right:0;
+      width:380px; max-height:560px;
+      background:#fff; border-radius:20px;
+      border:1.5px solid rgba(45,31,26,0.1);
+      box-shadow:0 20px 60px rgba(45,31,26,0.15), 0 4px 16px rgba(45,31,26,0.08);
+      display:none; flex-direction:column; overflow:hidden;
+    }
+    #haloai-panel.open { display:flex; }
+
+    /* chat panel header */
+    .haloai-header {
+      padding:14px 16px 12px;
+      background:linear-gradient(135deg, var(--rose), var(--brown));
+      display:flex; align-items:center; gap:10px; flex-shrink:0;
+    }
+    .haloai-avatar-wrap {
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center;
+      font-size:18px; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.4);
+    }
+    .haloai-header-text { flex:1; }
+    .haloai-name { font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+    .haloai-status { font-family:'DM Sans',sans-serif; font-size:11px; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:5px; }
+    .haloai-status::before { content:''; width:6px; height:6px; border-radius:50%; background:#4aefa0; display:inline-block; }
+    .haloai-close { background:rgba(255,255,255,0.15); border:none; color:#fff; width:28px; height:28px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:background 0.15s; flex-shrink:0; }
+    .haloai-close:hover { background:rgba(255,255,255,0.25); }
+
+    /* topic chips inside chat bubble */
+    .haloai-chips {
+      padding:10px 12px 6px; display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0;
+      border-bottom:1px solid rgba(45,31,26,0.06);
+    }
+    .haloai-chip {
+      font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600;
+      padding:4px 10px; background:var(--warm); border:1px solid rgba(45,31,26,0.1);
+      border-radius:20px; cursor:pointer; color:var(--dark); transition:all 0.15s;
+      white-space:nowrap;
+    }
+    .haloai-chip:hover { background:var(--blush); border-color:var(--rose); color:var(--rose); }
+
+    /* messages for chat bubble */
+    .haloai-messages {
+      flex:1; overflow-y:auto; padding:12px;
+      display:flex; flex-direction:column; gap:10px;
+      min-height:0;
+    }
+    .haloai-messages::-webkit-scrollbar { width:4px; }
+    .haloai-messages::-webkit-scrollbar-thumb { background:rgba(45,31,26,0.12); border-radius:2px; }
+
+    .haloai-msg {
+      display:flex; gap:8px; align-items:flex-end;
+      animation:msgIn 0.25s ease;
+    }
+    @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    .haloai-msg.user { flex-direction:row-reverse; }
+
+    .haloai-msg-avatar {
+      width:26px; height:26px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:13px;
+      background:linear-gradient(135deg, var(--rose), var(--brown));
+      color:#fff; font-weight:700; font-family:'DM Sans',sans-serif;
+    }
+    .haloai-msg.user .haloai-msg-avatar { background:var(--dark); }
+
+    .haloai-bubble-text {
+      max-width:78%; padding:10px 13px; border-radius:16px 16px 16px 4px;
+      background:var(--warm); font-family:'DM Sans',sans-serif; font-size:13px;
+      color:var(--dark); line-height:1.6;
+      border:1px solid rgba(45,31,26,0.07);
+    }
+    .haloai-msg.user .haloai-bubble-text {
+      background:var(--dark); color:#fff;
+      border-radius:16px 16px 4px 16px; border-color:transparent;
+    }
+
+    /* typing indicator */
+    .haloai-typing .haloai-bubble-text {
+      padding:12px 16px;
+    }
+    .typing-dots { display:flex; gap:4px; align-items:center; }
+    .typing-dots span {
+      width:7px; height:7px; border-radius:50%; background:var(--muted);
+      animation:typingBounce 1.2s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(2) { animation-delay:0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    /* input bar */
+    .haloai-input-bar {
+      padding:10px 12px; border-top:1px solid rgba(45,31,26,0.08);
+      display:flex; gap:8px; align-items:flex-end; flex-shrink:0;
+      background:#fff;
+    }
+    #haloai-input {
+      flex:1; font-family:'DM Sans',sans-serif; font-size:13px; resize:none;
+      border:1.5px solid rgba(45,31,26,0.12); border-radius:12px;
+      padding:9px 12px; outline:none; background:#fafafa; color:var(--dark);
+      max-height:100px; overflow-y:auto; transition:border-color 0.15s; line-height:1.5;
+    }
+    #haloai-input:focus { border-color:var(--rose); background:#fff; }
+    #haloai-input::placeholder { color:var(--muted); }
+    #haloai-send {
+      width:36px; height:36px; border-radius:12px; flex-shrink:0;
+      background:var(--dark); border:none; cursor:pointer; color:#fff;
+      display:flex; align-items:center; justify-content:center; font-size:16px;
+      transition:all 0.15s;
+    }
+    #haloai-send:hover { background:var(--brown); transform:scale(1.05); }
+    #haloai-send:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+    @media(max-width:480px) {
+      #haloai-panel { width:calc(100vw - 32px); right:-4px; }
+      #haloai-bubble { bottom:16px; right:16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- main nav bar-->
+<nav class="floatnav" id="floatnav">
+  <a href="/" class="fn-logo">✦ FlyingFunds</a>
+  <div class="fn-div"></div>
+  <div class="fn-links" id="fnLinks">
+    <a href="/market">Market</a>
+    <a href="/learn">Learn</a>
+    <a href="/news">News</a>
+    <a href="/about">About</a>
+  </div>
+  <div class="fn-right">
+    <div class="fn-user-menu" id="fnUserMenu" style="display:none;">
+      <button class="fn-user-btn" onclick="toggleUserMenu()">
+        <div class="fn-avatar" id="fnAvatar">?</div>
+        <span id="fnUserLabel">Account</span>
+        <span class="fn-chevron">▾</span>
+      </button>
+      <div class="fn-dropdown">
+        <div class="fn-dd-header">
+          <div class="fn-dd-name"  id="fnDDName">—</div>
+          <div class="fn-dd-email" id="fnDDEmail">—</div>
+        </div>
+        <a class="fn-dd-item" href="/dashboard"><span>🏠</span> Dashboard</a>
+        <a class="fn-dd-item" href="/portfolios-ui"><span>📁</span> Portfolios</a>
+        <a class="fn-dd-item" href="/watchlist"><span>👁</span> Watchlist</a>
+        <a class="fn-dd-item" href="/invest"><span>📈</span> Invest</a>
+        <a class="fn-dd-item" href="/learn"><span>🎓</span> Learn</a>
+        <a class="fn-dd-item" href="/settings"><span>⚙️</span> Settings</a>
+        <div class="fn-dd-sep"></div>
+        <button class="fn-dd-item danger" onclick="logout()"><span>→</span> Sign out</button>
+      </div>
+    </div>
+    <div id="fnAuthBtns">
+      <a href="/signup" class="fn-signup">Sign up</a>
+      <a href="/login"  class="fn-signin">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<!-- sidebar navi -->
+<aside class="iconsidebar" id="iconsidebar">
+  <a class="is-link" href="/dashboard"     data-tip="Dashboard"  id="is-dashboard">🏠</a>
+  <a class="is-link" href="/portfolios-ui" data-tip="Portfolios" id="is-portfolios">📁</a>
+  <a class="is-link" href="/invest"        data-tip="Invest"     id="is-invest">📈</a>
+  <a class="is-link" href="/watchlist"     data-tip="Watchlist"  id="is-watchlist">👁</a>
+  <a class="is-link" href="/diary"         data-tip="Diary"      id="is-diary">📓</a>
+  <div class="is-div"></div>
+  <a class="is-link" href="/settings"      data-tip="Settings"   id="is-settings">⚙️</a>
+  <button class="is-link danger"           data-tip="Sign out"   onclick="logout()">→</button>
+</aside>
+
+<!-- PAGE -->
+<div class="page-body" id="pageBody">
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- HALO AI CHAT BUBBLE; shown on every page when logged in -->
+<div id="haloai-bubble">
+  <div id="haloai-panel">
+    <!-- Header -->
+    <div class="haloai-header">
+      <div class="haloai-avatar-wrap">🎓</div>
+      <div class="haloai-header-text">
+        <div class="haloai-name">HALO</div>
+        <div class="haloai-status">Your finance tutor · always on</div>
+      </div>
+      <button class="haloai-close" onclick="haloaiClose()">✕</button>
+    </div>
+
+    <!-- topic chips -->
+    <div class="haloai-chips" id="haloaiChips">
+      <span class="haloai-chip" onclick="haloaiAsk('What is the Sharpe ratio and what does mine mean?')">Sharpe ratio</span>
+      <span class="haloai-chip" onclick="haloaiAsk('Explain Value at Risk (VaR) in simple terms')">VaR explained</span>
+      <span class="haloai-chip" onclick="haloaiAsk('What is Modern Portfolio Theory?')">Portfolio theory</span>
+      <span class="haloai-chip" onclick="haloaiAsk('What are common behavioural biases that affect investors?')">Biases</span>
+      <span class="haloai-chip" onclick="haloaiAsk('What is the difference between active and passive investing?')">Active vs passive</span>
+      <span class="haloai-chip" onclick="haloaiAsk('How do I read a drawdown chart?')">Drawdown</span>
+    </div>
+
+    <!-- Messages -->
+    <div class="haloai-messages" id="haloaiMessages">
+      <div class="haloai-msg">
+        <div class="haloai-msg-avatar">F</div>
+        <div class="haloai-bubble-text">Hi! I'm Halo, your personal finance tutor. Ask me anything — from what a Sharpe ratio means to how portfolio theory works. I can explain concepts in plain English or go deep into the theory. What would you like to learn?</div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="haloai-input-bar">
+      <textarea id="haloai-input" placeholder="Ask anything about finance, investing, or your portfolio…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();haloaiSend()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button id="haloai-send" onclick="haloaiSend()">↑</button>
+    </div>
+  </div>
+
+  <!-- Trigger button -->
+  <button id="haloai-btn" onclick="haloaiToggle()" title="Ask Halo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+    </svg>
+    <div class="haloai-unread" id="haloaiUnread"></div>
+  </button>
+  <div id="haloai-tooltip">Ask Halo anything 🎓</div>
+</div>
+
+<script>
+
+
+
+  // Nav 
+  window.addEventListener('scroll', () => {
+    document.getElementById('floatnav').classList.toggle('scrolled', window.scrollY > 20);
+  }, { passive:true });
+
+  function toggleUserMenu() { document.getElementById('fnUserMenu').classList.toggle('open'); }
+  document.addEventListener('click', e => {
+    const m = document.getElementById('fnUserMenu');
+    if (m && !m.contains(e.target)) m.classList.remove('open');
+  });
+
+  function logout() { localStorage.removeItem('token'); window.location.href = '/login'; }
+
+  function markActive() {
+    const path = window.location.pathname;
+    document.querySelectorAll('.fn-links a').forEach(a =>
+      a.classList.toggle('active', a.getAttribute('href') === path));
+    document.querySelectorAll('.is-link[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      a.classList.toggle('active', href === path || (href !== '/' && path.startsWith(href)));
+    });
+  }
+
+  async function initAuth() {
+    const token = localStorage.getItem('token');
+    const authBtns = document.getElementById('fnAuthBtns');
+    const userMenu = document.getElementById('fnUserMenu');
+    const sidebar  = document.getElementById('iconsidebar');
+    const bubble   = document.getElementById('haloai-bubble');
+
+    if (!token) {
+      authBtns.style.display = 'flex';
+      userMenu.style.display = 'none';
+      sidebar.style.display  = 'none';
+      bubble.style.display   = 'none';
+      return;
+    }
+    try {
+      const res = await fetch('/users/me', { headers:{ Authorization:token } });
+      if (!res.ok) throw new Error();
+      const user = await res.json();
+      authBtns.style.display = 'none';
+      userMenu.style.display = 'block';
+      sidebar.style.display  = 'flex';
+      bubble.style.display   = 'block';
+
+      const name = user.username || user.email || '?';
+      const av   = (user.avatar && user.avatar !== 'person' && user.avatar !== '👤')
+        ? user.avatar : name.slice(0,2).toUpperCase();
+      document.getElementById('fnAvatar').textContent    = av;
+      document.getElementById('fnUserLabel').textContent = user.username || name.split('@')[0];
+      document.getElementById('fnDDName').textContent    = user.username || 'User';
+      document.getElementById('fnDDEmail').textContent   = user.email || '';
+
+      // Store user for HaloAI context
+      window._haloaiUser = user;
+
+      try {
+        const pr = await fetch('/portfolios/', { headers:{ Authorization:token } });
+        if (pr.ok) {
+          const ps = await pr.json();
+          if (ps.length) {
+            document.getElementById('is-dashboard').href = `/dashboard/${ps[0].id}`;
+            const dd = document.querySelector('.fn-dd-item[href="/dashboard"]');
+            if (dd) dd.href = `/dashboard/${ps[0].id}`;
+            window._haloaiPortfolios = ps;
+          }
+        }
+      } catch(_) {}
+
+      // Show tooltip briefly on first visit
+      const seen = localStorage.getItem('ff_haloai_seen');
+      if (!seen) {
+        setTimeout(() => {
+          const t = document.getElementById('haloai-tooltip');
+          if (t) t.style.display = 'block';
+          localStorage.setItem('ff_haloai_seen', '1');
+        }, 2000);
+      } else {
+        const t = document.getElementById('haloai-tooltip');
+        if (t) t.style.display = 'none';
+      }
+
+    } catch(_) {
+      authBtns.style.display = 'flex';
+      userMenu.style.display = 'none';
+      sidebar.style.display  = 'none';
+      bubble.style.display   = 'none';
+      localStorage.removeItem('token');
+    }
+  }
+
+  markActive();
+  initAuth();
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // HALO AI CHAT ENGINE
+  let haloaiOpen    = false;
+  let haloaiLoading = false;
+  let haloaiHistory = []; // [{role, content}]
+
+  // System prompt — Halo AI persona
+  function haloaiSystemPrompt() {
+    const user  = window._haloaiUser;
+    const ports = window._haloaiPortfolios;
+    const page  = window.location.pathname;
+
+    let context = `You are Halo AI, a friendly and knowledgeable personal finance tutor built into FlyingFunds, an investment portfolio management platform. Your role is to educate users about finance, investing, and portfolio management — explaining concepts clearly, connecting theory to practice, and helping users understand their own portfolio data.
+
+Personality: Warm, encouraging, and intellectually rigorous. You make complex finance accessible without dumbing it down. You cite relevant theory (Markowitz, CAPM, Fama, Kahneman) when appropriate but always explain it in plain English first. You are honest when something is uncertain or context-dependent.
+
+Current context:
+- User is on page: ${page}
+- Platform: FlyingFunds (portfolio analytics, risk metrics, paper trading, watchlist, investment diary)`;
+
+    if (user) {
+      context += `\n- User: ${user.username || user.email?.split('@')[0] || 'investor'}`;
+      context += `\n- Experience level: ${user.level || 'not specified'}`;
+      context += `\n- Investor type: ${user.user_type || 'not specified'}`;
+    }
+    if (ports && ports.length) {
+      context += `\n- Portfolios: ${ports.map(p => p.name).join(', ')}`;
+    }
+
+    context += `\n\nGuidelines:
+- Keep responses concise but complete — aim for 2-4 paragraphs maximum unless the question genuinely requires more depth
+- Use plain English first, then introduce technical terms with definitions
+- When explaining metrics (Sharpe, VaR, drawdown etc.) always give a concrete example
+- If asked about the user's specific portfolio data, acknowledge you can see their context but cannot access live numbers — direct them to the relevant page
+- Never give specific investment advice (what to buy or sell). Educate, explain, and empower
+- If a concept is covered in the FlyingFunds Learn section, mention they can explore it there
+- Use occasional emojis to keep the tone friendly but don't overdo it`;
+
+    return context;
+  }
+
+  function haloaiToggle() {
+    haloaiOpen = !haloaiOpen;
+    document.getElementById('haloai-panel').classList.toggle('open', haloaiOpen);
+    document.getElementById('haloaiUnread').classList.remove('show');
+    const t = document.getElementById('haloai-tooltip');
+    if (t) t.style.display = 'none';
+    if (haloaiOpen) setTimeout(() => document.getElementById('haloai-input').focus(), 100);
+  }
+
+  function haloaiClose() {
+    haloaiOpen = false;
+    document.getElementById('haloai-panel').classList.remove('open');
+  }
+
+  function haloaiAsk(question) {
+    document.getElementById('haloai-input').value = question;
+    haloaiSend();
+  }
+
+  function haloaiAddMsg(role, content) {
+    const container = document.getElementById('haloaiMessages');
+    const isUser = role === 'user';
+    const div = document.createElement('div');
+    div.className = `haloai-msg${isUser ? ' user' : ''}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'haloai-msg-avatar';
+    avatar.textContent = isUser
+      ? (window._haloaiUser?.avatar?.length === 1 || window._haloaiUser?.avatar?.length === 2 ? window._haloaiUser.avatar : (window._haloaiUser?.username?.[0]?.toUpperCase() || 'U'))
+      : 'F';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'haloai-bubble-text';
+    // Simple markdown: bold **text**, line breaks
+    bubble.innerHTML = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function haloaiShowTyping() {
+    const container = document.getElementById('haloaiMessages');
+    const div = document.createElement('div');
+    div.className = 'haloai-msg haloai-typing';
+    div.id = 'haloaiTyping';
+    div.innerHTML = `<div class="haloai-msg-avatar">F</div>
+      <div class="haloai-bubble-text"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function haloaiHideTyping() {
+    const el = document.getElementById('haloaiTyping');
+    if (el) el.remove();
+  }
+
+  async function haloaiSend() {
+    const input = document.getElementById('haloai-input');
+    const text  = input.value.trim();
+    if (!text || haloaiLoading) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    haloaiLoading = true;
+    document.getElementById('haloai-send').disabled = true;
+
+    // Hide chips after first message
+    document.getElementById('haloaiChips').style.display = 'none';
+
+    // Add user message
+    haloaiAddMsg('user', text);
+    haloaiHistory.push({ role: 'user', content: text });
+
+    // Show typing
+    haloaiShowTyping();
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: haloaiSystemPrompt(),
+          messages: haloaiHistory
+        })
+      });
+
+      const data = await response.json();
+      haloaiHideTyping();
+
+      const reply = data.content?.[0]?.text || "I'm having trouble connecting right now. Please try again in a moment.";
+      haloaiHistory.push({ role: 'assistant', content: reply });
+
+      // Keep history to last 10 messages to avoid token bloat
+      if (haloaiHistory.length > 10) haloaiHistory = haloaiHistory.slice(-10);
+
+      haloaiAddMsg('assistant', reply);
+
+      // Show unread badge if panel is closed
+      if (!haloaiOpen) document.getElementById('haloaiUnread').classList.add('show');
+
+    } catch(e) {
+      haloaiHideTyping();
+      haloaiAddMsg('assistant', "Sorry, I couldn't connect right now. Make sure you're online and try again.");
+    }
+
+    haloaiLoading = false;
+    document.getElementById('haloai-send').disabled = false;
+  }
+</script>
+
+</body>
+</html>

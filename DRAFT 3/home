@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Home | FlyingFunds{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>FlyingFunds</h1>
+    <p class="muted">An investment portfolio management app with analytics & risk metrics.</p>
+    <ul>
+      <li>Portfolio tracking + holdings</li>
+      <li>Time-series valuation</li>
+      <li>Risk metrics: volatility, Sharpe, max drawdown, VaR/CVaR</li>
+      <li>Interactive dashboards</li>
+    </ul>
+    <a href="/portfolios-ui"><button>Go to portfolios</button></a>
+  </div>
+{% endblock %}
