@@ -2,7 +2,7 @@
 {% block title %}FlyingFunds | Invest Smarter{% endblock %}
 {% block content %}
 <style>
-  /* override */
+
   .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
 
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
@@ -24,7 +24,7 @@
     background: var(--cream);
   }
 
-  /* soft blobs */
+  /* blobs */
   .blob {
     position: absolute;
     border-radius: 50%;
@@ -59,6 +59,13 @@
   }
   @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
 
+
+  .hero-sub {
+    font-size:clamp(15px,2vw,19px);color:var(--muted);line-height:1.7;
+    max-width:520px;margin:0 auto 44px;
+    animation:fadeUp 0.7s ease 0.16s both;
+  }
+
   .hero-title {
     font-family:'Instrument Serif',serif;
     font-size:clamp(48px,8vw,96px);
@@ -68,12 +75,6 @@
   }
   .hero-title em  { font-style:italic;color:var(--rose); }
   .hero-title .ag { color:var(--sage); }
-
-  .hero-sub {
-    font-size:clamp(15px,2vw,19px);color:var(--muted);line-height:1.7;
-    max-width:520px;margin:0 auto 44px;
-    animation:fadeUp 0.7s ease 0.16s both;
-  }
 
   .hero-cta {
     display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
@@ -102,6 +103,10 @@
     -webkit-mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
     animation:fadeUp 0.7s ease 0.4s both;
   }
+  .t-sym  {font-weight:700;color:var(--dark);}
+  .t-up   {color:#4a9470;font-weight:600;}
+  .t-down {color:#c0544a;font-weight:600;}
+
   .ticker-track{display:flex;gap:12px;animation:tickerScroll 32s linear infinite;width:max-content;}
   @keyframes tickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .ticker-item {
@@ -111,9 +116,6 @@
     border-radius:40px;color:var(--muted);
     box-shadow:0 2px 8px rgba(45,31,26,0.06);
   }
-  .t-sym  {font-weight:700;color:var(--dark);}
-  .t-up   {color:#4a9470;font-weight:600;}
-  .t-down {color:#c0544a;font-weight:600;}
 
   .scroll-hint {
     position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
@@ -268,8 +270,7 @@
     .cta-section{padding:100px 24px;}
   }
 
-  /* dark mode: cta-section uses var(--dark) as bg which flips to cream in dark theme,
-     so we pin it to a real dark colour instead */
+  /* dark mode*/
   [data-theme="dark"] .cta-section { background: #1a0e0b !important; }
   [data-theme="dark"] .btn-cta-p   { background: #ede4dc !important; color: #1a0e0b !important; }
 </style>
@@ -287,7 +288,7 @@
       <h1 class="hero-title">
         Invest with<br><em>clarity</em> &amp; <span class="ag">confidence</span>
       </h1>
-      <p class="hero-sub">FlyingFunds brings portfolio management, risk analytics, and financial education together — so you understand every move you make.</p>
+      <p class="hero-sub">FlyingFunds brings portfolio management, risk analytics, and financial education together...so you understand every move you make.</p>
       <div class="hero-cta">
         <a href="/signup" class="btn-primary">Start for free →</a>
         <a href="/about"  class="btn-ghost">Learn more</a>

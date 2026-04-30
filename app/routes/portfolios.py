@@ -14,26 +14,6 @@ class PortfolioCreate(BaseModel):
     name: str
     category: Optional[str] = "General"
 
-class PortfolioUpdate(BaseModel):
-    name: Optional[str] = None
-    category: Optional[str] = None
-
-class HoldingCreate(BaseModel):
-    symbol: str
-    quantity: float
-    avg_buy_price: float
-
-class ReorderPayload(BaseModel):
-    ordered_ids: List[int]  # portfolio IDs in desired order
-
-
-# check portfolio belongs to current user — raises 404 (not 403, to avoid leaking existence)
-def _owned(db, user_id, portfolio_id):
-    p = db.query(Portfolio).filter(Portfolio.id == portfolio_id, Portfolio.user_id == user_id).first()
-    if not p:
-        raise HTTPException(404, "Portfolio not found")
-    return p
-
 
 @router.post("/", status_code=201)
 def createPortfolio(payload: PortfolioCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -65,6 +45,35 @@ def list_portfolios(db: Session = Depends(get_db), current_user: User = Depends(
     ]
 
 
+class HoldingCreate(BaseModel):
+    symbol: str
+    quantity: float
+    avg_buy_price: float
+
+
+@router.post("/{portfolio_id}/holdings", status_code=201)
+def add_holding(portfolio_id: int, payload: HoldingCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    portfolio = _owned(db, current_user.id, portfolio_id)
+    # always store symbol in uppercase so lookups are consistent
+    h = Holding(portfolio_id=portfolio.id, symbol=payload.symbol.upper(), quantity=payload.quantity, avg_buy_price=payload.avg_buy_price)
+    db.add(h)
+    db.commit()
+    db.refresh(h)
+    return {"id": h.id, "symbol": h.symbol, "quantity": h.quantity, "avg_buy_price": h.avg_buy_price}
+
+
+@router.delete("/{portfolio_id}", status_code=204)
+def delete_portfolio(portfolio_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    p = _owned(db, current_user.id, portfolio_id)
+    db.delete(p)
+    db.commit()
+
+
+class PortfolioUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+
+
 @router.patch("/{portfolio_id}")
 def update_portfolio(portfolio_id: int, payload: PortfolioUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     p = _owned(db, current_user.id, portfolio_id)
@@ -80,14 +89,23 @@ def update_portfolio(portfolio_id: int, payload: PortfolioUpdate, db: Session = 
     return {"id": p.id, "name": p.name, "category": getattr(p, "category", "General")}
 
 
-@router.delete("/{portfolio_id}", status_code=204)
-def delete_portfolio(portfolio_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    p = _owned(db, current_user.id, portfolio_id)
-    db.delete(p)
-    db.commit()
+@router.get("/{portfolio_id}")
+def get_portfolio(portfolio_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    portfolio = _owned(db, current_user.id, portfolio_id)
+    holdings = db.query(Holding).filter(Holding.portfolio_id == portfolio.id).all()
+    return {
+        "id": portfolio.id,
+        "name": portfolio.name,
+        "category": getattr(portfolio, "category", "General") or "General",
+        "holdings": [{"id": h.id, "symbol": h.symbol, "quantity": h.quantity, "avg_buy_price": h.avg_buy_price} for h in holdings],
+    }
 
 
-# lets users drag and reorder their portfolios — saves order to the database
+class ReorderPayload(BaseModel):
+    ordered_ids: List[int]
+
+
+# drag reorder — added this much later in the project
 @router.post("/reorder")
 def reorder_portfolios(payload: ReorderPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     for idx, pid in enumerate(payload.ordered_ids):
@@ -101,24 +119,9 @@ def reorder_portfolios(payload: ReorderPayload, db: Session = Depends(get_db), c
     return {"ok": True}
 
 
-@router.post("/{portfolio_id}/holdings", status_code=201)
-def add_holding(portfolio_id: int, payload: HoldingCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    portfolio = _owned(db, current_user.id, portfolio_id)
-    # always store symbol in uppercase so lookups are consistent
-    h = Holding(portfolio_id=portfolio.id, symbol=payload.symbol.upper(), quantity=payload.quantity, avg_buy_price=payload.avg_buy_price)
-    db.add(h)
-    db.commit()
-    db.refresh(h)
-    return {"id": h.id, "symbol": h.symbol, "quantity": h.quantity, "avg_buy_price": h.avg_buy_price}
-
-
-@router.get("/{portfolio_id}")
-def get_portfolio(portfolio_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    portfolio = _owned(db, current_user.id, portfolio_id)
-    holdings = db.query(Holding).filter(Holding.portfolio_id == portfolio.id).all()
-    return {
-        "id": portfolio.id,
-        "name": portfolio.name,
-        "category": getattr(portfolio, "category", "General") or "General",
-        "holdings": [{"id": h.id, "symbol": h.symbol, "quantity": h.quantity, "avg_buy_price": h.avg_buy_price} for h in holdings],
-    }
+# extracted this into a helper after copy-pasting it like 4 times
+def _owned(db, user_id, portfolio_id):
+    p = db.query(Portfolio).filter(Portfolio.id == portfolio_id, Portfolio.user_id == user_id).first()
+    if not p:
+        raise HTTPException(404, "Portfolio not found")
+    return p

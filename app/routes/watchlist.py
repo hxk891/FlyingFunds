@@ -16,34 +16,6 @@ class WatchlistAdd(BaseModel):
     target_price: Optional[float] = None
 
 
-class WatchlistUpdate(BaseModel):
-    notes: Optional[str] = None
-    target_price: Optional[float] = None
-
-
-@router.get("/")
-def get_watchlist(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    items = (
-        db.query(WatchlistItem)
-        .filter(WatchlistItem.user_id == current_user.id)
-        .order_by(WatchlistItem.added_at.desc())
-        .all()
-    )
-    return [
-        {
-            "id": i.id,
-            "symbol": i.symbol,
-            "notes": i.notes,
-            "target_price": i.target_price,
-            "added_at": i.added_at.isoformat(),
-        }
-        for i in items
-    ]
-
-
 @router.post("/", status_code=201)
 def add_to_watchlist(
     payload: WatchlistAdd,
@@ -79,6 +51,52 @@ def add_to_watchlist(
     }
 
 
+@router.delete("/{item_id}", status_code=204)
+def remove_from_watchlist(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    item = (
+        db.query(WatchlistItem)
+        .filter(WatchlistItem.id == item_id, WatchlistItem.user_id == current_user.id)
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found.")
+
+    db.delete(item)
+    db.commit()
+
+
+class WatchlistUpdate(BaseModel):
+    notes: Optional[str] = None
+    target_price: Optional[float] = None
+
+
+@router.get("/")
+def get_watchlist(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    items = (
+        db.query(WatchlistItem)
+        .filter(WatchlistItem.user_id == current_user.id)
+        .order_by(WatchlistItem.added_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": i.id,
+            "symbol": i.symbol,
+            "notes": i.notes,
+            "target_price": i.target_price,
+            "added_at": i.added_at.isoformat(),
+        }
+        for i in items
+    ]
+
+
 @router.patch("/{item_id}")
 def update_watchlist_item(
     item_id: int,
@@ -108,21 +126,3 @@ def update_watchlist_item(
         "notes": item.notes,
         "target_price": item.target_price,
     }
-
-
-@router.delete("/{item_id}", status_code=204)
-def remove_from_watchlist(
-    item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    item = (
-        db.query(WatchlistItem)
-        .filter(WatchlistItem.id == item_id, WatchlistItem.user_id == current_user.id)
-        .first()
-    )
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found.")
-
-    db.delete(item)
-    db.commit()

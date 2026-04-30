@@ -1,15 +1,56 @@
 // Health score, plain understandabke summaries, what-if engine, behavioural insights.
 // scoring driven by risk metrics (Sharpe, VaR, drawdown, volatility).
 
-// Helpers
-function _pct(v)   { return (Number(v) * 100).toFixed(1) + '%'; }
-function _abs(v)   { return Math.abs(Number(v)); }
-function _f2(v)    { return Number(v).toFixed(2); }
-function _has(v)   { return v !== undefined && v !== null && !isNaN(Number(v)); }
-// reads the global experience level set by dashboard.html
-function _lvl()    { return (window._userLevel || 'advanced').toLowerCase(); }
+// whatif results
+function renderWhatIf(containerId, result) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (result.error) {
+    el.innerHTML = `<p style="color:#888;font-family:'DM Sans',sans-serif;font-size:13px;">${result.error}</p>`;
+    return;
+  }
 
-// Metric inline explanations 
+  const isBeg = _lvl() === 'beginner';
+  // beginners: hide rows that are pure jargon (Sharpe ratio, Est Sharpe ratio)
+  const shownChanges = isBeg
+    ? result.changes.filter(c => !c.label.toLowerCase().includes('sharpe') && !c.label.toLowerCase().includes('volatility'))
+    : result.changes;
+
+  // beginners get a simpler assumption line
+  const assumptionText = isBeg
+    ? (result.beginnerAssumption || result.assumption.replace(/beta[\s≈\d.]+/gi,'').replace(/idiosyncratic/gi,'').replace(/MPT/gi,''))
+    : result.assumption;
+
+  // pick insight text based on level
+  const insightText = isBeg && result.beginnerInsight ? result.beginnerInsight : result.insight;
+
+  el.innerHTML = `
+    <div style="font-family:'DM Sans',sans-serif;">
+      <div style="font-size:13px;font-weight:600;color:#2d1f1a;margin-bottom:3px;">${result.scenario}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.5;">${assumptionText}</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+        <thead><tr style="border-bottom:1.5px solid #e5e5e5;">
+          <th style="text-align:left;font-size:11px;color:#888;font-weight:500;padding:3px 0;">${isBeg ? 'What changes' : 'Metric'}</th>
+          <th style="text-align:right;font-size:11px;color:#888;font-weight:500;padding:3px 6px;">${isBeg ? 'Now' : 'Before'}</th>
+          <th style="text-align:right;font-size:11px;color:#888;font-weight:500;padding:3px 6px;">${isBeg ? 'Would become' : 'After'}</th>
+          <th style="text-align:right;font-size:11px;color:#888;font-weight:500;padding:3px 0;">Change</th>
+        </tr></thead>
+        <tbody>
+          ${shownChanges.map(c => `<tr style="border-bottom:1px solid #f0f0f0;">
+            <td style="font-size:12px;padding:6px 0;color:#2d1f1a;">${c.label}</td>
+            <td style="text-align:right;font-size:12px;padding:6px;color:#666;">${c.before}</td>
+            <td style="text-align:right;font-size:12px;padding:6px;font-weight:600;color:${c.bad?'#dc2626':'#16a34a'};">${c.after}</td>
+            <td style="text-align:right;font-size:12px;padding:6px 0;color:${c.bad?'#dc2626':'#16a34a'};">${c.delta}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="background:#fff;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.65;color:#2d1f1a;border-left:3px solid #c9837a;">
+        💡 ${insightText}
+      </div>
+    </div>`;
+}
+
+// Metric inline explanations
 const METRIC_EXPLAIN = {
   sharpe: v => {
     const n = Number(v);
@@ -57,6 +98,19 @@ const METRIC_EXPLAIN = {
     if (n < 15)  return `Annualised return ${n.toFixed(1)}%/yr — solid, in line with or above long-term equity market returns.`;
     return `Annualised return ${n.toFixed(1)}%/yr — strong. Significantly above long-term market averages.`;
   },
+};
+
+// global ex
+window.FlyingFundsInsights = {
+  computeHealthScore,
+  PortfolioSummary,
+  computeWhatIf,
+  analyseBehaviour,
+  renderHealthScore,
+  renderWhatIf,
+  renderBehaviouralInsights,
+  attachMetricTooltip,
+  METRIC_EXPLAIN,
 };
 
 // portfolio health score returns; score, grade, colour, reasons, suggestions
@@ -518,55 +572,6 @@ function renderHealthScore(containerId, health) {
     </div>`;
 }
 
-// whatif results
-function renderWhatIf(containerId, result) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  if (result.error) {
-    el.innerHTML = `<p style="color:#888;font-family:'DM Sans',sans-serif;font-size:13px;">${result.error}</p>`;
-    return;
-  }
-
-  const isBeg = _lvl() === 'beginner';
-  // beginners: hide rows that are pure jargon (Sharpe ratio, Est Sharpe ratio)
-  const shownChanges = isBeg
-    ? result.changes.filter(c => !c.label.toLowerCase().includes('sharpe') && !c.label.toLowerCase().includes('volatility'))
-    : result.changes;
-
-  // beginners get a simpler assumption line
-  const assumptionText = isBeg
-    ? (result.beginnerAssumption || result.assumption.replace(/beta[\s≈\d.]+/gi,'').replace(/idiosyncratic/gi,'').replace(/MPT/gi,''))
-    : result.assumption;
-
-  // pick insight text based on level
-  const insightText = isBeg && result.beginnerInsight ? result.beginnerInsight : result.insight;
-
-  el.innerHTML = `
-    <div style="font-family:'DM Sans',sans-serif;">
-      <div style="font-size:13px;font-weight:600;color:#2d1f1a;margin-bottom:3px;">${result.scenario}</div>
-      <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.5;">${assumptionText}</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
-        <thead><tr style="border-bottom:1.5px solid #e5e5e5;">
-          <th style="text-align:left;font-size:11px;color:#888;font-weight:500;padding:3px 0;">${isBeg ? 'What changes' : 'Metric'}</th>
-          <th style="text-align:right;font-size:11px;color:#888;font-weight:500;padding:3px 6px;">${isBeg ? 'Now' : 'Before'}</th>
-          <th style="text-align:right;font-size:11px;color:#888;font-weight:500;padding:3px 6px;">${isBeg ? 'Would become' : 'After'}</th>
-          <th style="text-align:right;font-size:11px;color:#888;font-weight:500;padding:3px 0;">Change</th>
-        </tr></thead>
-        <tbody>
-          ${shownChanges.map(c => `<tr style="border-bottom:1px solid #f0f0f0;">
-            <td style="font-size:12px;padding:6px 0;color:#2d1f1a;">${c.label}</td>
-            <td style="text-align:right;font-size:12px;padding:6px;color:#666;">${c.before}</td>
-            <td style="text-align:right;font-size:12px;padding:6px;font-weight:600;color:${c.bad?'#dc2626':'#16a34a'};">${c.after}</td>
-            <td style="text-align:right;font-size:12px;padding:6px 0;color:${c.bad?'#dc2626':'#16a34a'};">${c.delta}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-      <div style="background:#fff;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.65;color:#2d1f1a;border-left:3px solid #c9837a;">
-        💡 ${insightText}
-      </div>
-    </div>`;
-}
-
 // behavioural insights
 function renderBehaviouralInsights(containerId, insights) {
   const el = document.getElementById(containerId);
@@ -614,15 +619,9 @@ function attachMetricTooltip(elementId, metricKey, value) {
   el.addEventListener('mouseleave', () => document.getElementById('metric-tooltip')?.remove());
 }
 
-// global ex
-window.FlyingFundsInsights = {
-  computeHealthScore,
-  PortfolioSummary,
-  computeWhatIf,
-  analyseBehaviour,
-  renderHealthScore,
-  renderWhatIf,
-  renderBehaviouralInsights,
-  attachMetricTooltip,
-  METRIC_EXPLAIN,
-};
+// Helpers - reads the global experience level set by dashboard.html
+function _lvl()    { return (window._userLevel || 'advanced').toLowerCase(); }
+function _pct(v)   { return (Number(v) * 100).toFixed(1) + '%'; }
+function _abs(v)   { return Math.abs(Number(v)); }
+function _f2(v)    { return Number(v).toFixed(2); }
+function _has(v)   { return v !== undefined && v !== null && !isNaN(Number(v)); }

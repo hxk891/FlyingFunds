@@ -15,18 +15,14 @@ from app import models
 
 router = APIRouter(prefix="/trading", tags=["trading"])
 
-# default starting balance for new users — £10k seems reasonable for paper trading
 DEFAULT_BALANCE = 10000.0
 
-# in-memory price cache so we dont spam finnhub on every request
-# TTL = 60 seconds, the lock stops race conditions when multiple requests come in at once
-_price_cache: dict = {}   # { symbol: (price, timestamp) }
+_price_cache: dict = {}
 _price_cache_lock = Lock()
-PRICE_CACHE_TTL = 60      # seconds
+PRICE_CACHE_TTL = 60
 
 
 def _get_portfolio_owned(db: Session, user_id: int, portfolio_id: int):
-    # check the portfolio belongs to this user — dont want people seeing each others data
     p = db.query(models.Portfolio).filter(
         models.Portfolio.id == portfolio_id,
         models.Portfolio.user_id == user_id,
@@ -36,83 +32,10 @@ def _get_portfolio_owned(db: Session, user_id: int, portfolio_id: int):
     return p
 
 
-def _live_price(symbol: str) -> float:
-    """Fetch live price with in-memory TTL cache to avoid hammering Finnhub."""
-    sym = symbol.upper()
-    now = time.time()
-
-    # check cache first before making an HTTP request
-    with _price_cache_lock:
-        cached = _price_cache.get(sym)
-        if cached and (now - cached[1]) < PRICE_CACHE_TTL:
-            return cached[0]
-
-    api_key = os.getenv("FINNHUB_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="FINNHUB_API_KEY not set")
-    r = requests.get(
-        "https://finnhub.io/api/v1/quote",
-        params={"symbol": sym, "token": api_key},
-        timeout=10,
-    )
-    if not r.ok:
-        raise HTTPException(status_code=502, detail=f"Finnhub error: {r.text}")
-    price = r.json().get("c")
-    if not price:
-        raise HTTPException(status_code=502, detail=f"No price data for {symbol}")
-
-    price = float(price)
-    with _price_cache_lock:
-        _price_cache[sym] = (price, now)
-    return price
-
-
-def _live_price_safe(symbol: str):
-    """Like _live_price but returns None on any error (for bulk fetches)."""
-    try:
-        return _live_price(symbol)
-    except Exception:
-        return None
-
-
-def _get_balance(user) -> float:
-    val = getattr(user, "cash_balance", None)
-    return float(val) if val is not None else DEFAULT_BALANCE
-
-
-# pydantic schemas for request validation
-class DepositIn(BaseModel):
-    amount: float
-
 class PaperTradeIn(BaseModel):
     portfolio_id: int
     symbol: str
     quantity: float
-
-class ManualTradeIn(BaseModel):
-    portfolio_id: int
-    symbol: str
-    side: str
-    quantity: float
-    price: float
-
-
-@router.get("/balance")
-def get_balance(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    return {"balance": _get_balance(user)}
-
-
-@router.post("/deposit")
-def deposit(payload: DepositIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    if payload.amount <= 0:
-        raise HTTPException(400, "Amount must be positive")
-    if payload.amount > 1_000_000:
-        raise HTTPException(400, "Maximum deposit is £1,000,000")
-    db_user = db.query(models.User).filter(models.User.id == user.id).first()
-    db_user.cash_balance = _get_balance(user) + payload.amount
-    db.commit()
-    db.refresh(db_user)
-    return {"balance": float(db_user.cash_balance)}
 
 
 @router.post("/buy")
@@ -137,7 +60,6 @@ def paper_buy(payload: PaperTradeIn, db: Session = Depends(get_db), user=Depends
     t = models.Trade(portfolio_id=payload.portfolio_id, symbol=symbol, side="BUY", quantity=qty, price=price)
     db.add(t)
 
-    # check if we already hold this symbol — if so update avg price using weighted average
     h = db.query(models.Holding).filter(
         models.Holding.portfolio_id == payload.portfolio_id,
         models.Holding.symbol == symbol,
@@ -183,7 +105,6 @@ def paper_sell(payload: PaperTradeIn, db: Session = Depends(get_db), user=Depend
     db.add(t)
 
     h.quantity = h.quantity - qty
-    # if we sold basically everything, delete the holding row entirely
     if h.quantity < 0.0001:
         db.delete(h)
 
@@ -192,7 +113,75 @@ def paper_sell(payload: PaperTradeIn, db: Session = Depends(get_db), user=Depend
     return {"ok": True, "symbol": symbol, "quantity": qty, "price": price, "proceeds": proceeds, "balance": float(db_user.cash_balance)}
 
 
+# price fetching — extracted this after buy and sell both needed it
+def _live_price(symbol: str) -> float:
+    """Fetch live price with in-memory TTL cache to avoid hammering Finnhub."""
+    sym = symbol.upper()
+    now = time.time()
+
+    with _price_cache_lock:
+        cached = _price_cache.get(sym)
+        if cached and (now - cached[1]) < PRICE_CACHE_TTL:
+            return cached[0]
+
+    api_key = os.getenv("FINNHUB_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="FINNHUB_API_KEY not set")
+    r = requests.get(
+        "https://finnhub.io/api/v1/quote",
+        params={"symbol": sym, "token": api_key},
+        timeout=10,
+    )
+    if not r.ok:
+        raise HTTPException(status_code=502, detail=f"Finnhub error: {r.text}")
+    price = r.json().get("c")
+    if not price:
+        raise HTTPException(status_code=502, detail=f"No price data for {symbol}")
+
+    price = float(price)
+    with _price_cache_lock:
+        _price_cache[sym] = (price, now)
+    return price
+
+
+def _live_price_safe(symbol: str):
+    try:
+        return _live_price(symbol)
+    except Exception:
+        return None
+
+
+class DepositIn(BaseModel):
+    amount: float
+
+
+@router.get("/balance")
+def get_balance(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return {"balance": _get_balance(user)}
+
+
+@router.post("/deposit")
+def deposit(payload: DepositIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    if payload.amount <= 0:
+        raise HTTPException(400, "Amount must be positive")
+    if payload.amount > 1_000_000:
+        raise HTTPException(400, "Maximum deposit is £1,000,000")
+    db_user = db.query(models.User).filter(models.User.id == user.id).first()
+    db_user.cash_balance = _get_balance(user) + payload.amount
+    db.commit()
+    db.refresh(db_user)
+    return {"balance": float(db_user.cash_balance)}
+
+
 # manual trade entry — doesnt hit the API, user provides the price themselves
+class ManualTradeIn(BaseModel):
+    portfolio_id: int
+    symbol: str
+    side: str
+    quantity: float
+    price: float
+
+
 @router.post("/manual")
 def manual_trade(payload: ManualTradeIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
     _get_portfolio_owned(db, user.id, payload.portfolio_id)
@@ -230,6 +219,12 @@ def manual_trade(payload: ManualTradeIn, db: Session = Depends(get_db), user=Dep
     return {"ok": True, "note": "Manual entry — cash balance not affected"}
 
 
+# balance helper — extracted late, was inline in deposit/buy/sell originally
+def _get_balance(user) -> float:
+    val = getattr(user, "cash_balance", None)
+    return float(val) if val is not None else DEFAULT_BALANCE
+
+
 @router.get("/pnl/{portfolio_id}")
 def pnl(portfolio_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     _get_portfolio_owned(db, user.id, portfolio_id)
@@ -242,8 +237,6 @@ def pnl(portfolio_id: int, db: Session = Depends(get_db), user=Depends(get_curre
     if not holdings:
         return {"holdings": [], "total_cost": 0, "total_value": 0, "total_pnl": 0, "total_pnl_pct": 0, "balance": _get_balance(user)}
 
-    # fetch all unique symbols in parallel — one HTTP call per unique symbol, not one per holding
-    # this is much faster than doing them one at a time, especially for large portfolios
     symbols = list({h.symbol for h in holdings})
     prices = {}
     with ThreadPoolExecutor(max_workers=min(len(symbols), 6)) as ex:
@@ -257,11 +250,9 @@ def pnl(portfolio_id: int, db: Session = Depends(get_db), user=Depends(get_curre
 
     for h in holdings:
         live = prices.get(h.symbol)
-
         cost = h.quantity * h.avg_buy_price
         value = h.quantity * live if live is not None else None
         pnl_amt = (value - cost) if value is not None else None
-        # pnl % = (live - avg_cost) / avg_cost * 100
         pnl_pct = ((live - h.avg_buy_price) / h.avg_buy_price * 100) if live is not None else None
 
         total_cost += cost
@@ -319,8 +310,6 @@ def history(portfolio_id: int, db: Session = Depends(get_db), user=Depends(get_c
     }
 
 
-# builds a value-over-time chart for a specific holding in a portfoloi
-# tries yfinance first, then our own DB prices, then just trade points
 @router.get("/investment-chart/{portfolio_id}")
 def investment_chart(
     portfolio_id: int,
@@ -340,9 +329,7 @@ def investment_chart(
     symbol = symbol.upper().strip()
 
     from collections import defaultdict
-    import time
 
-    # get all trades for this symbol in this portfoloi
     trades = (
         db.query(models.Trade)
         .filter(
@@ -356,14 +343,12 @@ def investment_chart(
     if not trades:
         raise HTTPException(404, "No trades found for this symbol in this portfolio")
 
-    # Build trade map: date -> list of trades
     trade_map = defaultdict(list)
     for t in trades:
         day = t.ts.strftime("%Y-%m-%d") if t.ts else None
         if day:
             trade_map[day].append(t)
 
-    # strategy 1: yfinance historical candles (free tier)
     candle_dates  = []
     candle_closes = []
 
@@ -377,7 +362,6 @@ def investment_chart(
     except Exception:
         pass
 
-    # strategy 2: prices from our own database (uploaded CSV)
     if not candle_dates:
         from datetime import timedelta
         cutoff = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
@@ -391,8 +375,6 @@ def investment_chart(
             candle_dates  = [p.date for p in db_prices]
             candle_closes = [p.close for p in db_prices]
 
-    # build the series — walk through each price day, accumulate qty from trades,
-    # then multiply running_qty by close price to get holding value on that day
     series = []
     source = "trades_only"
 
@@ -400,7 +382,6 @@ def investment_chart(
         source = "historical"
         price_map = dict(zip(candle_dates, candle_closes))
 
-        # Build a sorted list of (date, side, qty, price) from all trades
         trade_events = sorted(
             [(t.ts.strftime("%Y-%m-%d"), t.side, t.quantity, t.price)
              for t in trades if t.ts],
@@ -412,7 +393,6 @@ def investment_chart(
         trade_idx   = 0
 
         for date in candle_dates:
-            # apply all trades that occured on or before this date
             while trade_idx < len(trade_events) and trade_events[trade_idx][0] <= date:
                 _, side, qty, price = trade_events[trade_idx]
                 if side == "BUY":
@@ -432,7 +412,6 @@ def investment_chart(
                 })
 
     else:
-        # strategy 3: trade-point-only — no price history available at all
         running_qty = 0.0
         cost_basis  = 0.0
         for t in trades:
@@ -451,7 +430,6 @@ def investment_chart(
                     "close": t.price,
                 })
 
-        # try to append todays live price as the final point so the chart doesnt end in the past
         try:
             api_key = os.getenv("FINNHUB_API_KEY", "")
             if api_key and running_qty > 0:

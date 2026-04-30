@@ -1,3 +1,7 @@
+function haloRespond(msg, history) {
+    return HALO.respond(msg, history);
+  }
+
 const HALO = (() => {
 
     const STOP = new Set([
@@ -10,38 +14,6 @@ const HALO = (() => {
       'know','understand','show','get','its','our','their','there','here','some',
       'any','all','more','much','mean','means','like','think'
     ]);
-
-    function stem(w) {
-      if (w.length <= 4) return w;
-      return w
-        .replace(/ational$/, 'ate').replace(/tional$/, 'tion')
-        .replace(/enci$/, 'ence').replace(/anci$/, 'ance')
-        .replace(/iser$|izer$/, 'ise').replace(/alism$/, 'al')
-        .replace(/iveness$/, 'ive').replace(/fulness$/, 'ful')
-        .replace(/ousness$/, 'ous').replace(/aliti$/, 'al')
-        .replace(/iviti$/, 'ive').replace(/biliti$/, 'ble')
-        .replace(/ating$|ation$|ations$/, 'ate')
-        .replace(/ings?$/, '').replace(/edly$/, '')
-        .replace(/ness$/, '').replace(/ment$|ments$/, '')
-        .replace(/ers?$/, '').replace(/ies$/, 'y')
-        .replace(/s$/, '');
-    }
-
-    function tokenise(text) {
-      return text.toLowerCase()
-        .replace(/[^a-z0-9\s]/g, ' ')
-        .split(/\s+/)
-        .filter(t => t.length > 2 && !STOP.has(t))
-        .map(stem);
-    }
-
-    function bigrams(tokens) {
-      const bigrams = [];
-      for (let i = 0; i < tokens.length - 1; i++) {
-        bigrams.push(tokens[i] + '_' + tokens[i + 1]);
-      }
-      return bigrams;
-    }
 
     const FIXES = {
       'sharpi':'sharpe','sharpee':'sharpe','markwitz':'markowitz',
@@ -798,9 +770,38 @@ const HALO = (() => {
       return { text: fallbackText, related: [] };
     }
 
+    // NLP helpers -- defined down here, hoisted so respond() can call them above
+    function stem(w) {
+      if (w.length <= 4) return w;
+      return w
+        .replace(/ational$/, 'ate').replace(/tional$/, 'tion')
+        .replace(/enci$/, 'ence').replace(/anci$/, 'ance')
+        .replace(/iser$|izer$/, 'ise').replace(/alism$/, 'al')
+        .replace(/iveness$/, 'ive').replace(/fulness$/, 'ful')
+        .replace(/ousness$/, 'ous').replace(/aliti$/, 'al')
+        .replace(/iviti$/, 'ive').replace(/biliti$/, 'ble')
+        .replace(/ating$|ation$|ations$/, 'ate')
+        .replace(/ings?$/, '').replace(/edly$/, '')
+        .replace(/ness$/, '').replace(/ment$|ments$/, '')
+        .replace(/ers?$/, '').replace(/ies$/, 'y')
+        .replace(/s$/, '');
+    }
+
+    function tokenise(text) {
+      return text.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(t => t.length > 2 && !STOP.has(t))
+        .map(stem);
+    }
+
+    function bigrams(tokens) {
+      const bigrams = [];
+      for (let i = 0; i < tokens.length - 1; i++) {
+        bigrams.push(tokens[i] + '_' + tokens[i + 1]);
+      }
+      return bigrams;
+    }
+
     return { respond };
   })();
-
-  function haloRespond(msg, history) {
-    return HALO.respond(msg, history);
-  }

@@ -16,25 +16,6 @@ VALID_TOPICS = {
 }
 
 
-def _get_read(user: User) -> list[str]:
-    try:
-        return json.loads(user.read_topics or "[]")
-    except Exception:
-        return []
-
-
-# GET /api/learn/progress
-
-@router.get("/progress")
-def get_progress(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    return {"read": _get_read(current_user)}
-
-
-# POST /api/learn/progress
-
 class MarkReadPayload(BaseModel):
     topic_id: str
 
@@ -72,7 +53,20 @@ def unmark_read(
     return {"read": read}
 
 
-# POST /api/learn/progress/reset
+@router.get("/progress")
+def get_progress(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return {"read": _get_read(current_user)}
+
+
+def _get_read(user: User) -> list[str]:
+    try:
+        return json.loads(user.read_topics or "[]")
+    except Exception:
+        return []
+
 
 @router.post("/progress/reset")
 def reset_progress(
